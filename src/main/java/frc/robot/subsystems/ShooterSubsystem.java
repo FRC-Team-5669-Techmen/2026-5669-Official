@@ -17,18 +17,16 @@ public class ShooterSubsystem extends SubsystemBase {
     public ShooterSubsystem() {
         TalonFXConfiguration config = new TalonFXConfiguration();
 
-        // 1. Configure PID gains (example values, tune these!)
+     
         config.Slot0.kP = -0.11; 
-        config.Slot0.kV = 0; // Feedforward is crucial for high RPM
+        config.Slot0.kV = 0;
 
-        // 2. Configure Ramping (seconds from 0 to full)
-        // Correct field for Phoenix 6 Closed Loop Ramping
         config.ClosedLoopRamps.VoltageClosedLoopRampPeriod = 100.0;
         config.ClosedLoopRamps.DutyCycleClosedLoopRampPeriod = 100.0;
-        // Apply config to leader
+        
         leader.getConfigurator().apply(config);
 
-        // 3. Set follower to oppose leader direction
+      
         follower.setControl(new Follower(leader.getDeviceID(), MotorAlignmentValue.Aligned));
     }
 

@@ -12,10 +12,9 @@ public class RunShooterCommand extends Command {
         m_targetRPM = targetRPM;
         addRequirements(m_shooter);
     }
-
     @Override
     public void execute() {
-        // Continuously send the velocity request
+        
         m_shooter.runAtRPM(m_targetRPM);
     }
 
