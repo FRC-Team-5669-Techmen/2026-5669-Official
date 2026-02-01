@@ -18,7 +18,8 @@ public final class Constants {
         public static final int kLeaderId = 16;
         public static final int kFollowerId = 17;
 
-        public static final double kTargetRPM = 5000.0;
+        public static final double kfastTargetRPM = 5000.0;
+        public static final double kslowTargetRPM = 2500.0;
 
         public static final double kP = -0.11;
         public static final double kI = 0.0;
