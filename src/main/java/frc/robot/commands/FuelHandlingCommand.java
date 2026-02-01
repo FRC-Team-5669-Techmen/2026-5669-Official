@@ -65,6 +65,6 @@ public class FuelHandlingCommand extends Command {
 
     @Override
     public boolean isFinished() {
-        return false; // Runs until interrupted (button release)
+        return false;
     }
 }

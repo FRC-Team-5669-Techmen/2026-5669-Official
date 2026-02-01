@@ -3,6 +3,7 @@
 // the WPILib BSD license file in the root directory of this project.
 // Muhammad Nabeel
 // Lukas Deusch 
+//Eric Xia
 // Jhonen Hasenbein
 // Marcos "Danger" Posada
 
@@ -78,19 +79,19 @@ public class RobotContainer {
             drivetrain.applyRequest(() -> idle).ignoringDisable(true)
         );
 
-        // --- FUEL HANDLING BINDINGS ---
         
-        // Right Trigger: Forward (Intake/Shoot)
+        
+        // full intake process (index + Shooter intake + shooting balls)
         joystick.rightTrigger().whileTrue(
             new FuelHandlingCommand(index, shooterIntake, shooter, true)
         );
 
-        // Left Trigger: Reverse (Rewind)
+        // rewind of full "intake" process
         joystick.leftTrigger().whileTrue(
             new FuelHandlingCommand(index, shooterIntake, shooter, false)
         );
 
-        // Original Shooter Test Button
+        // Shooter ramp up
         joystick.a().whileTrue(new RunShooterCommand(shooter, Constants.Shooter.kTargetRPM));
         
         joystick.b().whileTrue(drivetrain.applyRequest(() ->
