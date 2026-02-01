@@ -1,7 +1,6 @@
 package frc.robot.subsystems;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -10,13 +9,12 @@ import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import frc.robot.Constants;
 
 public class ShooterSubsystem extends SubsystemBase {
-    //ID init
+    // ID init
     private final TalonFX leader = new TalonFX(Constants.Shooter.kLeaderId);
     private final TalonFX follower = new TalonFX(Constants.Shooter.kFollowerId);
     
-    // Controls
+    // Controls - STRICTLY VELOCITY (RPM)
     private final VelocityVoltage m_velocityRequest = new VelocityVoltage(0);
-    private final DutyCycleOut m_dutyCycleRequest = new DutyCycleOut(0);
 
     public ShooterSubsystem() {
         TalonFXConfiguration config = new TalonFXConfiguration();
@@ -43,13 +41,9 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public void runAtRPM(double rpm) {
+        // Convert RPM to Rotations Per Second (RPS)
         double rps = rpm / 60.0;
         leader.setControl(m_velocityRequest.withVelocity(rps));
-    }
-
-    // New method for unison/reverse movement (Open Loop Percentage)
-    public void runOpenLoop(double percent) {
-        leader.setControl(m_dutyCycleRequest.withOutput(percent));
     }
 
     public void stop() {

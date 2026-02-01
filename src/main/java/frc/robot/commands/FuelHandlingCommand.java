@@ -6,8 +6,6 @@ import frc.robot.subsystems.IndexSubsystem;
 import frc.robot.subsystems.ShooterIntakeSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 
-//Authentically Coded By Lukas Deusch - Senior 
-
 public class FuelHandlingCommand extends Command {
     private final IndexSubsystem index;
     private final ShooterIntakeSubsystem shooterIntake;
@@ -35,24 +33,26 @@ public class FuelHandlingCommand extends Command {
     public void execute() {
         double indexSpeed;
         double intakeSpeed;
-        double shooterSpeed;
+        double shooterRPM;
 
         if (isForward) {
-            // "Intake" / Shooting direction (Positive constants)
+            // "Intake" / Shooting direction
             indexSpeed = Constants.Index.kForwardSpeed;
             intakeSpeed = Constants.ShooterIntake.kForwardSpeed;
-            shooterSpeed = Constants.Shooter.kForwardSpeed;
+            shooterRPM = Constants.Shooter.kTargetRPM; // 5000 RPM
         } else {
-            // "Rewind" / Clearing jam direction (Negative constants)
+            // "Rewind" / Clearing jam direction
             indexSpeed = Constants.Index.kReverseSpeed;
             intakeSpeed = Constants.ShooterIntake.kReverseSpeed;
-            shooterSpeed = Constants.Shooter.kReverseSpeed;
+            shooterRPM = Constants.Shooter.kReverseRPM; // -1000 RPM
         }
 
         // Run all motors in unison
         index.run(indexSpeed);
         shooterIntake.run(intakeSpeed);
-        shooter.runOpenLoop(shooterSpeed);
+        
+        // Use RPM control (VelocityVoltage) for the shooter
+        shooter.runAtRPM(shooterRPM);
     }
 
     @Override

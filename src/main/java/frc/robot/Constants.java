@@ -21,12 +21,11 @@ public final class Constants {
         // Manual direction adjustment for Shooter
         public static final boolean kLeaderInverted = false; 
 
-        public static final double kTargetRPM = 5000.0;
+        // RPM Constants
+        public static final double kTargetRPM = 5000.0; // Normal Shooting Speed
+        public static final double kReverseRPM = -1000.0; // Reverse Speed for jams
         
-        // Speeds for the "Unison" command (Open Loop %)
-        public static final double kForwardSpeed = 0.80; // 80% output when "intaking" to shoot
-        public static final double kReverseSpeed = -0.30; // Slow reverse to clear jams
-
+        // PID Config
         public static final double kP = -0.11;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
