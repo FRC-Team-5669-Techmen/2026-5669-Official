@@ -1,9 +1,6 @@
 // Copyright (c) FIRST and other WPILib contributors.
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
-// Muhammad Nabeel
-// Lukas Deusch 
-// Jhonen Hasenbein
 
 package frc.robot;
 
@@ -14,6 +11,7 @@ import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import frc.robot.commands.RunShooterCommand;
+import frc.robot.commands.FuelHandlingCommand; // Import the new command
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -22,11 +20,12 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
 
 import frc.robot.generated.TunerConstants;
-//Diddy AYO
 import frc.robot.Constants;
 
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.ShooterSubsystem;
+import frc.robot.subsystems.IndexSubsystem;
+import frc.robot.subsystems.ShooterIntakeSubsystem;
 
 public class RobotContainer {
     
@@ -51,7 +50,11 @@ public class RobotContainer {
     private final CommandXboxController joystick = new CommandXboxController(Constants.Operator.kDriverControllerPort);
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
+    
+    // Subsystems
     public final ShooterSubsystem shooter = new ShooterSubsystem();
+    public final IndexSubsystem index = new IndexSubsystem();
+    public final ShooterIntakeSubsystem shooterIntake = new ShooterIntakeSubsystem();
 
     public RobotContainer() {
         configureBindings();
@@ -71,7 +74,19 @@ public class RobotContainer {
             drivetrain.applyRequest(() -> idle).ignoringDisable(true)
         );
 
+        // --- FUEL HANDLING BINDINGS ---
         
+        // Right Trigger: Forward (Intake/Shoot)
+        joystick.rightTrigger().whileTrue(
+            new FuelHandlingCommand(index, shooterIntake, shooter, true)
+        );
+
+        // Left Trigger: Reverse (Rewind)
+        joystick.leftTrigger().whileTrue(
+            new FuelHandlingCommand(index, shooterIntake, shooter, false)
+        );
+
+        // Original Shooter Test Button
         joystick.a().whileTrue(new RunShooterCommand(shooter, Constants.Shooter.kTargetRPM));
         
         joystick.b().whileTrue(drivetrain.applyRequest(() ->
