@@ -9,8 +9,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import frc.robot.Constants;
 
-//Authentically Coded By Lukas Deusch - Senior 
-
 public class ShooterSubsystem extends SubsystemBase {
     //ID init
     private final TalonFX leader = new TalonFX(Constants.Shooter.kLeaderId);
@@ -40,7 +38,7 @@ public class ShooterSubsystem extends SubsystemBase {
         
         leader.getConfigurator().apply(config);
 
-        // Follower is aligned to leader. If motors are physically opposed, changing Aligned to Opposed might be necessary later.
+        // Follower is strictly aligned to leader
         follower.setControl(new Follower(leader.getDeviceID(), MotorAlignmentValue.Aligned));
     }
 
@@ -49,7 +47,7 @@ public class ShooterSubsystem extends SubsystemBase {
         leader.setControl(m_velocityRequest.withVelocity(rps));
     }
 
-    // New method for unison/reverse movement (Open Loop)
+    // New method for unison/reverse movement (Open Loop Percentage)
     public void runOpenLoop(double percent) {
         leader.setControl(m_dutyCycleRequest.withOutput(percent));
     }

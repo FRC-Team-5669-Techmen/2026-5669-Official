@@ -3,8 +3,6 @@ package frc.robot;
 import static edu.wpi.first.units.Units.*;
 import edu.wpi.first.units.measure.AngularVelocity;
 
-//Authentically Coded By Lukas Deusch - Senior 
-
 public final class Constants {
 
     public static final class Operator {
@@ -39,7 +37,7 @@ public final class Constants {
     }
 
     public static final class Index {
-        public static final int kMotorId = 18; // ID for Index Motor
+        public static final int kMotorId = 18; // Assigned ID
         public static final boolean kInverted = false; // Change manually if needed
 
         public static final double kForwardSpeed = 0.5; // Speed moving fuel to shooter
@@ -47,7 +45,7 @@ public final class Constants {
     }
 
     public static final class ShooterIntake {
-        public static final int kMotorId = 19; // ID for Shooter Intake Motor
+        public static final int kMotorId = 19; // Assigned ID
         public static final boolean kInverted = false; // Change manually if needed
 
         public static final double kForwardSpeed = 0.6; // Speed feeding into shooter
