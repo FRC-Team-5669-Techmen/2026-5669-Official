@@ -24,6 +24,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 
+import frc.robot.Constants;
 import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
 
 /**
@@ -34,7 +35,7 @@ import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
  * https://v6.docs.ctr-electronics.com/en/stable/docs/tuner/tuner-swerve/index.html
  */
 public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Subsystem {
-    private static final double kSimLoopPeriod = 0.004; // 4 ms
+    private static final double kSimLoopPeriod = Constants.Sim.kLoopPeriod; 
     private Notifier m_simNotifier = null;
     private double m_lastSimTime;
 
@@ -141,8 +142,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
      *
      * @param drivetrainConstants     Drivetrain-wide constants for the swerve drive
      * @param odometryUpdateFrequency The frequency to run the odometry loop. If
-     *                                unspecified or set to 0 Hz, this is 250 Hz on
-     *                                CAN FD, and 100 Hz on CAN 2.0.
+     * unspecified or set to 0 Hz, this is 250 Hz on
+     * CAN FD, and 100 Hz on CAN 2.0.
      * @param modules                 Constants for each specific module
      */
     public CommandSwerveDrivetrain(
@@ -165,14 +166,14 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
      *
      * @param drivetrainConstants       Drivetrain-wide constants for the swerve drive
      * @param odometryUpdateFrequency   The frequency to run the odometry loop. If
-     *                                  unspecified or set to 0 Hz, this is 250 Hz on
-     *                                  CAN FD, and 100 Hz on CAN 2.0.
+     * unspecified or set to 0 Hz, this is 250 Hz on
+     * CAN FD, and 100 Hz on CAN 2.0.
      * @param odometryStandardDeviation The standard deviation for odometry calculation
-     *                                  in the form [x, y, theta]ᵀ, with units in meters
-     *                                  and radians
+     * in the form [x, y, theta]ᵀ, with units in meters
+     * and radians
      * @param visionStandardDeviation   The standard deviation for vision calculation
-     *                                  in the form [x, y, theta]ᵀ, with units in meters
-     *                                  and radians
+     * in the form [x, y, theta]ᵀ, with units in meters
+     * and radians
      * @param modules                   Constants for each specific module
      */
     public CommandSwerveDrivetrain(
@@ -279,7 +280,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
      * @param visionRobotPoseMeters The pose of the robot as measured by the vision camera.
      * @param timestampSeconds The timestamp of the vision measurement in seconds.
      * @param visionMeasurementStdDevs Standard deviations of the vision pose measurement
-     *     in the form [x, y, theta]ᵀ, with units in meters and radians.
+     * in the form [x, y, theta]ᵀ, with units in meters and radians.
      */
     @Override
     public void addVisionMeasurement(
