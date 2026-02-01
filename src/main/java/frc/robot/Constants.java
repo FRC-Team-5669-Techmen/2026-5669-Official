@@ -3,6 +3,8 @@ package frc.robot;
 import static edu.wpi.first.units.Units.*;
 import edu.wpi.first.units.measure.AngularVelocity;
 
+//Authentically Coded By Lukas Deusch - Senior 
+
 public final class Constants {
 
     public static final class Operator {
@@ -17,9 +19,15 @@ public final class Constants {
     public static final class Shooter {
         public static final int kLeaderId = 16;
         public static final int kFollowerId = 17;
+        
+        // Manual direction adjustment for Shooter
+        public static final boolean kLeaderInverted = false; 
 
-        public static final double kfastTargetRPM = 5000.0;
-        public static final double kslowTargetRPM = 2500.0;
+        public static final double kTargetRPM = 5000.0;
+        
+        // Speeds for the "Unison" command (Open Loop %)
+        public static final double kForwardSpeed = 0.80; // 80% output when "intaking" to shoot
+        public static final double kReverseSpeed = -0.30; // Slow reverse to clear jams
 
         public static final double kP = -0.11;
         public static final double kI = 0.0;
@@ -28,6 +36,22 @@ public final class Constants {
 
         public static final double kVoltageRampPeriod = 100.0;
         public static final double kDutyCycleRampPeriod = 100.0;
+    }
+
+    public static final class Index {
+        public static final int kMotorId = 18; // ID for Index Motor
+        public static final boolean kInverted = false; // Change manually if needed
+
+        public static final double kForwardSpeed = 0.5; // Speed moving fuel to shooter
+        public static final double kReverseSpeed = -0.5; // Speed for rewind
+    }
+
+    public static final class ShooterIntake {
+        public static final int kMotorId = 19; // ID for Shooter Intake Motor
+        public static final boolean kInverted = false; // Change manually if needed
+
+        public static final double kForwardSpeed = 0.6; // Speed feeding into shooter
+        public static final double kReverseSpeed = -0.6; // Speed for rewind
     }
 
     public static final class Turret {
