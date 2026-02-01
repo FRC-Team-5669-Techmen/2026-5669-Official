@@ -1,6 +1,7 @@
 package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.Constants;
 import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.LimelightSubsystem;
 import edu.wpi.first.math.controller.PIDController;
@@ -10,14 +11,18 @@ public class TurretAlign extends Command {
     private final LimelightSubsystem limelight;
     private final TurretSubsystem turret;
 
-    // Start with a lower P for a Kraken (try 0.02 to 0.04)
-    private final PIDController turnPID = new PIDController(0.03, 0.0, 0.002);
+    private final PIDController turnPID = new PIDController(
+        Constants.Turret.kP, 
+        Constants.Turret.kI, 
+        Constants.Turret.kD
+    );
 
     public TurretAlign(LimelightSubsystem limelight, TurretSubsystem turret) {
         this.limelight = limelight;
         this.turret = turret;
         addRequirements(turret, limelight);
-        turnPID.setTolerance(0.5); 
+        
+        turnPID.setTolerance(Constants.Turret.kToleranceDegrees); 
     }
 
     @Override
@@ -30,8 +35,11 @@ public class TurretAlign extends Command {
         double tx = limelight.getTX();
         double pidOutput = turnPID.calculate(tx, 0.0);
 
-        // CLAMP: Limits motor to 30% power so it doesn't overshoot wildly
-        double clampedOutput = MathUtil.clamp(pidOutput, -0.3, 0.3);
+        double clampedOutput = MathUtil.clamp(
+            pidOutput, 
+            -Constants.Turret.kMaxOutput, 
+            Constants.Turret.kMaxOutput
+        );
 
         turret.setMotorSpeed(clampedOutput);
     }
