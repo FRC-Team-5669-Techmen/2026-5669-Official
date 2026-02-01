@@ -1,13 +1,11 @@
 // Copyright (c) FIRST and other WPILib contributors.
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
-<<<<<<< HEAD
 // Muhammad Nabeel
 // Lukas Deusch 
 // Jhonen Hasenbein
 // Marcos "Danger" Posada
-=======
->>>>>>> 45b3f00e25f3d10ce819a712557c9cdf0fe01971
+
 
 package frc.robot;
 
