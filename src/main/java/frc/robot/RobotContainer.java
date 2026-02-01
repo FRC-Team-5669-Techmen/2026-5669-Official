@@ -3,7 +3,6 @@
 // the WPILib BSD license file in the root directory of this project.
 // Muhammad Nabeel
 // Lukas Deusch 
-//Jhonen Hasenbein
 
 package frc.robot;
 
