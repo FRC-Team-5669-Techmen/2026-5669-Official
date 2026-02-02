@@ -5,11 +5,11 @@ import com.ctre.phoenix6.controls.DutyCycleOut;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 
-public class TurretSubsystem extends SubsystemBase {
+public class Goober extends SubsystemBase {
     private final TalonFX motor = new TalonFX(Constants.Turret.kMotorId);
     private final DutyCycleOut request = new DutyCycleOut(0);
 
-    public TurretSubsystem() {
+    public Goober() {
     }
 
     public void setMotorSpeed(double percent) {
