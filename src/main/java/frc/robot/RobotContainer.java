@@ -62,12 +62,23 @@ public class RobotContainer {
 
     private void configureBindings() {
         drivetrain.setDefaultCommand(
-            drivetrain.applyRequest(() ->
-                drive.withVelocityX(Math.pow((-joystick.getLeftY()), 3) * MaxSpeed)
-                    .withVelocityY(Math.pow((-joystick.getLeftX()), 3) * MaxSpeed) 
-                    .withRotationalRate(Math.pow((-joystick.getRightX()), 3) * MaxAngularRate) 
-            )
-        );
+    drivetrain.applyRequest(() -> {
+        
+        double xInput = -joystick.getLeftY();
+        double yInput = -joystick.getLeftX();
+        double rInput = -joystick.getRightX();
+
+       
+        double scaledX = Math.signum(xInput) * Math.pow(Math.abs(xInput), 3);
+        double scaledY = Math.signum(yInput) * Math.pow(Math.abs(yInput), 3);
+        double scaledRot = Math.signum(rInput) * Math.pow(Math.abs(rInput), 3);
+
+        return drive
+            .withVelocityX(scaledX * MaxSpeed)
+            .withVelocityY(scaledY * MaxSpeed)
+            .withRotationalRate(scaledRot * MaxAngularRate);
+    })
+);
 
         final var idle = new SwerveRequest.Idle();
         RobotModeTriggers.disabled().whileTrue(
