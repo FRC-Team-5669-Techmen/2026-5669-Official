@@ -22,7 +22,8 @@ public final class Constants {
         public static final boolean kLeaderInverted = false; 
 
         // RPM Constants
-        public static final double kTargetRPM = 5000.0; // Normal Shooting Speed
+        public static final double kfastTargetRPM = 5000.0; // Normal Shooting Speed
+        public static final double kslowTargetRPM = 2500.0;
         public static final double kReverseRPM = -1000.0; // Reverse Speed for jams
         
         // PID Config

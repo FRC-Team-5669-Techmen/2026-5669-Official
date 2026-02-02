@@ -39,7 +39,7 @@ public class FuelHandlingCommand extends Command {
             // "Intake" / Shooting direction
             indexSpeed = Constants.Index.kForwardSpeed;
             intakeSpeed = Constants.ShooterIntake.kForwardSpeed;
-            shooterRPM = Constants.Shooter.kTargetRPM; // 5000 RPM
+            shooterRPM = Constants.Shooter.kfastTargetRPM; // 5000 RPM
         } else {
             // "Rewind" / Clearing jam direction
             indexSpeed = Constants.Index.kReverseSpeed;

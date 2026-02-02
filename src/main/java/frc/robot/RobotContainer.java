@@ -92,7 +92,8 @@ public class RobotContainer {
         );
 
         // Shooter ramp up
-        joystick.a().whileTrue(new RunShooterCommand(shooter, Constants.Shooter.kTargetRPM));
+        joystick.a().whileTrue(new RunShooterCommand(shooter, Constants.Shooter.kfastTargetRPM));
+        joystick.b().whileTrue(new RunShooterCommand(shooter, Constants.Shooter.kslowTargetRPM));
         
         joystick.b().whileTrue(drivetrain.applyRequest(() ->
             point.withModuleDirection(new Rotation2d(-joystick.getLeftY(), -joystick.getLeftX()))
