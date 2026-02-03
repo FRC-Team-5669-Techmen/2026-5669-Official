@@ -8,8 +8,8 @@ public final class Constants {
     public static final class Operator {
         public static final int kDriverControllerPort = 0;
         
-        public static final double kDeadband = 0.1;
-        public static final double kRotationalDeadband = 0.1;
+        public static final double kDeadband = 0.0;
+        public static final double kRotationalDeadband = 0.0;
 
         public static final AngularVelocity kMaxAngularRate = RotationsPerSecond.of(0.75);
     }
