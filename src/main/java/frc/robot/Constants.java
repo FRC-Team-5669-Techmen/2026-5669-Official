@@ -8,18 +8,18 @@ public final class Constants {
     public static final class Operator {
         public static final int kDriverControllerPort = 0;
         
-        public static final double kDeadband = 0.0;
-        public static final double kRotationalDeadband = 0.0;
+        public static final double kDeadband = 0.05;
+        public static final double kRotationalDeadband = 0.05;
 
         public static final AngularVelocity kMaxAngularRate = RotationsPerSecond.of(0.75);
     }
 
     // --- SHOOTER (KEPT EXACTLY AS UPLOADED) ---
     public static final class Shooter {
-        public static final int kLeaderId = 16;
-        public static final int kFollowerId = 17;
+        public static final int kLeaderId = 16; //fixed
+        public static final int kFollowerId = 17; //fixed
         
-        public static final boolean kLeaderInverted = false; 
+        public static final boolean kLeaderInverted = true; 
 
         public static final double kfastTargetRPM = 5000.0; 
         public static final double kslowTargetRPM = 2500.0;
@@ -51,11 +51,11 @@ public final class Constants {
     }
 
     public static final class Turret {
-        public static final int kMotorId = 61;
+        public static final int kMotorId = 61; //fixed
         public static final double kSpeedMultiplier = 0.25;
-        public static final double kP = 0.03;
-        public static final double kI = 0.0;
-        public static final double kD = 0.002;
+        public static final double kP = 0.2;
+        public static final double kI = 0.2;
+        public static final double kD = 0.05;
         public static final double kToleranceDegrees = 0.5;
         public static final double kMaxOutput = 0.3;
     }
@@ -71,7 +71,7 @@ public final class Constants {
 
     // --- NEW GOOBA CONSTANTS (Kraken X44) ---
     public static final class Gooba {
-        public static final int kMotorId = 20; // [FIXME] Verify this ID
+        public static final int kMotorId = 51; // [FIXME] Verify this ID  //Fixed
         
         // Motion Magic (Servo-like Position Control)
         public static final double kP = 2.4; 
@@ -86,6 +86,6 @@ public final class Constants {
         
         // Positions (Rotations)
         public static final double kPositionStowed = 0.0;
-        public static final double kPositionDeployed = 5.0; // [FIXME] Tune this value!
+        public static final double kPositionDeployed = 2.5; // [FIXME] Tune this value!
     }
 }

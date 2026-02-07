@@ -41,12 +41,13 @@ public class GooberAlign extends Command {
             Constants.Turret.kMaxOutput
         );
 
-        turret.setMotorSpeed(clampedOutput);
+        turret.setMotorSpeed(-clampedOutput);
     }
 
     @Override
     public boolean isFinished() {
-        return limelight.isTargetAvailable() && turnPID.atSetpoint();
+       // return limelight.isTargetAvailable() && turnPID.atSetpoint();
+       return false;
     }
 
     @Override

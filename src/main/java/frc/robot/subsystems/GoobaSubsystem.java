@@ -39,7 +39,7 @@ public class GoobaSubsystem extends SubsystemBase {
     }
 
     public void setPosition(double rotations) {
-        m_motor.setControl(m_positionControl.withPosition(rotations));
+        m_motor.setControl(m_positionControl.withPosition(-rotations));
     }
 
     public double getPosition() {
