@@ -126,7 +126,7 @@ public class RobotContainer {
         shooter, index, shooterIntake, gooba, goober, rizz, brick, groundIntake, piston1, piston2
     );
         // AUTO CHOOSER — must come AFTER named commands
-        autoChooser = AutoBuilder.buildAutoChooser("Tests");
+        autoChooser = AutoBuilder.buildAutoChooser("TaxiAuto");
         SmartDashboard.putData("Auto Mode", autoChooser);
 
         // DRIVE MODE CHOOSER — Field Centric vs Robot Centric

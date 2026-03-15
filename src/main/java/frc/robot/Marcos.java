@@ -94,6 +94,18 @@ public class Marcos {
             new TogglePneumaticCommand(piston2)
         );
 
-        
+        // --- STOP COMMANDS (used by autonomous routines) ---
+        // Stops the ground intake roller
+        NamedCommands.registerCommand("stopGroundIntake",
+            new InstantCommand(() -> groundIntake.stop(), groundIntake)
+        );
+
+        // Stops the index and shooter intake (feeder path)
+        NamedCommands.registerCommand("stopIntake",
+            new InstantCommand(() -> {
+                index.stop();
+                shooterIntake.stop();
+            }, index, shooterIntake)
+        );
     }
 }
