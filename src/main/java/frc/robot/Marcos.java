@@ -41,9 +41,10 @@ public class Marcos {
         );
 
         // Score preloaded balls without any vision/limelight tracking
+        // 5s spin-up to let turret motors reach full speed before feeding
         NamedCommands.registerCommand("scorePreload",
             new SequentialCommandGroup(
-                new RunShooterCommand(shooter, Constants.Shooter.kfastTargetRPM).withTimeout(1.5),
+                new RunShooterCommand(shooter, Constants.Shooter.kfastTargetRPM).withTimeout(5.0),
                 new FuelHandlingCommand(index, shooterIntake, shooter, true).withTimeout(2.5),
                 new InstantCommand(() -> shooter.stop(), shooter)
             )
