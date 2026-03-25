@@ -54,9 +54,11 @@ public class Marcos {
             new FuelHandlingCommand(index, shooterIntake, shooter, false).withTimeout(2.0)
         );
 
-        // ADDED TIMEOUT
+        // Runs ground intake + feed motors together so the game piece gets loaded
         NamedCommands.registerCommand("runGroundIntake",
-            new RunGroundIntakeCommand(groundIntake).withTimeout(5.0)
+            new RunGroundIntakeCommand(groundIntake)
+                .alongWith(new FeedShooterCommand(index, shooterIntake))
+                .withTimeout(5.0)
         );
 
         NamedCommands.registerCommand("deployGooba",
