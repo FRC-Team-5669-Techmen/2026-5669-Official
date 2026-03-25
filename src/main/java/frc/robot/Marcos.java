@@ -67,9 +67,9 @@ public class Marcos {
             new FuelHandlingCommand(index, shooterIntake, shooter, false).withTimeout(2.0)
         );
 
-        // ADDED TIMEOUT
+        // No timeout — runs continuously for the rest of auto when triggered
         NamedCommands.registerCommand("runGroundIntake",
-            new RunGroundIntakeCommand(groundIntake).withTimeout(5.0)
+            new RunGroundIntakeCommand(groundIntake)
         );
 
         NamedCommands.registerCommand("deployGooba",
