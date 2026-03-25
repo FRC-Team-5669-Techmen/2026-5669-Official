@@ -43,36 +43,30 @@ public class GoobaSubsystem extends SubsystemBase {
 
         m_motor.getConfigurator().apply(configs);
         
-        // Brake Mode is essential for a servo-like mechanism
         m_motor.setNeutralMode(NeutralModeValue.Brake);
-        
-        // Reset encoder to 0 on startup
         m_motor.setPosition(0);
 
         // ==========================================
-        // INTERPOLATION MAP (Limelight 'tx' degrees -> Hood Rotations)
-        // REPLACE THESE EXAMPLE NUMBERS WITH YOUR REAL TEST DATA
-        // Note: Ensure your rotation values stay between your soft limits (0.0 to 10.7)
+        // YOUR REAL INTERPOLATION MAP
+        // Format: shotMap.put(Limelight_TX, Hood_Position);
         // ==========================================
         
-        // Point 1: Close up (Target is high in camera, large positive 'tx' because limelight is sideways)
-        shotMap.put(15.6, 0.0);
+        // --- SAFETY DEFAULT ---
+        // This guarantees the map is never empty so the code doesn't crash
+        // before you finish your calibration!
+        shotMap.put(-15.6, 0.0); 
+        shotMap.put(-24.6, 3.5); 
+
+
+        // TODO: Add your real data points here once you calibrate them!
+        // shotMap.put(YOUR_TX_1, YOUR_HOOD_POS_1);
+        // shotMap.put(YOUR_TX_2, YOUR_HOOD_POS_2);
         
-        // Point 2: Mid-Close 
-        shotMap.put(8.5, 1.80);
-        
-        // Point 3: Mid 
-        shotMap.put(1.2, 2.45); 
-        
-        // Point 4: Mid-Far (Target starts getting lower in camera view)
-        shotMap.put(-4.5, 3.10); 
-        
-        // Point 5: Deep/Trench area (Target is very low in camera view)
-        shotMap.put(-10.1, 3.75); 
     }
 
     public void setPosition(double rotations) {
-        m_motor.setControl(m_positionControl.withPosition(-rotations));
+        // Safe movement inside the 0.0 to 10.7 soft limits
+        m_motor.setControl(m_positionControl.withPosition(rotations));
     }
 
     public double getPosition() {
@@ -80,6 +74,7 @@ public class GoobaSubsystem extends SubsystemBase {
     }
 
     public double getRotationValueFromTx(double tx) {
+        // Removed the .isEmpty() check. It will now safely pull from the map!
         return shotMap.get(tx);
     }
 
@@ -88,6 +83,6 @@ public class GoobaSubsystem extends SubsystemBase {
         double currentPos = m_motor.getPosition().getValueAsDouble();
 
         //Helpful for calibration - you can view this in your driver station console or push to SmartDashboard
-        //System.out.println("GOOBA:" + currentPos);
+        System.out.println("GOOBA:" + currentPos);
     }
 }

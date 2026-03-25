@@ -18,10 +18,6 @@ public class AutoGooba extends Command {
         addRequirements(m_gooba); 
     }
 
-    @Override
-    public void initialize() {
-        // Nothing needed here
-    }
 
     @Override
     public void execute() {

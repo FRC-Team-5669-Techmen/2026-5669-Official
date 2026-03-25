@@ -12,7 +12,7 @@ public class GooberAlign extends Command {
     private int seekDirection = 1; 
     
     // Safe speed for scanning back and forth
-    private final double SEARCH_SPEED = 0.25; 
+    private final double SEARCH_SPEED = 0.15; 
 
     public GooberAlign(LimelightSubsystem limelight, Goober turret) {
         this.limelight = limelight;
@@ -38,7 +38,7 @@ public class GooberAlign extends Command {
             }
  
             // Apply the sweep speed
-            if (seekDirection == 1) {
+           if (seekDirection == 1) {
                 turret.setMotorSpeed(SEARCH_SPEED); 
             } else if (seekDirection == -1) {
                 turret.setMotorSpeed(-SEARCH_SPEED);
@@ -48,7 +48,7 @@ public class GooberAlign extends Command {
 
     @Override
     public boolean isFinished() {
-       return false;
+       return !limelight.isValidTarget();
     }
 
     @Override
