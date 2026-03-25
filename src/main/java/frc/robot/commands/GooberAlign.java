@@ -56,4 +56,4 @@ public class GooberAlign extends Command {
         turret.stop();
         seekDirection = 1; // Reset state for the next time the command runs
     }
-}
+}+2
