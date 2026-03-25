@@ -8,6 +8,7 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants;
+import frc.robot.LimelightHelpers;
 
 public class LimelightSubsystem extends SubsystemBase {
     private final NetworkTable table;
@@ -29,6 +30,11 @@ public class LimelightSubsystem extends SubsystemBase {
         botpose = table.getEntry("botpose");
         botposeTargetSpace = table.getEntry("botpose_targetspace");
         tid = table.getEntry("tid");
+        // ... your other network table entries ...
+
+        // Tell the Limelight to ONLY track the IDs in your Constants file
+        LimelightHelpers.SetFiducialIDFiltersOverride("limelight", Constants.Limelight.kValidTargetIds);
+    
     }
 
     /** Returns the horizontal offset (tx) from the crosshair to the target in degrees. */

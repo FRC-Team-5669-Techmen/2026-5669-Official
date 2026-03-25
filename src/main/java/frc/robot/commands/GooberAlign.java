@@ -48,7 +48,7 @@ public class GooberAlign extends Command {
 
     @Override
     public boolean isFinished() {
-       return false;
+       return !limelight.isValidTarget();
     }
 
     @Override
