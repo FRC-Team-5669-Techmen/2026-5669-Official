@@ -29,6 +29,12 @@
           }
         },
         {
+          "type": "named",
+          "data": {
+            "name": "scorePreload"
+          }
+        },
+        {
           "type": "path",
           "data": {
             "pathName": "Right-to-Pickup-2"
