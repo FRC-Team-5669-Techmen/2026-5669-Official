@@ -69,6 +69,10 @@ public class Goober extends SubsystemBase {
         motor.stopMotor();
     }
 
+    public boolean targetLocked() {
+        return turnPID.atSetpoint();
+    }
+
     @Override
     public void periodic() {
 

@@ -54,8 +54,11 @@ public class GoobaSubsystem extends SubsystemBase {
         // --- SAFETY DEFAULT ---
         // This guarantees the map is never empty so the code doesn't crash
         // before you finish your calibration!
-        shotMap.put(-15.6, 0.0); 
-        shotMap.put(-24.6, 3.5); 
+        shotMap.put(27.3 ,1.0);
+        shotMap.put(-16.8, 2.36);
+        shotMap.put(-18.3, 3.8);
+        shotMap.put(-23.9, 4.93);
+
 
 
         // TODO: Add your real data points here once you calibrate them!
