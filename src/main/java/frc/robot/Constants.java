@@ -49,8 +49,8 @@ public final class Constants {
     public static final class Index {
         public static final int kMotorId = 13; 
         public static final boolean kInverted = false; 
-        public static final double kForwardSpeed = 0.5; 
-        public static final double kReverseSpeed = -0.5; 
+        public static final double kForwardSpeed = 12.0; 
+        public static final double kReverseSpeed = -6.0; 
     }
 
     public static final class ShooterIntake {
@@ -102,6 +102,10 @@ public final class Constants {
         public static final int kMotorId = 20; 
         public static final boolean kInverted = false; 
         public static final double kIntakeSpeed = 0.75; 
+        
+        // NEW: Reverse speed for spitting notes back out
+        public static final double kReverseSpeed = -0.75; 
+        
         public static final double kSupplyCurrentLimit = 40.0;
     }
 

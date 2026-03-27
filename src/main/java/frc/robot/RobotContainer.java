@@ -25,6 +25,7 @@ import com.pathplanner.lib.commands.FollowPathCommand;
 
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.networktables.NetworkTableInstance;
 
 // Subsystems
 import frc.robot.subsystems.CommandSwerveDrivetrain;
@@ -90,6 +91,8 @@ public class RobotContainer {
     public final MariosEar brick = new MariosEar(rizz);
     public final GroundIntakeSubsystem groundIntake = new GroundIntakeSubsystem();
     public final ClimbSubsystem climb = new ClimbSubsystem();
+    
+    public final DriverDashboard driverDashboard = new DriverDashboard();
 
     public final PneumaticSubsystem ClimbPiston = new PneumaticSubsystem(
         Constants.Pneumatics.kPcmId, 0);
@@ -186,7 +189,16 @@ public class RobotContainer {
         );
 
         driverController.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
+        
+        // Right Trigger: Normal Intake
         driverController.rightTrigger().whileTrue(new RunGroundIntakeCommand(groundIntake));
+        
+        // Left Trigger: Reverse Intake (Spit out)
+        driverController.leftTrigger().whileTrue(new StartEndCommand(
+            () -> groundIntake.runIntake(Constants.GroundIntake.kReverseSpeed), 
+            () -> groundIntake.stop(), 
+            groundIntake
+        ));
 
         driverController.x().onTrue(new TogglePneumaticCommand(DoubleIntake));
         driverController.a().onTrue(new TogglePneumaticCommand(ClimbPiston));
@@ -281,5 +293,22 @@ public class RobotContainer {
             return (alliance.get() == edu.wpi.first.wpilibj.DriverStation.Alliance.Red) ? (turn == 'R') : (turn == 'B');
         }
         return false;
+    }
+
+    public void updateDashboard() {
+        // Fetch Limelight data cleanly via NetworkTables
+        var llTable = NetworkTableInstance.getDefault().getTable("limelight");
+        double tx = llTable.getEntry("tx").getDouble(0.0);
+        double ty = llTable.getEntry("ty").getDouble(0.0);
+        boolean hasTarget = llTable.getEntry("tv").getDouble(0.0) == 1.0;
+
+        // Check if the hub is currently open based on your existing logic
+        boolean isHubOpen = isHubOpenForUs();
+        
+        // Grab the physical RPM straight from the Shooter Subsystem 
+        double currentRpm = shooter.getCurrentRpm();
+
+        // Pass everything to the dashboard
+        driverDashboard.updateLiveStats(tx, ty, hasTarget, isHubOpen, currentRpm);
     }
 }
