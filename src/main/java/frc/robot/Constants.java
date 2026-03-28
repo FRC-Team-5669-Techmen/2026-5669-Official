@@ -34,7 +34,7 @@ public final class Constants {
         public static final double kslowTargetRPM = 2500.0; 
         public static final double kReverseRPM = -1000.0;   
         public static final double kTestingRPM = 1500.0;    
-        public static final double kMaxRPM = 3100.0; 
+        public static final double kMaxRPM = 3100.0; //7000
         public static final double kIdleRPM = 1700.0; 
         public static final double kDecelerateStep = 60.0; 
         public static final double kIdleAccelerateStep = 50.0; 
