@@ -8,20 +8,36 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 7.976468870926098,
-        "y": 3.21986799346697
+        "x": 7.820653710247349,
+        "y": 3.670874558303886
       },
       "isLocked": false,
       "linkedName": "BallCenter"
     },
     {
       "anchor": {
-        "x": 7.108007117437722,
-        "y": 2.8676275207591937
+        "x": 7.262844522968198,
+        "y": 3.3609805653710225
       },
       "prevControl": {
-        "x": 7.279575194948422,
-        "y": 3.088902671984119
+        "x": 7.71219081272085,
+        "y": 3.376475265017667
+      },
+      "nextControl": {
+        "x": 6.782066677511303,
+        "y": 3.3444020189759556
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.705035335689046,
+        "y": 2.3383303886925773
+      },
+      "prevControl": {
+        "x": 6.776872307080632,
+        "y": 2.5777869599978653
       },
       "nextControl": null,
       "isLocked": false,
@@ -30,8 +46,8 @@
   ],
   "rotationTargets": [
     {
-      "waypointRelativePos": 0.4,
-      "rotationDegrees": 110.07617699273142
+      "waypointRelativePos": 0.8,
+      "rotationDegrees": 110.076
     }
   ],
   "constraintZones": [],
