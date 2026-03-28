@@ -1,6 +1,7 @@
 package frc.robot;
 
 import com.pathplanner.lib.auto.NamedCommands;
+import com.pathplanner.lib.events.EventTrigger;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -71,6 +72,10 @@ public class Marcos {
         NamedCommands.registerCommand("runGroundIntake",
             new RunGroundIntakeCommand(groundIntake)
         );
+
+        // Event markers in .path files use EventTrigger, NOT NamedCommands.
+        // This binds the "runGroundIntake" event marker to actually start the command.
+        new EventTrigger("runGroundIntake").onTrue(new RunGroundIntakeCommand(groundIntake));
 
         NamedCommands.registerCommand("deployGooba",
             new GoobaToggleCommand(gooba, true)
