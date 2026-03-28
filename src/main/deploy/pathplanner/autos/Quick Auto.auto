@@ -11,12 +11,6 @@
           }
         },
         {
-          "type": "named",
-          "data": {
-            "name": "runGroundIntake"
-          }
-        },
-        {
           "type": "path",
           "data": {
             "pathName": "Quick Path"
