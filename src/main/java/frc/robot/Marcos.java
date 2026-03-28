@@ -87,8 +87,8 @@ public class Marcos {
                     new GooberAlign(rizz, goober),
                     new AutoGooba(gooba, rizz)
                 ).withTimeout(2.5),
-                // Phase 2: Spin up shooter and fire
-                new RunShooterCommand(shooter, Constants.Shooter.kfastTargetRPM).withTimeout(1.5),
+                // Phase 2: Spin up shooter and fire, please work
+                new RunShooterCommand(shooter, Constants.Shooter.kfastTargetRPM).withTimeout(5.5),
                 new FuelHandlingCommand(index, shooterIntake, shooter, true).withTimeout(2.5),
                 new InstantCommand(() -> shooter.stop(), shooter)
             )
