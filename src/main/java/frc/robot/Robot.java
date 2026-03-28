@@ -92,6 +92,27 @@ public class Robot extends TimedRobot {
 
     @Override
     public void autonomousInit() {
+        // Log critical state so we can diagnose "wrong direction" issues
+        var alliance = edu.wpi.first.wpilibj.DriverStation.getAlliance();
+        double gyroYaw = m_robotContainer.drivetrain.getPigeon2().getYaw().getValueAsDouble();
+        var currentPose = m_robotContainer.drivetrain.getState().Pose;
+
+        if (alliance.isEmpty()) {
+            // THIS IS THE #1 CAUSE OF AUTOS GOING THE WRONG WAY
+            edu.wpi.first.wpilibj.DriverStation.reportWarning(
+                "AUTO START: NO ALLIANCE SET! Paths will NOT flip correctly. Set your alliance in Driver Station!", false);
+            SmartDashboard.putString("Auto Alliance", "!! NOT SET !!");
+        } else {
+            SmartDashboard.putString("Auto Alliance", alliance.get().toString());
+        }
+
+        SmartDashboard.putNumber("Auto Start Gyro Yaw", gyroYaw);
+        SmartDashboard.putString("Auto Start Pose", String.format("(%.2f, %.2f) @ %.1f°",
+            currentPose.getX(), currentPose.getY(), currentPose.getRotation().getDegrees()));
+        DogLog.log("Auto/Alliance", alliance.isPresent() ? alliance.get().toString() : "NONE");
+        DogLog.log("Auto/StartGyroYaw", gyroYaw);
+        DogLog.log("Auto/StartPose", currentPose);
+
         m_autonomousCommand = m_robotContainer.getAutonomousCommand();
 
         if (m_autonomousCommand != null) {
