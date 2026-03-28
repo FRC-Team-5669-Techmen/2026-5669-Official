@@ -57,7 +57,7 @@ public class GoobaSubsystem extends SubsystemBase {
         shotMap.put(27.3 ,1.0);
         shotMap.put(-16.8, 2.36);
         shotMap.put(-18.3, 3.8);
-        shotMap.put(-23.9, 4.93);
+        shotMap.put(-23.9, 5.1);
 
 
 

@@ -240,7 +240,7 @@ public class RobotContainer {
                 gooba.setPosition(Constants.Gooba.kPositionDeployed);
             }
         }, gooba));
-
+/* 
         operator.rightBumper().onTrue(new InstantCommand(() -> {
             m_continuousTurretAim = !m_continuousTurretAim;
         }));
@@ -254,7 +254,8 @@ public class RobotContainer {
         operator.leftBumper().and(continuousAimTrigger.negate()).whileTrue(
             new GooberAlign(rizz, goober).alongWith(new AutoGooba(gooba, rizz))
         );
-
+*/
+        operator.leftBumper().whileTrue(new GooberAlign(rizz, goober).alongWith(new AutoGooba(gooba, rizz)));
         operator.povUp().whileTrue(new ManualGoobaCommand(gooba, false));
         operator.povDown().whileTrue(new ManualGoobaCommand(gooba, true));
         

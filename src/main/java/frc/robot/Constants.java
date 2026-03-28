@@ -5,6 +5,8 @@ import edu.wpi.first.units.measure.AngularVelocity;
 
 public final class Constants {
 
+    //larp larp sahur
+    //mr pina is a poopoo head 
     public static final class Operator {
         public static final int kDriverControllerPort = 0;
         public static final int kOperatorControllerPort = 1;
@@ -51,8 +53,10 @@ public final class Constants {
         public static final boolean kInverted = false; 
         public static final double kForwardSpeed = 12.0; 
         public static final double kReverseSpeed = -6.0; 
-    }
 
+        //Index Orignal = 12.0 
+    }
+//GABA
     public static final class ShooterIntake {
         public static final int kMotorId = 15; 
         public static final boolean kInverted = true; 
