@@ -5,6 +5,7 @@ import com.pathplanner.lib.events.EventTrigger;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import frc.robot.commands.*;
 import frc.robot.subsystems.*;
@@ -76,6 +77,22 @@ public class Marcos {
         // Event markers in .path files use EventTrigger, NOT NamedCommands.
         // This binds the "runGroundIntake" event marker to actually start the command.
         new EventTrigger("runGroundIntake").onTrue(new RunGroundIntakeCommand(groundIntake));
+
+        // Limelight-tracked score: align turret + auto-aim hood, then shoot.
+        // Robot must be stopped before calling this — no shooting while moving.
+        NamedCommands.registerCommand("visionScore",
+            new SequentialCommandGroup(
+                // Phase 1: Align turret (GooberAlign) + aim hood (AutoGooba) simultaneously
+                new ParallelCommandGroup(
+                    new GooberAlign(rizz, goober),
+                    new AutoGooba(gooba, rizz)
+                ).withTimeout(2.5),
+                // Phase 2: Spin up shooter and fire
+                new RunShooterCommand(shooter, Constants.Shooter.kfastTargetRPM).withTimeout(1.5),
+                new FuelHandlingCommand(index, shooterIntake, shooter, true).withTimeout(2.5),
+                new InstantCommand(() -> shooter.stop(), shooter)
+            )
+        );
 
         NamedCommands.registerCommand("deployGooba",
             new GoobaToggleCommand(gooba, true)
