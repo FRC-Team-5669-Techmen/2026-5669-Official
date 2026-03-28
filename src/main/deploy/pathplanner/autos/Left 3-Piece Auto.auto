@@ -31,7 +31,7 @@
         {
           "type": "named",
           "data": {
-            "name": "scorePreload"
+            "name": "visionScore"
           }
         },
         {
@@ -55,7 +55,7 @@
         {
           "type": "named",
           "data": {
-            "name": "scorePreload"
+            "name": "visionScore"
           }
         }
       ]
