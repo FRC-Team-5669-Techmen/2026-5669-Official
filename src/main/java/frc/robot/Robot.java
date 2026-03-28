@@ -40,40 +40,45 @@ public class Robot extends TimedRobot {
     public void robotPeriodic() {
         m_timeAndJoystickReplay.update();
         CommandScheduler.getInstance().run(); 
-    boolean ready = m_robotContainer.isHubOpenForUs();
-    SmartDashboard.putBoolean("HUB OPEN", ready);
-double matchTime = edu.wpi.first.wpilibj.DriverStation.getMatchTime();
-var alliance = edu.wpi.first.wpilibj.DriverStation.getAlliance();
-boolean isOurTurn = m_robotContainer.isHubOpenForUs();
-boolean isTeleop = edu.wpi.first.wpilibj.DriverStation.isTeleop();
-if(isTeleop) {
-    if (isOurTurn && matchTime > 0) {
-    // Constant vibration while it's our turn to score
-    m_robotContainer.driverController.getHID().setRumble(edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0.1);
-    } 
-}
-// coundown
-else if (matchTime <= 130 && matchTime > 30) {
-    double timeInShift = (matchTime - 30) % 25;
-    
-    if (timeInShift <= 5.0 && timeInShift > 0.1) {
-        if ((timeInShift % 1.0) < 0.2) {
-            m_robotContainer.driverController.getHID().setRumble(
-                edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0.9);
-        } else {
+        
+        // --> DASHBOARD CONTINUOUSLY UPDATES HERE <--
+        m_robotContainer.updateDashboard();
+
+        boolean ready = m_robotContainer.isHubOpenForUs();
+        SmartDashboard.putBoolean("HUB OPEN", ready);
+        double matchTime = edu.wpi.first.wpilibj.DriverStation.getMatchTime();
+        var alliance = edu.wpi.first.wpilibj.DriverStation.getAlliance();
+        boolean isOurTurn = m_robotContainer.isHubOpenForUs();
+        boolean isTeleop = edu.wpi.first.wpilibj.DriverStation.isTeleop();
+
+        if(isTeleop) {
+            if (isOurTurn && matchTime > 0) {
+            // Constant vibration while it's our turn to score
+            m_robotContainer.driverController.getHID().setRumble(edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0.1);
+            } 
+        }
+        // coundown
+        else if (matchTime <= 130 && matchTime > 30) {
+            double timeInShift = (matchTime - 30) % 25;
+            
+            if (timeInShift <= 5.0 && timeInShift > 0.1) {
+                if ((timeInShift % 1.0) < 0.2) {
+                    m_robotContainer.driverController.getHID().setRumble(
+                        edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0.9);
+                } else {
+                    m_robotContainer.driverController.getHID().setRumble(
+                        edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0);
+                }
+            } else {
+                m_robotContainer.driverController.getHID().setRumble(
+                    edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0);
+            }
+        } 
+        else {
+            // Stop all vibration if it's not our turn and not a countdown window
             m_robotContainer.driverController.getHID().setRumble(
                 edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0);
         }
-    } else {
-        m_robotContainer.driverController.getHID().setRumble(
-            edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0);
-    }
-} 
-else {
-    // Stop all vibration if it's not our turn and not a countdown window
-    m_robotContainer.driverController.getHID().setRumble(
-        edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0);
-}
     }
 
     @Override

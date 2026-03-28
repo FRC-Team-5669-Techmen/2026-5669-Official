@@ -25,6 +25,7 @@ import com.pathplanner.lib.commands.FollowPathCommand;
 
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.networktables.NetworkTableInstance;
 
 // Subsystems
 import frc.robot.subsystems.CommandSwerveDrivetrain;
@@ -90,11 +91,9 @@ public class RobotContainer {
     public final MariosEar brick = new MariosEar(rizz);
     public final GroundIntakeSubsystem groundIntake = new GroundIntakeSubsystem();
     public final ClimbSubsystem climb = new ClimbSubsystem();
-/* public final PneumaticSubsystem ClimbPiston = new PneumaticSubsystem(
-        Constants.Pneumatics.kPcmId, 
-        Constants.Pneumatics.kSol1Forward, 
-        Constants.Pneumatics.kSol1Reverse);
-        */
+    
+    public final DriverDashboard driverDashboard = new DriverDashboard();
+
     public final PneumaticSubsystem ClimbPiston = new PneumaticSubsystem(
         Constants.Pneumatics.kPcmId, 0);
     public final PneumaticSubsystem DoubleIntake = new PneumaticSubsystem(
@@ -106,9 +105,9 @@ public class RobotContainer {
     private final SendableChooser<Command> autoChooser;
 
     // State Toggles
-    // UPDATED: Now set to FALSE by default so it doesn't drain battery on startup!
     private boolean m_continuousTurretAim = false; 
-    private boolean m_isShooterIdle = false; // Controls if shooter maintains idle speed
+    private boolean m_isShooterIdle = false; 
+    private boolean m_isSimulatedTankDrive = false; // Controls if swerve acts like a traditional tank drive
 
     public RobotContainer() {
         Marcos.registerNamedCommands(
@@ -145,14 +144,17 @@ public class RobotContainer {
 
         drivetrain.setDefaultCommand(
             drivetrain.applyRequest(() -> {
-                double xInput = -driverController.getLeftY();
-                double yInput = -driverController.getLeftX();
-                double rInput = -driverController.getRightX();
+                // Get raw inputs
+                double xInput = -driverController.getLeftY();  // Forward/Backward
+                double yInput = -driverController.getLeftX();  // Strafe Left/Right
+                double rInput = -driverController.getRightX(); // Rotation
 
+                // Apply limiters and cubic curve
                 double scaledX = xLimiter.calculate(Math.signum(xInput) * Math.pow(Math.abs(xInput), 3));
                 double scaledY = yLimiter.calculate(Math.signum(yInput) * Math.pow(Math.abs(yInput), 3));
                 double scaledRot = rotLimiter.calculate(Math.signum(rInput) * Math.pow(Math.abs(rInput), 3));
 
+                // Get Speed Multipliers
                 double speedMultiplier = globalSpeedLimiter.getSelected();
                 if (driverController.getHID().getStartButton()) {
                     speedMultiplier = buttonSpeedLimiter.getSelected();
@@ -161,6 +163,17 @@ public class RobotContainer {
                 double currentMaxSpeed = MaxSpeed * speedMultiplier;
                 double currentMaxAngularRate = MaxAngularRate * speedMultiplier;
 
+                // --- TANK DRIVE / NO-STRAFE LOGIC ---
+                if (m_isSimulatedTankDrive) {
+                    // Force the robot into Robot-Centric mode and disable all strafing (Y velocity)
+                    // Left Stick Y controls throttle, Right Stick X controls steering
+                    return robotCentricDrive
+                        .withVelocityX(scaledX * currentMaxSpeed)
+                        .withVelocityY(0.0) // ZERO strafing completely
+                        .withRotationalRate(scaledRot * currentMaxAngularRate);
+                }
+
+                // --- NORMAL SWERVE DRIVE LOGIC ---
                 if ("robot".equals(driveModeChooser.getSelected())) {
                     return robotCentricDrive
                         .withVelocityX(scaledX * currentMaxSpeed)
@@ -176,12 +189,20 @@ public class RobotContainer {
         );
 
         driverController.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
+        
+        // Right Trigger: Normal Intake
         driverController.rightTrigger().whileTrue(new RunGroundIntakeCommand(groundIntake));
+        
+        // Left Trigger: Reverse Intake (Spit out)
+        driverController.leftTrigger().whileTrue(new StartEndCommand(
+            () -> groundIntake.runIntake(Constants.GroundIntake.kReverseSpeed), 
+            () -> groundIntake.stop(), 
+            groundIntake
+        ));
 
         driverController.x().onTrue(new TogglePneumaticCommand(DoubleIntake));
         driverController.a().onTrue(new TogglePneumaticCommand(ClimbPiston));
 
-        //driverController.a().whileTrue(new TogglePneumaticCommand(ClimbPiston));
         driverController.povUp().whileTrue(new RunClimbMotorCommand(climb, Constants.Climb.kClimbSpeed));
         driverController.povDown().whileTrue(new RunClimbMotorCommand(climb, -Constants.Climb.kClimbSpeed));
 
@@ -189,6 +210,13 @@ public class RobotContainer {
         driverController.povLeft().onTrue(new InstantCommand(() -> {
             m_isShooterIdle = !m_isShooterIdle;
             System.out.println("Shooter Idle State Toggled: " + m_isShooterIdle);
+        }));
+
+        // Driver D-Pad Right toggles the Simulated Tank Drive Mode
+        driverController.povRight().onTrue(new InstantCommand(() -> {
+            m_isSimulatedTankDrive = !m_isSimulatedTankDrive;
+            SmartDashboard.putBoolean("Tank Drive Active", m_isSimulatedTankDrive);
+            System.out.println("Tank Drive State Toggled: " + m_isSimulatedTankDrive);
         }));
 
         // ==========================================
@@ -219,12 +247,10 @@ public class RobotContainer {
 
         Trigger continuousAimTrigger = new Trigger(() -> m_continuousTurretAim);
         
-        // Run both Turret Aim and Hood Auto-Adjust simultaneously when toggled ON
         continuousAimTrigger.whileTrue(
             new GooberAlign(rizz, goober).alongWith(new AutoGooba(gooba, rizz))
         );
         
-        // Run both Turret Aim and Hood Auto-Adjust simultaneously when Left Bumper is HELD
         operator.leftBumper().and(continuousAimTrigger.negate()).whileTrue(
             new GooberAlign(rizz, goober).alongWith(new AutoGooba(gooba, rizz))
         );
@@ -232,7 +258,6 @@ public class RobotContainer {
         operator.povUp().whileTrue(new ManualGoobaCommand(gooba, false));
         operator.povDown().whileTrue(new ManualGoobaCommand(gooba, true));
         
-        // Manual Turret Commands now use the Constants variable
         operator.povLeft().whileTrue(new ManualTurretCommand(goober, -Constants.Turret.kManualJogSpeed));
         operator.povRight().whileTrue(new ManualTurretCommand(goober, Constants.Turret.kManualJogSpeed));
 
@@ -244,12 +269,11 @@ public class RobotContainer {
             drivetrain.applyRequest(() -> idle).ignoringDisable(true)
         );
 
-        // Default Shooter Command (Enforces Idle state when not shooting)
         shooter.setDefaultCommand(new RunCommand(() -> {
             if (m_isShooterIdle) {
                 shooter.runAtRPM(Constants.Shooter.kIdleRPM);
             } else {
-                shooter.stop(); // Truly turn off if idle is disabled
+                shooter.stop(); 
             }
         }, shooter));
 
@@ -269,5 +293,22 @@ public class RobotContainer {
             return (alliance.get() == edu.wpi.first.wpilibj.DriverStation.Alliance.Red) ? (turn == 'R') : (turn == 'B');
         }
         return false;
+    }
+
+    public void updateDashboard() {
+        // Fetch Limelight data cleanly via NetworkTables
+        var llTable = NetworkTableInstance.getDefault().getTable("limelight");
+        double tx = llTable.getEntry("tx").getDouble(0.0);
+        double ty = llTable.getEntry("ty").getDouble(0.0);
+        boolean hasTarget = llTable.getEntry("tv").getDouble(0.0) == 1.0;
+
+        // Check if the hub is currently open based on your existing logic
+        boolean isHubOpen = isHubOpenForUs();
+        
+        // Grab the physical RPM straight from the Shooter Subsystem 
+        double currentRpm = shooter.getCurrentRpm();
+
+        // Pass everything to the dashboard
+        driverDashboard.updateLiveStats(tx, ty, hasTarget, isHubOpen, currentRpm);
     }
 }
