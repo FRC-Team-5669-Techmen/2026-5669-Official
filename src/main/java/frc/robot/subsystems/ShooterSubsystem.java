@@ -133,20 +133,12 @@ public class ShooterSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        
-        SmartDashboard.putNumber("Shooter Actual RPM", getCurrentRpm());
-        SmartDashboard.putNumber("Shooter Target RPM", currentTargetRpm);
-        
         // Grab the live stator current (torque) so you can physically see the acceleration effort
         double currentDraw = Math.round(leader.getStatorCurrent().getValueAsDouble() * 10.0) / 10.0;
         
-
-      //  System.out.println("SHOOTER RPM: " + Math.round(getCurrentRpm()) + 
-       //                    " | TARGET: " + currentTargetRpm + 
-       //                    " | TORQUE AMPS: " + currentDraw);
-
-                         //  " | TARGET: " + currentTargetRpm + 
-                           //" | RAMPER: " + Math.round(m_rampedSetpointRpm) +
-                         //  " | TORQUE AMPS: " + currentDraw);
+        // Push values to Shuffleboard / SmartDashboard
+        SmartDashboard.putNumber("Shooter Actual RPM", getCurrentRpm());
+        SmartDashboard.putNumber("Shooter Target RPM", currentTargetRpm);
+        SmartDashboard.putNumber("Shooter Torque Amps", currentDraw);
     }
 }

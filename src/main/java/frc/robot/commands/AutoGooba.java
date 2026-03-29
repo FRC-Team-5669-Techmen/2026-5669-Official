@@ -33,7 +33,7 @@ public class AutoGooba extends Command {
             
             // --- CALIBRATION PRINTOUT ---
             // Prints both the TX and the physical Hood position side-by-side
-            System.out.println("[CALIBRATION] TX: " + currentTx + "  |  Hood Pos: " + m_gooba.getPosition());
+           // System.out.println("[CALIBRATION] TX: " + currentTx + "  |  Hood Pos: " + m_gooba.getPosition());
             
             // 3. Move the hood
             m_gooba.setPosition(targetRotations);

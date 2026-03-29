@@ -125,7 +125,7 @@ public class LimelightSubsystem extends SubsystemBase {
     public void periodic() {
         // Publish vision data to SmartDashboard for tuning and debugging.
         SmartDashboard.putNumber("Limelight tx", getTX());
-        SmartDashboard.putNumber("Limelight ty", getTY());
+        //SmartDashboard.putNumber("Limelight ty", getTY());
        // SmartDashboard.putNumber("Limelight ta", getTargetArea());
         //SmartDashboard.putNumber("Limelight tv", tv.getNumber(0).doubleValue());
     }
