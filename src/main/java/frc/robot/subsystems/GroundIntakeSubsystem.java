@@ -21,8 +21,8 @@ public class GroundIntakeSubsystem extends SubsystemBase {
         
         // REDLINE LIMITS
         CurrentLimitsConfigs currentLimits = config.CurrentLimits;
-        // Supply capped just under the PDH channel breaker rating so the
-        // software limits gracefully instead of tripping the breaker under load.
+        // Supply capped just under the 30A fuse rating so the software limits
+        // gracefully instead of blowing the fuse under load.
         currentLimits.SupplyCurrentLimit = Constants.GroundIntake.kSupplyCurrentLimit;
         currentLimits.SupplyCurrentLimitEnable = true;
 
