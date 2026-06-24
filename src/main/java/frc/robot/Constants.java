@@ -110,7 +110,7 @@ public final class Constants {
         // NEW: Reverse speed for spitting notes back out
         public static final double kReverseSpeed = -0.75; 
         
-        public static final double kSupplyCurrentLimit = 30.0;
+        public static final double kSupplyCurrentLimit = 40.0;
     }
 
     public static final class Climb {
