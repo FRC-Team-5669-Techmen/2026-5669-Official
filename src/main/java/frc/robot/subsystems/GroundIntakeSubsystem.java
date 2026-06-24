@@ -21,13 +21,10 @@ public class GroundIntakeSubsystem extends SubsystemBase {
         
         // REDLINE LIMITS
         CurrentLimitsConfigs currentLimits = config.CurrentLimits;
-        // Supply capped just under the PDH channel breaker rating so the
-        // software limits gracefully instead of tripping the breaker under load.
-        currentLimits.SupplyCurrentLimit = Constants.GroundIntake.kSupplyCurrentLimit;
+        currentLimits.SupplyCurrentLimit = 60.0; 
         currentLimits.SupplyCurrentLimitEnable = true;
 
-        // Higher stator gives torque headroom against compression; supply still caps total draw.
-        currentLimits.StatorCurrentLimit = 120.0;
+        currentLimits.StatorCurrentLimit = 80.0; 
         currentLimits.StatorCurrentLimitEnable = true;
 
         config.MotorOutput.Inverted = Constants.GroundIntake.kInverted ? 
