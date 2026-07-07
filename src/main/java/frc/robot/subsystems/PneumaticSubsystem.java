@@ -12,7 +12,7 @@ public class PneumaticSubsystem extends SubsystemBase {
   private Solenoid m_other;
 
   /**
-   * Constructor for a Single Solenoid setup (e.g., ClimbPiston)
+   * Constructor for a Single Solenoid setup (e.g., the climb piston)
    * @param pcmId The CAN ID of the PCM.
    * @param channel The channel on the PCM.
    */
@@ -22,7 +22,7 @@ public class PneumaticSubsystem extends SubsystemBase {
   }
 
   /**
-   * Constructor for a Double Solenoid setup (e.g., DoubleIntake)
+   * Constructor for a Double Solenoid setup (e.g., the intake pistons)
    * @param pcmId The CAN ID of the PCM.
    * @param forwardChannel The forward channel on the PCM.
    * @param reverseChannel The reverse channel on the PCM.

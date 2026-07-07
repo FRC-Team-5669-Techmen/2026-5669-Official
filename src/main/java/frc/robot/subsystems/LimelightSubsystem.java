@@ -10,10 +10,22 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants;
 import frc.robot.LimelightHelpers;
 
+/**
+ * Limelight AprilTag camera (team nickname: "rizz").
+ *
+ * <p><b>IMPORTANT — the camera is mounted SIDEWAYS.</b> That swaps the meaning of
+ * the Limelight's reported axes for this robot:
+ * <ul>
+ *   <li>{@code tx} = the real-world VERTICAL angle to the tag (used for distance)</li>
+ *   <li>{@code ty} = the real-world HORIZONTAL angle to the tag (used for turret aim)</li>
+ * </ul>
+ * Getters below return the raw Limelight values; callers pick the right one for
+ * their geometry (see {@link #distanceToTarget()} and {@link #getCorrectedTX()}).
+ */
 public class LimelightSubsystem extends SubsystemBase {
     private final NetworkTable table;
-    private final NetworkTableEntry tx;   // Horizontal offset (degrees)
-    private final NetworkTableEntry ty;   // Vertical offset (degrees)
+    private final NetworkTableEntry tx;   // Horizontal offset in camera frame (degrees)
+    private final NetworkTableEntry ty;   // Vertical offset in camera frame (degrees)
     private final NetworkTableEntry ta;   // Target area (percent)
     private final NetworkTableEntry tv;   // Target valid (0 or 1)
     private final NetworkTableEntry botpose; // Array of 6 numbers: [x, y, z, roll, pitch, yaw]
@@ -30,19 +42,17 @@ public class LimelightSubsystem extends SubsystemBase {
         botpose = table.getEntry("botpose");
         botposeTargetSpace = table.getEntry("botpose_targetspace");
         tid = table.getEntry("tid");
-        // ... your other network table entries ...
 
-        // Tell the Limelight to ONLY track the IDs in your Constants file
+        // Tell the Limelight to ONLY track the IDs in the Constants file
         LimelightHelpers.SetFiducialIDFiltersOverride("limelight", Constants.Limelight.kValidTargetIds);
-    
     }
 
-    /** Returns the horizontal offset (tx) from the crosshair to the target in degrees. */
+    /** Raw tx (degrees). Because of the sideways mount, this is the VERTICAL angle to the tag. */
     public double getTX() {
         return tx.getNumber(0).doubleValue();
     }
 
-    /** Returns the vertical offset (ty) from the crosshair to the target in degrees. */
+    /** Raw ty (degrees). Because of the sideways mount, this is the HORIZONTAL angle to the tag. */
     public double getTY() {
         return ty.getNumber(0).doubleValue();
     }
@@ -68,9 +78,9 @@ public class LimelightSubsystem extends SubsystemBase {
             // If no valid pose is available, return a default Pose2d.
             return new Pose2d();
         }
-        double x = poseArray[0];              // X position in meters
-        double y = poseArray[1];              // Y position in meters
-        double yawDegrees = poseArray[5];       // Yaw (rotation) in degrees
+        double x = poseArray[0];          // X position in meters
+        double y = poseArray[1];          // Y position in meters
+        double yawDegrees = poseArray[5]; // Yaw (rotation) in degrees
         return new Pose2d(x, y, Rotation2d.fromDegrees(yawDegrees));
     }
 
@@ -81,7 +91,7 @@ public class LimelightSubsystem extends SubsystemBase {
     public int getID() {
         return (int) tid.getInteger(-1);
     }
-   
+
     /** Returns true ONLY if the limelight sees a target AND its ID is in the approved list. */
     public boolean isValidTarget() {
         if (!isTargetAvailable()) {
@@ -91,42 +101,51 @@ public class LimelightSubsystem extends SubsystemBase {
         int currentID = getID();
         for (int validID : Constants.Limelight.kValidTargetIds) {
             if (currentID == validID) {
-                return true; 
+                return true;
             }
         }
-        
-        return false; 
+
+        return false;
     }
 
+    /**
+     * Distance to the target (meters) via trigonometry: the tag height is known,
+     * so the vertical angle (raw tx thanks to the sideways mount) gives range.
+     */
     public double distanceToTarget() {
         if (!isTargetAvailable()) return 0.0;
 
-        double angleToGoalDeg = Constants.Gooba.kmountAngleDegrees + getTX();
+        double angleToGoalDeg = Constants.Limelight.kMountAngleDegrees + getTX();
         double angleToGoalRad = Math.toRadians(angleToGoalDeg);
 
-        return (Constants.Gooba.kaprilTagHeightMeters - Constants.Gooba.klensheightmeters) / Math.tan(angleToGoalRad);
+        return (Constants.Limelight.kAprilTagHeightMeters - Constants.Limelight.kLensHeightMeters)
+            / Math.tan(angleToGoalRad);
     }
 
-    public double getNewTX() {
-        double rawTX = getTY();
+    /**
+     * Horizontal aiming angle (degrees) for the turret, compensated for the camera
+     * sitting {@link Constants.Limelight#kHOffsetMeters} off the shooter centerline.
+     * Reads raw ty because the sideways mount makes ty the horizontal axis.
+     */
+    public double getCorrectedTX() {
+        double horizontalAngle = getTY();
         double distance = distanceToTarget();
 
-        if (distance < 0.5) { return rawTX;}
+        if (distance < 0.5) {
+            return horizontalAngle;
+        }
 
-        //get the correction in degrees
+        // Angular correction for the camera-to-shooter offset at this distance
         double correction = Math.toDegrees(Math.atan(Constants.Limelight.kHOffsetMeters / distance));
 
         // If camera is to the RIGHT, the shooter needs to aim further RIGHT (add)
         // If camera is to the LEFT, the shooter needs to aim further LEFT (subtract)
-        return rawTX + correction;
+        return horizontalAngle + correction;
     }
 
     @Override
     public void periodic() {
         // Publish vision data to SmartDashboard for tuning and debugging.
         SmartDashboard.putNumber("Limelight tx", getTX());
-        //SmartDashboard.putNumber("Limelight ty", getTY());
-       // SmartDashboard.putNumber("Limelight ta", getTargetArea());
-        //SmartDashboard.putNumber("Limelight tv", tv.getNumber(0).doubleValue());
     }
 }
