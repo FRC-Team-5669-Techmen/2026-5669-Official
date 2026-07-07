@@ -34,8 +34,9 @@ public class GooberAlign extends Command {
     @Override
     public void execute() {
         if (limelight.isValidTarget()) {
-            // Track the target
-            turret.aimAtTarget(-limelight.getCorrectedTX());
+            // Camera is centered on the shooter, so raw tx aims the turret directly.
+            // If the turret runs AWAY from the target after a remount, flip this sign.
+            turret.aimAtTarget(-limelight.getTX());
         } else {
             // Hunt for the target: bounce between the firmware soft limits (+10 / -25)
             double currentPosition = turret.getPosition();

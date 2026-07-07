@@ -10,12 +10,12 @@ import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 
 /**
  * Gooba = the shooter hood/arc. Kraken X44 under Motion Magic position control,
- * with an interpolating shot map from Limelight angle to hood rotations.
+ * with an interpolating shot map from target distance (meters) to hood rotations.
  */
 public class GoobaSubsystem extends SubsystemBase {
     private final TalonFX m_motor = new TalonFX(Constants.Gooba.kMotorId);
 
-    // Calibrated shot map: Limelight tx (vertical angle, sideways mount) -> hood rotations
+    // Shot map: distance to target (meters) -> hood rotations
     private final InterpolatingDoubleTreeMap shotMap = new InterpolatingDoubleTreeMap();
 
     // Motion Magic Request (smooth position control)
@@ -51,13 +51,18 @@ public class GoobaSubsystem extends SubsystemBase {
 
         // ==========================================
         // SHOT MAP CALIBRATION DATA
-        // Format: shotMap.put(limelight_tx_degrees, hood_position_rotations);
-        // Re-record these points whenever the hood or camera mount changes.
+        // Format: shotMap.put(distance_to_target_meters, hood_position_rotations);
+        //
+        // !!! PLACEHOLDER VALUES !!!
+        // The Limelight was remounted (horizontal + centered), which voids the old
+        // angle-keyed calibration. Recalibrate on the field: park at a known
+        // distance, jog the hood until shots land (D-pad up/down prints the
+        // position to "Gooba Fine-Tune Position"), then record the pair here.
         // ==========================================
-        shotMap.put(27.3, 1.0);
-        shotMap.put(-16.8, 2.36);
-        shotMap.put(-18.3, 3.8);
-        shotMap.put(-23.9, 5.1);
+        shotMap.put(1.5, 1.0);
+        shotMap.put(3.0, 2.4);
+        shotMap.put(4.5, 3.8);
+        shotMap.put(6.0, 5.1);
     }
 
     /** Motion Magic move, kept inside the 0.0 to 10.7 rotation soft limits. */
@@ -69,8 +74,11 @@ public class GoobaSubsystem extends SubsystemBase {
         return m_motor.getPosition().getValueAsDouble();
     }
 
-    /** Interpolates the calibrated shot map for the hood position matching this tx. */
-    public double getRotationValueFromTx(double tx) {
-        return shotMap.get(tx);
+    /**
+     * Interpolates the shot map for the hood position matching this distance.
+     * Distances outside the calibrated range clamp to the nearest end point.
+     */
+    public double getRotationForDistance(double distanceMeters) {
+        return shotMap.get(distanceMeters);
     }
 }

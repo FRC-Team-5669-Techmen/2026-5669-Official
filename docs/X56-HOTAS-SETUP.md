@@ -63,8 +63,7 @@ Global Speed Limit still applies on top of the throttle scale.
 |-------------|--------|-----------------|
 | Trigger | Ground intake in (hold) | Right Trigger |
 | A (red thumb) | Reverse intake / spit (hold) | Left Trigger |
-| B | Toggle intake pistons | X |
-| C | Toggle climb piston | A |
+| B, C | Unbound — free for future mechanisms (were the removed pneumatic pistons) | X, A |
 | D | Toggle tank-drive mode | D-Pad Right |
 | Pinkie lever | Re-zero field-centric heading | Left Bumper |
 | Main hat up/down | Climb motor up/down (hold) | D-Pad Up/Down |

@@ -3,6 +3,7 @@ package frc.robot;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.events.EventTrigger;
 
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
@@ -25,9 +26,7 @@ public class Marcos {
         Goober goober,
         LimelightSubsystem limelight,
         MariosEar mariosEar,
-        GroundIntakeSubsystem groundIntake,
-        PneumaticSubsystem intakePistons,
-        PneumaticSubsystem climbPiston
+        GroundIntakeSubsystem groundIntake
     ) {
         NamedCommands.registerCommand("spinUpShooter",
             new RunShooterCommand(shooter, Constants.Shooter.kFastTargetRPM)
@@ -46,10 +45,6 @@ public class Marcos {
                 new FuelHandlingCommand(index, shooterIntake, shooter, true).withTimeout(2.0),
                 new InstantCommand(shooter::stop, shooter)
             )
-        );
-
-        NamedCommands.registerCommand("lowerIntake",
-            new InstantCommand(intakePistons::extend, intakePistons)
         );
 
         // Score preloaded balls without any vision/limelight tracking
@@ -119,12 +114,13 @@ public class Marcos {
             new GooberAlign(limelight, goober).withTimeout(2.0)
         );
 
-        NamedCommands.registerCommand("togglePiston1",
-            new TogglePneumaticCommand(intakePistons)
-        );
-
-        NamedCommands.registerCommand("togglePiston2",
-            new TogglePneumaticCommand(climbPiston)
-        );
+        // ==========================================
+        // PNEUMATICS REMOVED (2026 offseason).
+        // These names are still referenced by the deployed 3-piece autos, so they
+        // stay registered as no-ops until the autos are rebuilt in PathPlanner.
+        // ==========================================
+        NamedCommands.registerCommand("lowerIntake", Commands.none());
+        NamedCommands.registerCommand("togglePiston1", Commands.none());
+        NamedCommands.registerCommand("togglePiston2", Commands.none());
     }
 }

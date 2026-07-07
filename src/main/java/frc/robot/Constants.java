@@ -51,16 +51,6 @@ public final class Constants {
         public static final double kMinThrottleScale = 0.15;
     }
 
-    public static final class Pneumatics {
-        public static final int kPcmId = 25;
-        public static final int kSol1Forward = 1;
-        public static final int kSol1Reverse = 0;
-        public static final int kSol2Forward = 2;
-        public static final int kSol2Reverse = 3;
-        public static final int kSol3Forward = 6;
-        public static final int kSol3Reverse = 7;
-    }
-
     public static final class Shooter {
         public static final int kLeaderId = 16;
         public static final int kFollowerId = 17;
@@ -152,12 +142,12 @@ public final class Constants {
     }
 
     public static final class Limelight {
-        // Camera is mounted 1.5 in right of the shooter centerline
-        public static final double kHOffsetMeters = 1.5 * 0.0254;
         public static final int[] kValidTargetIds = {10, 18, 21, 26, 5, 2};
 
-        // The Limelight is mounted SIDEWAYS, so tx measures the vertical angle
-        // to the tag. These feed the trig in LimelightSubsystem.distanceToTarget().
+        // Offseason remount: camera is horizontal and centered on the shooter,
+        // so tx aims the turret directly and ty feeds the distance trig in
+        // LimelightSubsystem.distanceToTarget().
+        // TODO: re-measure the mount angle and lens height on the new mount.
         public static final double kMountAngleDegrees = 36.4;
         public static final double kLensHeightMeters = 0.0;
         public static final double kAprilTagHeightMeters = 1.12395;

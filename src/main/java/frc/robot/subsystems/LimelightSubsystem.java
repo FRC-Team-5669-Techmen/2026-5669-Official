@@ -11,21 +11,20 @@ import frc.robot.Constants;
 import frc.robot.LimelightHelpers;
 
 /**
- * Limelight AprilTag camera (team nickname: "rizz").
+ * Limelight AprilTag camera.
  *
- * <p><b>IMPORTANT — the camera is mounted SIDEWAYS.</b> That swaps the meaning of
- * the Limelight's reported axes for this robot:
+ * <p>Offseason 2026 remount: the camera is mounted HORIZONTALLY and CENTERED on
+ * the shooter, so the Limelight axes have their standard meanings:
  * <ul>
- *   <li>{@code tx} = the real-world VERTICAL angle to the tag (used for distance)</li>
- *   <li>{@code ty} = the real-world HORIZONTAL angle to the tag (used for turret aim)</li>
+ *   <li>{@code tx} = horizontal angle to the tag (drives the turret aim)</li>
+ *   <li>{@code ty} = vertical angle to the tag (drives the distance calculation)</li>
  * </ul>
- * Getters below return the raw Limelight values; callers pick the right one for
- * their geometry (see {@link #distanceToTarget()} and {@link #getCorrectedTX()}).
+ * No off-center aim correction is needed anymore.
  */
 public class LimelightSubsystem extends SubsystemBase {
     private final NetworkTable table;
-    private final NetworkTableEntry tx;   // Horizontal offset in camera frame (degrees)
-    private final NetworkTableEntry ty;   // Vertical offset in camera frame (degrees)
+    private final NetworkTableEntry tx;   // Horizontal offset (degrees)
+    private final NetworkTableEntry ty;   // Vertical offset (degrees)
     private final NetworkTableEntry ta;   // Target area (percent)
     private final NetworkTableEntry tv;   // Target valid (0 or 1)
     private final NetworkTableEntry botpose; // Array of 6 numbers: [x, y, z, roll, pitch, yaw]
@@ -47,12 +46,12 @@ public class LimelightSubsystem extends SubsystemBase {
         LimelightHelpers.SetFiducialIDFiltersOverride("limelight", Constants.Limelight.kValidTargetIds);
     }
 
-    /** Raw tx (degrees). Because of the sideways mount, this is the VERTICAL angle to the tag. */
+    /** Horizontal angle to the target in degrees (positive = target to the right). */
     public double getTX() {
         return tx.getNumber(0).doubleValue();
     }
 
-    /** Raw ty (degrees). Because of the sideways mount, this is the HORIZONTAL angle to the tag. */
+    /** Vertical angle to the target in degrees (positive = target above crosshair). */
     public double getTY() {
         return ty.getNumber(0).doubleValue();
     }
@@ -110,42 +109,23 @@ public class LimelightSubsystem extends SubsystemBase {
 
     /**
      * Distance to the target (meters) via trigonometry: the tag height is known,
-     * so the vertical angle (raw tx thanks to the sideways mount) gives range.
+     * so the vertical angle (ty) plus the camera mount angle gives range.
+     * Returns 0.0 when no target is visible.
      */
     public double distanceToTarget() {
         if (!isTargetAvailable()) return 0.0;
 
-        double angleToGoalDeg = Constants.Limelight.kMountAngleDegrees + getTX();
+        double angleToGoalDeg = Constants.Limelight.kMountAngleDegrees + getTY();
         double angleToGoalRad = Math.toRadians(angleToGoalDeg);
 
         return (Constants.Limelight.kAprilTagHeightMeters - Constants.Limelight.kLensHeightMeters)
             / Math.tan(angleToGoalRad);
     }
 
-    /**
-     * Horizontal aiming angle (degrees) for the turret, compensated for the camera
-     * sitting {@link Constants.Limelight#kHOffsetMeters} off the shooter centerline.
-     * Reads raw ty because the sideways mount makes ty the horizontal axis.
-     */
-    public double getCorrectedTX() {
-        double horizontalAngle = getTY();
-        double distance = distanceToTarget();
-
-        if (distance < 0.5) {
-            return horizontalAngle;
-        }
-
-        // Angular correction for the camera-to-shooter offset at this distance
-        double correction = Math.toDegrees(Math.atan(Constants.Limelight.kHOffsetMeters / distance));
-
-        // If camera is to the RIGHT, the shooter needs to aim further RIGHT (add)
-        // If camera is to the LEFT, the shooter needs to aim further LEFT (subtract)
-        return horizontalAngle + correction;
-    }
-
     @Override
     public void periodic() {
         // Publish vision data to SmartDashboard for tuning and debugging.
         SmartDashboard.putNumber("Limelight tx", getTX());
+        SmartDashboard.putNumber("Limelight distance (m)", distanceToTarget());
     }
 }

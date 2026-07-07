@@ -36,7 +36,6 @@ import frc.robot.subsystems.GroundIntakeSubsystem;
 import frc.robot.subsystems.IndexSubsystem;
 import frc.robot.subsystems.LimelightSubsystem;
 import frc.robot.subsystems.MariosEar;
-import frc.robot.subsystems.PneumaticSubsystem;
 import frc.robot.subsystems.ShooterIntakeSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 
@@ -49,7 +48,6 @@ import frc.robot.commands.ManualTurretCommand;
 import frc.robot.commands.RunClimbMotorCommand;
 import frc.robot.commands.RunGroundIntakeCommand;
 import frc.robot.commands.RunShooterCommand;
-import frc.robot.commands.TogglePneumaticCommand;
 
 public class RobotContainer {
 
@@ -98,13 +96,6 @@ public class RobotContainer {
 
     public final DriverDashboard driverDashboard = new DriverDashboard();
 
-    public final PneumaticSubsystem climbPiston = new PneumaticSubsystem(
-        Constants.Pneumatics.kPcmId, 0);
-    public final PneumaticSubsystem intakePistons = new PneumaticSubsystem(
-        Constants.Pneumatics.kPcmId,
-        Constants.Pneumatics.kSol2Forward,
-        Constants.Pneumatics.kSol2Reverse);
-
     private final SendableChooser<Command> autoChooser;
 
     // State Toggles
@@ -117,8 +108,7 @@ public class RobotContainer {
         DriverStation.silenceJoystickConnectionWarning(true);
 
         Marcos.registerNamedCommands(
-            shooter, index, shooterIntake, gooba, goober, limelight, mariosEar,
-            groundIntake, intakePistons, climbPiston
+            shooter, index, shooterIntake, gooba, goober, limelight, mariosEar, groundIntake
         );
 
         autoChooser = AutoBuilder.buildAutoChooser("Tests");
@@ -223,8 +213,7 @@ public class RobotContainer {
         // Left Trigger: Reverse Intake (Spit out)
         driverController.leftTrigger().whileTrue(reverseGroundIntakeCommand());
 
-        driverController.x().onTrue(new TogglePneumaticCommand(intakePistons));
-        driverController.a().onTrue(new TogglePneumaticCommand(climbPiston));
+        // X and A are unbound (they used to toggle the removed pneumatic pistons)
 
         driverController.povUp().whileTrue(new RunClimbMotorCommand(climb, Constants.Climb.kClimbSpeed));
         driverController.povDown().whileTrue(new RunClimbMotorCommand(climb, -Constants.Climb.kClimbSpeed));
@@ -279,9 +268,7 @@ public class RobotContainer {
         hotas.trigger().and(hotasConnected).whileTrue(new RunGroundIntakeCommand(groundIntake));
         hotas.buttonA().and(hotasConnected).whileTrue(reverseGroundIntakeCommand());
 
-        // B: intake pistons, C: climb piston (Xbox X / A equivalents)
-        hotas.buttonB().and(hotasConnected).onTrue(new TogglePneumaticCommand(intakePistons));
-        hotas.buttonC().and(hotasConnected).onTrue(new TogglePneumaticCommand(climbPiston));
+        // B and C are unbound (they used to toggle the removed pneumatic pistons)
 
         // D: tank-drive toggle, Pinkie lever: re-zero field-centric heading
         hotas.buttonD().and(hotasConnected).onTrue(new InstantCommand(this::toggleTankDriveMode));
