@@ -353,9 +353,11 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         /* Update the physics world position before updating odometry */
         if (this.mapleSimSwerveDrivetrain != null) {
             mapleSimSwerveDrivetrain.mapleSimDrive.setSimulationWorldPose(pose);
+            // Small delay to let the physics engine settle before odometry seeds.
+            // Sim only — on the real robot this would stall the main loop 50 ms
+            // right at auto start.
+            edu.wpi.first.wpilibj.Timer.delay(0.05);
         }
-        // Small delay to let the physics engine settle before odometry seeds
-        edu.wpi.first.wpilibj.Timer.delay(0.05); 
         super.resetPose(pose);
     }
 

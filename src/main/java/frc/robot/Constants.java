@@ -123,7 +123,6 @@ public final class Constants {
         public static final double kSupplyCurrentLimit = 40.0;
         public static final double kPositionStowed = 0.0;
         public static final double kPositionDeployed = 3.5;
-        public static final double kManualStep = 0.04;
     }
 
     public static final class GroundIntake {

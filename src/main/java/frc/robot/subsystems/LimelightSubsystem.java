@@ -110,12 +110,18 @@ public class LimelightSubsystem extends SubsystemBase {
     /**
      * Distance to the target (meters) via trigonometry: the tag height is known,
      * so the vertical angle (ty) plus the camera mount angle gives range.
-     * Returns 0.0 when no target is visible.
+     * Returns 0.0 when no target is visible or the geometry has no solution.
      */
     public double distanceToTarget() {
         if (!isTargetAvailable()) return 0.0;
 
         double angleToGoalDeg = Constants.Limelight.kMountAngleDegrees + getTY();
+
+        // Guard: at or below horizontal there is no valid solution. Without this,
+        // a mismeasured mount angle would return infinite/negative distances and
+        // poison the auto-aim filter. 0.0 is the same sentinel as "no target".
+        if (angleToGoalDeg < 1.0) return 0.0;
+
         double angleToGoalRad = Math.toRadians(angleToGoalDeg);
 
         return (Constants.Limelight.kAprilTagHeightMeters - Constants.Limelight.kLensHeightMeters)

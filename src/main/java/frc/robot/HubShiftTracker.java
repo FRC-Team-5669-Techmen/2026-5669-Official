@@ -20,6 +20,9 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
  * SHIFT 4     0:55-0:30  same as SHIFT 2
  * END GAME    0:30-0:00  both HUBs active
  * </pre>
+ *
+ * <p>The decision logic lives in {@link #computeOurHubOpen} as a pure function so
+ * it can be unit tested without a robot (see HubShiftTrackerTest).
  */
 public final class HubShiftTracker {
 
@@ -31,29 +34,48 @@ public final class HubShiftTracker {
      *         without FMS), so the rumble/dashboard cues stay quiet instead of lying.
      */
     public static boolean isOurHubOpen() {
-        if (DriverStation.isAutonomousEnabled()) {
+        return computeOurHubOpen(
+            DriverStation.isAutonomousEnabled(),
+            DriverStation.isTeleopEnabled(),
+            DriverStation.getAlliance().orElse(null),
+            DriverStation.getGameSpecificMessage(),
+            DriverStation.getMatchTime());
+    }
+
+    /**
+     * Pure shift-schedule logic — no DriverStation reads, so it is unit testable.
+     *
+     * @param autonomousEnabled true while the robot is enabled in autonomous
+     * @param teleopEnabled     true while the robot is enabled in teleop
+     * @param alliance          our alliance color, or null if unknown
+     * @param gameData          FMS game specific message ("R..." / "B..." = AUTO winner)
+     * @param matchTime         seconds remaining in the current period (negative if unknown)
+     */
+    public static boolean computeOurHubOpen(
+            boolean autonomousEnabled,
+            boolean teleopEnabled,
+            Alliance alliance,
+            String gameData,
+            double matchTime) {
+        if (autonomousEnabled) {
             return true; // both HUBs are active for all of AUTO
         }
-        if (!DriverStation.isTeleopEnabled()) {
+        if (!teleopEnabled) {
             return false;
         }
-
-        var alliance = DriverStation.getAlliance();
-        String gameData = DriverStation.getGameSpecificMessage();
-        if (alliance.isEmpty() || gameData == null || gameData.isEmpty()) {
+        if (alliance == null || gameData == null || gameData.isEmpty()) {
             return false; // no FMS data — unknown, treat as closed
         }
 
         boolean weWonAuto;
         switch (Character.toUpperCase(gameData.charAt(0))) {
-            case 'R' -> weWonAuto = alliance.get() == Alliance.Red;
-            case 'B' -> weWonAuto = alliance.get() == Alliance.Blue;
+            case 'R' -> weWonAuto = alliance == Alliance.Red;
+            case 'B' -> weWonAuto = alliance == Alliance.Blue;
             default -> {
                 return false; // unrecognized game data
             }
         }
 
-        double matchTime = DriverStation.getMatchTime();
         if (matchTime < 0) {
             return true; // no usable timer (tethered teleop) — assume open
         }

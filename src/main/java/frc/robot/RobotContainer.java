@@ -12,7 +12,6 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.FollowPathCommand;
 
 import edu.wpi.first.math.filter.SlewRateLimiter;
-import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -333,18 +332,17 @@ public class RobotContainer {
     }
 
     public void updateDashboard() {
-        // Fetch Limelight data cleanly via NetworkTables
-        var llTable = NetworkTableInstance.getDefault().getTable("limelight");
-        double tx = llTable.getEntry("tx").getDouble(0.0);
-        double ty = llTable.getEntry("ty").getDouble(0.0);
-        boolean hasTarget = llTable.getEntry("tv").getDouble(0.0) == 1.0;
-
         boolean isHubOpen = isHubOpenForUs();
-        double currentRpm = shooter.getCurrentRpm();
 
-        driverDashboard.updateLiveStats(tx, ty, hasTarget, isHubOpen, currentRpm);
+        driverDashboard.updateLiveStats(
+            limelight.getTX(),
+            limelight.getTY(),
+            limelight.isTargetAvailable(),
+            isHubOpen,
+            shooter.getCurrentRpm());
 
         SmartDashboard.putBoolean("HUB OPEN", isHubOpen);
         SmartDashboard.putBoolean("HOTAS Connected", hotas.isConnected());
+        SmartDashboard.putBoolean("HOTAS Throttle Connected", hotas.isThrottleConnected());
     }
 }

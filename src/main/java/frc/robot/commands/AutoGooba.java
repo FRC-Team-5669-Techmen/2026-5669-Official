@@ -43,7 +43,15 @@ public class AutoGooba extends Command {
             return;
         }
 
-        double distance = m_distanceFilter.calculate(m_vision.distanceToTarget());
+        // Distance can still read 0.0 if the target drops between the check above
+        // and this NT read, or if the mount-angle geometry has no solution — never
+        // let those samples into the filter or the hood dives to the map minimum.
+        double measured = m_vision.distanceToTarget();
+        if (measured <= 0.0) {
+            return;
+        }
+
+        double distance = m_distanceFilter.calculate(measured);
         double targetRotations = m_gooba.getRotationForDistance(distance);
 
         m_gooba.setPosition(targetRotations);
