@@ -4,68 +4,63 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.*;
+
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
-import com.ctre.phoenix6.hardware.TalonFX;
+
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.commands.FollowPathCommand;
 
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 
+import frc.robot.controls.HotasX56;
 import frc.robot.generated.TunerConstants;
-import frc.robot.Constants;
-
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.commands.FollowPathCommand;
-
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.networktables.NetworkTableInstance;
 
 // Subsystems
+import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
-import frc.robot.subsystems.ShooterSubsystem;
-import frc.robot.subsystems.IndexSubsystem;
-import frc.robot.subsystems.LimelightSubsystem;
-import frc.robot.subsystems.ShooterIntakeSubsystem;
 import frc.robot.subsystems.GoobaSubsystem;
 import frc.robot.subsystems.Goober;
-import frc.robot.subsystems.MariosEar;
-import frc.robot.subsystems.PneumaticSubsystem;
 import frc.robot.subsystems.GroundIntakeSubsystem;
-import frc.robot.subsystems.ClimbSubsystem; 
+import frc.robot.subsystems.IndexSubsystem;
+import frc.robot.subsystems.LimelightSubsystem;
+import frc.robot.subsystems.MariosEar;
+import frc.robot.subsystems.ShooterIntakeSubsystem;
+import frc.robot.subsystems.ShooterSubsystem;
 
 // Commands
-//Hashtg
-import frc.robot.commands.RunShooterCommand;
-import frc.robot.commands.FuelHandlingCommand;
+import frc.robot.commands.AutoGooba;
 import frc.robot.commands.FeedShooterCommand;
 import frc.robot.commands.GooberAlign;
-import frc.robot.commands.TogglePneumaticCommand;
 import frc.robot.commands.ManualGoobaCommand;
 import frc.robot.commands.ManualTurretCommand;
-import frc.robot.commands.RunGroundIntakeCommand;
 import frc.robot.commands.RunClimbMotorCommand;
-import frc.robot.commands.AutoGooba;
+import frc.robot.commands.RunGroundIntakeCommand;
+import frc.robot.commands.RunShooterCommand;
 
 public class RobotContainer {
 
-    private double MaxSpeed = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
-    private double MaxAngularRate = Constants.Operator.kMaxAngularRate.in(RadiansPerSecond);
+    private final double maxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
+    private final double maxAngularRate = Constants.Operator.kMaxAngularRate.in(RadiansPerSecond);
 
     private final SwerveRequest.FieldCentric fieldCentricDrive = new SwerveRequest.FieldCentric()
-            .withDeadband(MaxSpeed * Constants.Operator.kDeadband)
-            .withRotationalDeadband(MaxAngularRate * Constants.Operator.kRotationalDeadband)
+            .withDeadband(maxSpeed * Constants.Operator.kDeadband)
+            .withRotationalDeadband(maxAngularRate * Constants.Operator.kRotationalDeadband)
             .withDriveRequestType(DriveRequestType.Velocity);
 
     private final SwerveRequest.RobotCentric robotCentricDrive = new SwerveRequest.RobotCentric()
-            .withDeadband(MaxSpeed * Constants.Operator.kDeadband)
-            .withRotationalDeadband(MaxAngularRate * Constants.Operator.kRotationalDeadband)
+            .withDeadband(maxSpeed * Constants.Operator.kDeadband)
+            .withRotationalDeadband(maxAngularRate * Constants.Operator.kRotationalDeadband)
             .withDriveRequestType(DriveRequestType.Velocity);
 
     private final SlewRateLimiter xLimiter = new SlewRateLimiter(3.0);
@@ -75,10 +70,16 @@ public class RobotContainer {
     private final SendableChooser<String> driveModeChooser = new SendableChooser<>();
     private final SendableChooser<Double> globalSpeedLimiter = new SendableChooser<>();
     private final SendableChooser<Double> buttonSpeedLimiter = new SendableChooser<>();
-    private final Telemetry logger = new Telemetry(MaxSpeed);
+    private final Telemetry logger = new Telemetry(maxSpeed);
 
-    public final CommandXboxController driverController = new CommandXboxController(Constants.Operator.kDriverControllerPort);
-    public final CommandXboxController operator = new CommandXboxController(Constants.Operator.kOperatorControllerPort);
+    public final CommandXboxController driverController =
+        new CommandXboxController(Constants.Operator.kDriverControllerPort);
+    public final CommandXboxController operatorController =
+        new CommandXboxController(Constants.Operator.kOperatorControllerPort);
+
+    // Logitech X56 flight stick + throttle. Optional: when unplugged, every HOTAS
+    // binding is inert and the Xbox driver controller behaves exactly as before.
+    public final HotasX56 hotas = new HotasX56(Constants.Hotas.kStickPort, Constants.Hotas.kThrottlePort);
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
 
@@ -87,31 +88,26 @@ public class RobotContainer {
     public final ShooterIntakeSubsystem shooterIntake = new ShooterIntakeSubsystem();
     public final GoobaSubsystem gooba = new GoobaSubsystem();
     public final Goober goober = new Goober();
-    public final LimelightSubsystem rizz = new LimelightSubsystem();
-    public final MariosEar brick = new MariosEar(rizz);
+    public final LimelightSubsystem limelight = new LimelightSubsystem();
+    public final MariosEar mariosEar = new MariosEar(limelight);
     public final GroundIntakeSubsystem groundIntake = new GroundIntakeSubsystem();
     public final ClimbSubsystem climb = new ClimbSubsystem();
-    
-    public final DriverDashboard driverDashboard = new DriverDashboard();
 
-    public final PneumaticSubsystem ClimbPiston = new PneumaticSubsystem(
-        Constants.Pneumatics.kPcmId, 0);
-    public final PneumaticSubsystem DoubleIntake = new PneumaticSubsystem(
-        Constants.Pneumatics.kPcmId, 
-        Constants.Pneumatics.kSol2Forward, 
-        Constants.Pneumatics.kSol2Reverse);
-   
+    public final DriverDashboard driverDashboard = new DriverDashboard();
 
     private final SendableChooser<Command> autoChooser;
 
     // State Toggles
-    private boolean m_continuousTurretAim = false; 
-    private boolean m_isShooterIdle = false; 
-    private boolean m_isSimulatedTankDrive = false; // Controls if swerve acts like a traditional tank drive
+    private boolean m_isShooterIdle = false;
+    private boolean m_isSimulatedTankDrive = false; // Swerve acts like a traditional tank drive (no strafe)
 
     public RobotContainer() {
+        // We intentionally configure more HIDs (Xbox x2 + HOTAS x2) than are usually
+        // plugged in, so don't spam the DS console about the empty ports.
+        DriverStation.silenceJoystickConnectionWarning(true);
+
         Marcos.registerNamedCommands(
-            shooter, index, shooterIntake, gooba, goober, rizz, brick, groundIntake, DoubleIntake, ClimbPiston
+            shooter, index, shooterIntake, gooba, goober, limelight, mariosEar, groundIntake
         );
 
         autoChooser = AutoBuilder.buildAutoChooser("Tests");
@@ -133,43 +129,58 @@ public class RobotContainer {
         buttonSpeedLimiter.addOption("10%", 0.1);
         SmartDashboard.putData("Button Speed Limit", buttonSpeedLimiter);
 
-        configureBindings();
+        configureDriveDefaultCommand();
+        configureDriverBindings();
+        configureOperatorBindings();
+        configureHotasBindings();
+        configureSystemDefaults();
+
         FollowPathCommand.warmupCommand().schedule();
     }
 
-    private void configureBindings() {
-        // ==========================================
-        // --- DRIVER CONTROLLER (PORT 0) ---
-        // ==========================================
-
+    // ==========================================
+    // --- DRIVE INPUT (Xbox or HOTAS) ---
+    // ==========================================
+    private void configureDriveDefaultCommand() {
         drivetrain.setDefaultCommand(
             drivetrain.applyRequest(() -> {
-                // Get raw inputs
-                double xInput = -driverController.getLeftY();  // Forward/Backward
-                double yInput = -driverController.getLeftX();  // Strafe Left/Right
-                double rInput = -driverController.getRightX(); // Rotation
+                double xInput;
+                double yInput;
+                double rInput;
+                double speedMultiplier = globalSpeedLimiter.getSelected();
 
-                // Apply limiters and cubic curve
+                if (hotas.isConnected()) {
+                    // Flight stick: pitch = forward/back, roll = strafe, twist = rotation.
+                    // The physical throttle lever scales speed on top of the global limit.
+                    xInput = hotas.getForward();
+                    yInput = hotas.getStrafe();
+                    rInput = hotas.getTwist();
+                    speedMultiplier *= hotas.getThrottleScale();
+                } else {
+                    xInput = -driverController.getLeftY();  // Forward/Backward
+                    yInput = -driverController.getLeftX();  // Strafe Left/Right
+                    rInput = -driverController.getRightX(); // Rotation
+
+                    // Start button swaps in the alternate (usually slower) speed limit
+                    if (driverController.getHID().getStartButton()) {
+                        speedMultiplier = buttonSpeedLimiter.getSelected();
+                    }
+                }
+
+                // Cubic curve for fine control at low speed, then slew-rate limiting
                 double scaledX = xLimiter.calculate(Math.signum(xInput) * Math.pow(Math.abs(xInput), 3));
                 double scaledY = yLimiter.calculate(Math.signum(yInput) * Math.pow(Math.abs(yInput), 3));
                 double scaledRot = rotLimiter.calculate(Math.signum(rInput) * Math.pow(Math.abs(rInput), 3));
 
-                // Get Speed Multipliers
-                double speedMultiplier = globalSpeedLimiter.getSelected();
-                if (driverController.getHID().getStartButton()) {
-                    speedMultiplier = buttonSpeedLimiter.getSelected();
-                }
-
-                double currentMaxSpeed = MaxSpeed * speedMultiplier;
-                double currentMaxAngularRate = MaxAngularRate * speedMultiplier;
+                double currentMaxSpeed = maxSpeed * speedMultiplier;
+                double currentMaxAngularRate = maxAngularRate * speedMultiplier;
 
                 // --- TANK DRIVE / NO-STRAFE LOGIC ---
                 if (m_isSimulatedTankDrive) {
-                    // Force the robot into Robot-Centric mode and disable all strafing (Y velocity)
-                    // Left Stick Y controls throttle, Right Stick X controls steering
+                    // Robot-centric with strafing disabled: stick Y = throttle, rotation = steering
                     return robotCentricDrive
                         .withVelocityX(scaledX * currentMaxSpeed)
-                        .withVelocityY(0.0) // ZERO strafing completely
+                        .withVelocityY(0.0)
                         .withRotationalRate(scaledRot * currentMaxAngularRate);
                 }
 
@@ -187,84 +198,90 @@ public class RobotContainer {
                     .withRotationalRate(scaledRot * currentMaxAngularRate);
             })
         );
+    }
 
+    // ==========================================
+    // --- DRIVER CONTROLLER (PORT 0 - XBOX) ---
+    // ==========================================
+    private void configureDriverBindings() {
         driverController.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
-        
+
         // Right Trigger: Normal Intake
         driverController.rightTrigger().whileTrue(new RunGroundIntakeCommand(groundIntake));
-        
-        // Left Trigger: Reverse Intake (Spit out)
-        driverController.leftTrigger().whileTrue(new StartEndCommand(
-            () -> groundIntake.runIntake(Constants.GroundIntake.kReverseSpeed), 
-            () -> groundIntake.stop(), 
-            groundIntake
-        ));
 
-        driverController.x().onTrue(new TogglePneumaticCommand(DoubleIntake));
-        driverController.a().onTrue(new TogglePneumaticCommand(ClimbPiston));
+        // Left Trigger: Reverse Intake (Spit out)
+        driverController.leftTrigger().whileTrue(reverseGroundIntakeCommand());
+
+        // X and A are unbound (they used to toggle the removed pneumatic pistons)
 
         driverController.povUp().whileTrue(new RunClimbMotorCommand(climb, Constants.Climb.kClimbSpeed));
         driverController.povDown().whileTrue(new RunClimbMotorCommand(climb, -Constants.Climb.kClimbSpeed));
 
-        // Driver D-Pad Left toggles the Idle Shooter Mode
-        driverController.povLeft().onTrue(new InstantCommand(() -> {
-            m_isShooterIdle = !m_isShooterIdle;
-            System.out.println("Shooter Idle State Toggled: " + m_isShooterIdle);
-        }));
+        driverController.povLeft().onTrue(new InstantCommand(this::toggleShooterIdleMode));
+        driverController.povRight().onTrue(new InstantCommand(this::toggleTankDriveMode));
+    }
 
-        // Driver D-Pad Right toggles the Simulated Tank Drive Mode
-        driverController.povRight().onTrue(new InstantCommand(() -> {
-            m_isSimulatedTankDrive = !m_isSimulatedTankDrive;
-            SmartDashboard.putBoolean("Tank Drive Active", m_isSimulatedTankDrive);
-            System.out.println("Tank Drive State Toggled: " + m_isSimulatedTankDrive);
-        }));
+    // ==========================================
+    // --- OPERATOR CONTROLLER (PORT 1 - XBOX) ---
+    // ==========================================
+    private void configureOperatorBindings() {
+        operatorController.leftTrigger().whileTrue(new RunShooterCommand(shooter, Constants.Shooter.kFastTargetRPM));
+        operatorController.rightTrigger().whileTrue(new FeedShooterCommand(index, shooterIntake));
 
-        // ==========================================
-        // --- OPERATOR CONTROLLER (PORT 1) ---
-        // ==========================================
-
-        operator.leftTrigger().whileTrue(new RunShooterCommand(shooter, Constants.Shooter.kfastTargetRPM));
-        operator.rightTrigger().whileTrue(new FeedShooterCommand(index, shooterIntake));
-        
-        // 'B' Button now independently rewinds the Index Subsystem ONLY
-        operator.b().whileTrue(new StartEndCommand(
-            () -> index.run(Constants.Index.kReverseSpeed), 
-            () -> index.stop(), 
+        // 'B' Button independently rewinds the Index Subsystem ONLY
+        operatorController.b().whileTrue(new StartEndCommand(
+            () -> index.run(Constants.Index.kReverseSpeed),
+            index::stop,
             index
         ));
 
-        operator.y().onTrue(new InstantCommand(() -> {
+        // 'Y' toggles the hood between stowed and deployed
+        operatorController.y().onTrue(new InstantCommand(() -> {
             if (Math.abs(gooba.getPosition()) > 1.0) {
                 gooba.setPosition(Constants.Gooba.kPositionStowed);
             } else {
                 gooba.setPosition(Constants.Gooba.kPositionDeployed);
             }
         }, gooba));
-/* 
-        operator.rightBumper().onTrue(new InstantCommand(() -> {
-            m_continuousTurretAim = !m_continuousTurretAim;
-        }));
 
-        Trigger continuousAimTrigger = new Trigger(() -> m_continuousTurretAim);
-        
-        continuousAimTrigger.whileTrue(
-            new GooberAlign(rizz, goober).alongWith(new AutoGooba(gooba, rizz))
-        );
-        
-        operator.leftBumper().and(continuousAimTrigger.negate()).whileTrue(
-            new GooberAlign(rizz, goober).alongWith(new AutoGooba(gooba, rizz))
-        );
-*/
-        operator.leftBumper().whileTrue(new GooberAlign(rizz, goober).alongWith(new AutoGooba(gooba, rizz)));
-        operator.povUp().whileTrue(new ManualGoobaCommand(gooba, false));
-        operator.povDown().whileTrue(new ManualGoobaCommand(gooba, true));
-        
-        operator.povLeft().whileTrue(new ManualTurretCommand(goober, -Constants.Turret.kManualJogSpeed));
-        operator.povRight().whileTrue(new ManualTurretCommand(goober, Constants.Turret.kManualJogSpeed));
+        // Left Bumper: track the hub — turret alignment + auto hood angle together
+        operatorController.leftBumper().whileTrue(
+            new GooberAlign(limelight, goober).alongWith(new AutoGooba(gooba, limelight)));
 
-        // ==========================================
-        // --- SYSTEM DEFAULTS ---
-        // ==========================================
+        operatorController.povUp().whileTrue(new ManualGoobaCommand(gooba, false));  // jog hood toward stow
+        operatorController.povDown().whileTrue(new ManualGoobaCommand(gooba, true)); // jog hood toward deploy
+
+        operatorController.povLeft().whileTrue(new ManualTurretCommand(goober, -Constants.Turret.kManualJogSpeed));
+        operatorController.povRight().whileTrue(new ManualTurretCommand(goober, Constants.Turret.kManualJogSpeed));
+    }
+
+    // ==========================================
+    // --- HOTAS (PORTS 2 & 3 - X56 STICK + THROTTLE) ---
+    // ==========================================
+    // Mirrors the driver Xbox layout so either input device can drive the robot.
+    // Bindings are gated on the stick being plugged in; see docs/X56-HOTAS-SETUP.md.
+    private void configureHotasBindings() {
+        Trigger hotasConnected = new Trigger(hotas::isConnected);
+
+        // Trigger finger: ground intake in, thumb (A): spit out
+        hotas.trigger().and(hotasConnected).whileTrue(new RunGroundIntakeCommand(groundIntake));
+        hotas.buttonA().and(hotasConnected).whileTrue(reverseGroundIntakeCommand());
+
+        // B and C are unbound (they used to toggle the removed pneumatic pistons)
+
+        // D: tank-drive toggle, Pinkie lever: re-zero field-centric heading
+        hotas.buttonD().and(hotasConnected).onTrue(new InstantCommand(this::toggleTankDriveMode));
+        hotas.pinkie().and(hotasConnected).onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
+
+        // Main hat up/down: climb motor
+        hotas.povUp().and(hotasConnected).whileTrue(new RunClimbMotorCommand(climb, Constants.Climb.kClimbSpeed));
+        hotas.povDown().and(hotasConnected).whileTrue(new RunClimbMotorCommand(climb, -Constants.Climb.kClimbSpeed));
+    }
+
+    // ==========================================
+    // --- SYSTEM DEFAULTS ---
+    // ==========================================
+    private void configureSystemDefaults() {
         final var idle = new SwerveRequest.Idle();
         RobotModeTriggers.disabled().whileTrue(
             drivetrain.applyRequest(() -> idle).ignoringDisable(true)
@@ -274,42 +291,58 @@ public class RobotContainer {
             if (m_isShooterIdle) {
                 shooter.runAtRPM(Constants.Shooter.kIdleRPM);
             } else {
-                shooter.stop(); 
+                shooter.stop();
             }
         }, shooter));
 
         drivetrain.registerTelemetry(logger::telemeterize);
     }
 
+    /** Runs the ground intake backwards to spit fuel out, stopping on release. */
+    private Command reverseGroundIntakeCommand() {
+        return new StartEndCommand(
+            () -> groundIntake.runIntake(Constants.GroundIntake.kReverseSpeed),
+            groundIntake::stop,
+            groundIntake
+        );
+    }
+
+    private void toggleShooterIdleMode() {
+        m_isShooterIdle = !m_isShooterIdle;
+        SmartDashboard.putBoolean("Shooter Idle Active", m_isShooterIdle);
+        System.out.println("Shooter Idle State Toggled: " + m_isShooterIdle);
+    }
+
+    private void toggleTankDriveMode() {
+        m_isSimulatedTankDrive = !m_isSimulatedTankDrive;
+        SmartDashboard.putBoolean("Tank Drive Active", m_isSimulatedTankDrive);
+        System.out.println("Tank Drive State Toggled: " + m_isSimulatedTankDrive);
+    }
+
     public Command getAutonomousCommand() {
         return autoChooser.getSelected();
     }
 
+    /**
+     * True when scoring into our HUB earns points right now.
+     * Full REBUILT shift logic lives in {@link HubShiftTracker}.
+     */
     public boolean isHubOpenForUs() {
-        var alliance = edu.wpi.first.wpilibj.DriverStation.getAlliance();
-        String gameData = edu.wpi.first.wpilibj.DriverStation.getGameSpecificMessage();
-
-        if (alliance.isPresent() && gameData != null && !gameData.isEmpty()) {
-            char turn = gameData.toUpperCase().charAt(0);
-            return (alliance.get() == edu.wpi.first.wpilibj.DriverStation.Alliance.Red) ? (turn == 'R') : (turn == 'B');
-        }
-        return false;
+        return HubShiftTracker.isOurHubOpen();
     }
 
     public void updateDashboard() {
-        // Fetch Limelight data cleanly via NetworkTables
-        var llTable = NetworkTableInstance.getDefault().getTable("limelight");
-        double tx = llTable.getEntry("tx").getDouble(0.0);
-        double ty = llTable.getEntry("ty").getDouble(0.0);
-        boolean hasTarget = llTable.getEntry("tv").getDouble(0.0) == 1.0;
-
-        // Check if the hub is currently open based on your existing logic
         boolean isHubOpen = isHubOpenForUs();
-        
-        // Grab the physical RPM straight from the Shooter Subsystem 
-        double currentRpm = shooter.getCurrentRpm();
 
-        // Pass everything to the dashboard
-        driverDashboard.updateLiveStats(tx, ty, hasTarget, isHubOpen, currentRpm);
+        driverDashboard.updateLiveStats(
+            limelight.getTX(),
+            limelight.getTY(),
+            limelight.isTargetAvailable(),
+            isHubOpen,
+            shooter.getCurrentRpm());
+
+        SmartDashboard.putBoolean("HUB OPEN", isHubOpen);
+        SmartDashboard.putBoolean("HOTAS Connected", hotas.isConnected());
+        SmartDashboard.putBoolean("HOTAS Throttle Connected", hotas.isThrottleConnected());
     }
 }

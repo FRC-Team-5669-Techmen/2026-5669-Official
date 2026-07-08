@@ -12,10 +12,10 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 
+/** Goober = the turret. Rotates the shooter toward the hub using duty-cycle output. */
 public class Goober extends SubsystemBase {
     private final TalonFX motor = new TalonFX(Constants.Turret.kMotorId);
     private final DutyCycleOut request = new DutyCycleOut(0);
-    private final TalonFXConfiguration configs = new TalonFXConfiguration();
 
     private final PIDController turnPID = new PIDController(
         Constants.Turret.kP, Constants.Turret.kI, Constants.Turret.kD
@@ -25,16 +25,18 @@ public class Goober extends SubsystemBase {
     private final LinearFilter txFilter = LinearFilter.movingAverage(5);
 
     public Goober() {
+        TalonFXConfiguration configs = new TalonFXConfiguration();
+
         configs.SoftwareLimitSwitch.ReverseSoftLimitThreshold = -25.0;
         configs.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
 
-        configs.SoftwareLimitSwitch.ForwardSoftLimitThreshold = 10.0; 
+        configs.SoftwareLimitSwitch.ForwardSoftLimitThreshold = 10.0;
         configs.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
 
         configs.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-        
+
         motor.getConfigurator().apply(configs);
-        turnPID.setTolerance(Constants.Turret.kToleranceDegrees); 
+        turnPID.setTolerance(Constants.Turret.kToleranceDegrees);
     }
 
     public void setMotorSpeed(double percent) {
@@ -46,19 +48,24 @@ public class Goober extends SubsystemBase {
         double smoothedTx = txFilter.calculate(rawTx);
 
         double pidOutput = turnPID.calculate(smoothedTx, 0.0);
-        
+
         // JITTER FIX: If we are close enough to the target, cut power completely
         // so the motor stops fighting tiny gearbox vibrations.
         if (turnPID.atSetpoint()) {
             stop();
         } else {
             double clampedOutput = MathUtil.clamp(
-                pidOutput, 
-                -Constants.Turret.kMaxOutput, 
+                pidOutput,
+                -Constants.Turret.kMaxOutput,
                 Constants.Turret.kMaxOutput
             );
             setMotorSpeed(-clampedOutput);
         }
+    }
+
+    /** Clears the tx smoothing filter so a new alignment doesn't chase stale samples. */
+    public void resetAimFilter() {
+        txFilter.reset();
     }
 
     public double getPosition() {
@@ -75,10 +82,6 @@ public class Goober extends SubsystemBase {
 
     @Override
     public void periodic() {
-
         SmartDashboard.putNumber("Turret Motor Position", getPosition());
-
-        //double currentPos = motor.getPosition().getValueAsDouble();
-        //System.out.println("GOOBA:" + currentPos);
     }
 }

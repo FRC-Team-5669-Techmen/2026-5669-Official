@@ -8,9 +8,10 @@ import com.ctre.phoenix6.HootAutoReplay;
 
 import dev.doglog.DogLog;
 import dev.doglog.DogLogOptions;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
@@ -34,51 +35,50 @@ public class Robot extends TimedRobot {
                 .withCaptureNt(true));
         DogLog.setPdh(new PowerDistribution());
     }
- 
 
     @Override
     public void robotPeriodic() {
         m_timeAndJoystickReplay.update();
-        CommandScheduler.getInstance().run(); 
-        
-        // --> DASHBOARD CONTINUOUSLY UPDATES HERE <--
+        CommandScheduler.getInstance().run();
+
         m_robotContainer.updateDashboard();
+        updateDriverRumble();
+    }
 
-        boolean ready = m_robotContainer.isHubOpenForUs();
-        SmartDashboard.putBoolean("HUB OPEN", ready);
-        double matchTime = edu.wpi.first.wpilibj.DriverStation.getMatchTime();
-        var alliance = edu.wpi.first.wpilibj.DriverStation.getAlliance();
-        boolean isOurTurn = m_robotContainer.isHubOpenForUs();
-        boolean isTeleop = edu.wpi.first.wpilibj.DriverStation.isTeleop();
+    /**
+     * Haptic feedback for the driver during TELEOP:
+     * <ul>
+     *   <li>Strong pulses during the last 5 seconds of each SHIFT, warning that
+     *       the HUBs are about to swap.</li>
+     *   <li>Gentle constant rumble while our HUB is open for scoring.</li>
+     *   <li>Silence otherwise (and in every other mode).</li>
+     * </ul>
+     */
+    private void updateDriverRumble() {
+        var driverHid = m_robotContainer.driverController.getHID();
 
-        if(isTeleop) {
-            if (isOurTurn && matchTime > 0) {
-            // Constant vibration while it's our turn to score
-            m_robotContainer.driverController.getHID().setRumble(edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0.1);
-            } 
+        if (!DriverStation.isTeleopEnabled()) {
+            driverHid.setRumble(RumbleType.kBothRumble, 0.0);
+            return;
         }
-        // coundown
-        else if (matchTime <= 130 && matchTime > 30) {
+
+        double matchTime = DriverStation.getMatchTime();
+        double rumble = 0.0;
+
+        // SHIFT-change countdown: shifts run 2:10 -> 0:30 in 25 s windows
+        if (matchTime <= 130 && matchTime > 30) {
             double timeInShift = (matchTime - 30) % 25;
-            
-            if (timeInShift <= 5.0 && timeInShift > 0.1) {
-                if ((timeInShift % 1.0) < 0.2) {
-                    m_robotContainer.driverController.getHID().setRumble(
-                        edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0.9);
-                } else {
-                    m_robotContainer.driverController.getHID().setRumble(
-                        edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0);
-                }
-            } else {
-                m_robotContainer.driverController.getHID().setRumble(
-                    edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0);
+            if (timeInShift <= 5.0 && timeInShift > 0.1 && (timeInShift % 1.0) < 0.2) {
+                rumble = 0.9;
             }
-        } 
-        else {
-            // Stop all vibration if it's not our turn and not a countdown window
-            m_robotContainer.driverController.getHID().setRumble(
-                edu.wpi.first.wpilibj.GenericHID.RumbleType.kBothRumble, 0);
         }
+
+        // Constant low rumble while our HUB is open (unless we're mid-pulse)
+        if (rumble == 0.0 && matchTime > 0 && m_robotContainer.isHubOpenForUs()) {
+            rumble = 0.1;
+        }
+
+        driverHid.setRumble(RumbleType.kBothRumble, rumble);
     }
 
     @Override

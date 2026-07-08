@@ -26,7 +26,6 @@
 | Library | Purpose |
 |---------|---------|
 | Phoenix6 (26.1.1) | CTRE TalonFX motors, CANcoders, Pigeon2 IMU |
-| Phoenix5 (legacy) | CTRE PCM for pneumatics |
 | PathPlannerLib (2026.1.2) | Autonomous path following |
 | PhotonVision (photonlib) | USB camera AprilTag detection via PhotonCamera |
 | DogLog | Telemetry logging (NT publish, DS capture, PDH logging) |
@@ -42,16 +41,20 @@ src/main/java/frc/robot/
 ├── RobotContainer.java        # Subsystem instantiation, bindings, auto chooser
 ├── Constants.java             # All CAN IDs, PID gains, speeds, positions
 ├── Marcos.java                # PathPlanner named command registration
+├── HubShiftTracker.java       # REBUILT 2026 hub active/inactive shift logic
+├── DriverDashboard.java       # Shuffleboard "Match Dash" tab (match phase, hub status, RPM)
 ├── Telemetry.java             # Swerve state → NetworkTables + SignalLogger
 ├── LimelightHelpers.java      # Limelight vendor helper (not directly used)
+├── controls/
+│   └── HotasX56               # Logitech X56 HOTAS wrapper (stick + throttle USB devices)
 ├── commands/
 │   ├── FuelHandlingCommand     # Coordinated shooter + index + intake (fwd/rev)
+│   ├── FeedShooterCommand      # Index + shooter intake only (shooter runs separately)
 │   ├── RunShooterCommand       # Spin shooter at target RPM
 │   ├── GoobaToggleCommand      # Deploy/stow gooba (instant)
-│   ├── AutoGooba               # Auto-aim gooba using Limelight distance
-│   ├── GooberAlign             # PID turret align using Limelight tx
-│   ├── Mariosearcommand        # Multi-phase turret aim (Limelight → USB cams)
-│   ├── TogglePneumaticCommand  # Toggle a double solenoid (instant)
+│   ├── AutoGooba               # Auto-aim gooba using Limelight shot map
+│   ├── GooberAlign             # PID turret align w/ search sweep (Limelight)
+│   ├── MariosEarCommand        # Multi-phase turret aim (Limelight → USB cams)
 │   ├── ManualGoobaCommand      # D-pad jog gooba position up/down
 │   ├── ManualTurretCommand     # D-pad jog turret left/right
 │   ├── RunGroundIntakeCommand  # Run ground intake roller
@@ -65,7 +68,6 @@ src/main/java/frc/robot/
 │   ├── Goober                  # Turret motor, duty cycle rotation
 │   ├── LimelightSubsystem      # Limelight NetworkTables (tx/ty/ta/tv/botpose)
 │   ├── MariosEar               # Multi-camera vision: Limelight + 2 PhotonVision USB cams
-│   ├── PneumaticSubsystem      # Reusable double solenoid (CTRE PCM)
 │   ├── GroundIntakeSubsystem   # Kraken X44, ground pickup roller
 │   └── ClimbSubsystem          # Kraken X60, winch motor with soft limits
 ├── generated/
@@ -122,18 +124,11 @@ This is a 2026 FRC robot with the following mechanical systems:
 - 1:100 gearbox with ratchet mechanism
 - Soft limits: +/- 1000 rotations
 - 60A supply current limit
-- Pneumatic piston (Sol3) for climb ratchet
-
-### Pneumatics
-- CTRE PCM (CAN 25) with 3 double solenoids:
-  - **Sol1** (ports 0/1): Intake piston
-  - **Sol2** (ports 3/4): Intake 2 piston
-  - **Sol3** (ports 2/6): Climb ratchet piston
 
 ### Vision
 - **Limelight**: AprilTag detection, provides tx/ty/ta/tv/botpose via NetworkTables
-  - Horizontal offset correction for off-center camera mounting (1.5" offset)
-  - Distance-to-target calculation using trigonometry
+  - Mounted HORIZONTALLY and CENTERED on the shooter (2026 offseason remount): tx aims the turret, ty drives the distance trig
+  - Distance-to-target calculation using trigonometry (`distanceToTarget()`)
 - **PhotonVision USB cameras**: "Left" and "Right" cameras for wide-angle target search
 - **MariosEar**: Fuses all 3 cameras into a multi-phase turret aiming pipeline
 
@@ -145,11 +140,10 @@ This is a 2026 FRC robot with the following mechanical systems:
 | `ShooterSubsystem` | 2 TalonFX (leader/follower) | VelocityVoltage | `runAtRPM(rpm)`, `stop()` |
 | `IndexSubsystem` | 1 TalonFX | DutyCycleOut | `run(speed)`, `stop()` |
 | `ShooterIntakeSubsystem` | 1 TalonFX | DutyCycleOut | `run(speed)`, `stop()` |
-| `GoobaSubsystem` | 1 TalonFX (X44) | MotionMagicVoltage | `setPosition(rot)`, `getPosition()`, `getRotationValueFromDistance(d)` |
+| `GoobaSubsystem` | 1 TalonFX (X44) | MotionMagicVoltage | `setPosition(rot)`, `getPosition()`, `getRotationForDistance(d)` |
 | `Goober` | 1 TalonFX | DutyCycleOut | `setMotorSpeed(pct)`, `stop()` |
-| `LimelightSubsystem` | Limelight camera | NetworkTables | `getTX()`, `getTY()`, `isTargetAvailable()`, `distanceToTarget()`, `getNewTX()` |
+| `LimelightSubsystem` | Limelight camera | NetworkTables | `getTX()`, `getTY()`, `isValidTarget()`, `distanceToTarget()` |
 | `MariosEar` | 2 PhotonVision + Limelight | PhotonCamera | `limelightHasTarget()`, `getLimelightTX()`, `getLeftResult()`, `getRightResult()` |
-| `PneumaticSubsystem` | DoubleSolenoid (CTRE PCM) | Solenoid toggle | `extend()`, `retract()`, `toggle()` |
 | `GroundIntakeSubsystem` | 1 TalonFX (X44) | DutyCycleOut | `runIntake(speed)`, `stop()` |
 | `ClimbSubsystem` | 1 TalonFX (X60) | DutyCycleOut | `runMotor(speed)`, `stop()` |
 
@@ -157,11 +151,12 @@ This is a 2026 FRC robot with the following mechanical systems:
 
 Commands follow the standard WPILib command-based pattern. Key patterns:
 
-- **`FuelHandlingCommand`**: The core shooting/intake command. Coordinates index + shooterIntake + shooter simultaneously. `isForward=true` shoots (5000 RPM), `isForward=false` reverses/intakes (-1000 RPM). Runs while held.
-- **`Mariosearcommand`**: Multi-phase turret aiming with priority: (1) Limelight PID tracking → (2) Left USB cam coarse search → (3) Right USB cam coarse search → (4) stop.
-- **`GooberAlign`**: Limelight-only PID turret alignment using corrected tx with horizontal offset compensation.
-- **`AutoGooba`**: Continuous auto-aim that maps Limelight distance to hood position via interpolating tree map.
-- **Instant commands**: `GoobaToggleCommand`, `TogglePneumaticCommand` finish immediately after setting state.
+- **`FuelHandlingCommand`**: The core shooting/intake command. Coordinates index + shooterIntake + shooter simultaneously. `isForward=true` shoots, `isForward=false` reverses/intakes (-1000 RPM). Runs while held (autos add timeouts).
+- **`FeedShooterCommand`**: Runs index + shooter intake only, so the shooter can be spun up independently (operator layout).
+- **`MariosEarCommand`**: Multi-phase turret aiming with priority: (1) Limelight PID tracking → (2) Left USB cam coarse search → (3) Right USB cam coarse search → (4) stop.
+- **`GooberAlign`**: Limelight PID turret alignment on raw tx (camera is centered on the shooter). When no valid target is in view it sweeps the turret between its soft limits hunting for one. Never finishes on its own — bind with whileTrue or a timeout.
+- **`AutoGooba`**: Continuous auto-aim that maps Limelight distance (m) to hood position via the interpolating shot map, with a moving-average filter on distance.
+- **Instant commands**: `GoobaToggleCommand` finishes immediately after setting state.
 - **While-held commands**: `ManualGoobaCommand`, `ManualTurretCommand`, `RunClimbMotorCommand`, `RunGroundIntakeCommand` run continuously and stop on release.
 
 ## Controller Bindings
@@ -172,34 +167,40 @@ Commands follow the standard WPILib command-based pattern. Key patterns:
 | Left Stick | Swerve translation (X/Y) with cubic scaling |
 | Right Stick X | Swerve rotation with cubic scaling |
 | Start (held) | Activates button speed limiter (default 50%) |
-| Right Trigger (held) | Shoot (FuelHandling forward) |
-| Left Trigger (held) | Intake/reverse (FuelHandling reverse) |
-| B | Run ground intake + toggle gooba deploy/stow |
-| Back | Turret auto-aim (Mariosearcommand) |
-| A | Toggle climb piston |
-| Right Bumper | Run climb motor up + print Limelight ID |
-| Left Bumper | Run climb motor down + seed field-centric heading |
-| X | Toggle piston 1 & piston 2 |
+| Right Trigger (held) | Ground intake in |
+| Left Trigger (held) | Ground intake reverse (spit out) |
+| X, A | Unbound (used to toggle the removed pneumatic pistons) |
+| Left Bumper | Seed field-centric heading |
+| D-Pad Up/Down (held) | Climb motor up/down |
+| D-Pad Left | Toggle shooter idle mode |
+| D-Pad Right | Toggle simulated tank drive |
 
 ### Operator Controller (Port 1 - Xbox)
 | Input | Action |
 |-------|--------|
-| Right Trigger (held) | Shoot (FuelHandling forward) |
-| Left Trigger (held) | Intake/reverse (FuelHandling reverse) |
-| B | Run ground intake |
-| Back | Turret auto-aim (Mariosearcommand) |
-| D-Pad Up (held) | Jog gooba position up |
-| D-Pad Down (held) | Jog gooba position down |
-| D-Pad Left (held) | Jog turret left (speed -0.4) |
-| D-Pad Right (held) | Jog turret right (speed +0.4) |
+| Left Trigger (held) | Spin up shooter (fast RPM) |
+| Right Trigger (held) | Feed shooter (index + shooter intake) |
+| B (held) | Rewind index only |
+| Y | Toggle gooba stowed/deployed |
+| Left Bumper (held) | Track hub: GooberAlign + AutoGooba |
+| D-Pad Up (held) | Jog gooba toward stow |
+| D-Pad Down (held) | Jog gooba toward deploy |
+| D-Pad Left/Right (held) | Jog turret left/right |
+
+### HOTAS (Ports 2/3 - Logitech X56, optional)
+Full mapping and setup steps in `docs/X56-HOTAS-SETUP.md`. Stick pitch/roll/twist
+drive the swerve, the right throttle lever is an analog speed governor, and the
+stick buttons mirror the driver Xbox layout. When the stick is unplugged all
+HOTAS bindings are inert and the Xbox controller drives as normal.
 
 ### Speed Limiting
 - **Global speed limiter**: Shuffleboard chooser (100%/75%/50%/25%), always active
-- **Button speed limiter**: Shuffleboard chooser (50%/75%/25%/10%), active only while Start is held
+- **Button speed limiter**: Shuffleboard chooser (50%/75%/25%/10%), active only while Start is held (Xbox only)
+- **HOTAS throttle**: right throttle lever scales speed 15%-100% on top of the global limiter
 
-### Rumble Feedback
-- Constant low rumble (0.1) when it's the alliance's turn to score (game-specific message)
-- Pulsing rumble (0.9) during countdown windows approaching turn changes (every 25s window, first 5s pulses)
+### Rumble Feedback (driver controller, TELEOP only)
+- Constant low rumble (0.1) while our HUB is open for scoring (`HubShiftTracker`)
+- Pulsing rumble (0.9) during the last 5 seconds of each 25s SHIFT window
 
 ## PathPlanner Setup
 
@@ -217,26 +218,30 @@ Commands follow the standard WPILib command-based pattern. Key patterns:
 - Auto chooser defaults to "Tests"
 
 ### Named Commands (registered in `Marcos.java`)
-| Name | Command | Typical Timeout |
-|------|---------|----------------|
-| `spinUpShooter` | RunShooterCommand at 5000 RPM | - |
-| `spinUpShooterSlow` | RunShooterCommand at 2500 RPM | - |
-| `shoot` | FuelHandlingCommand (forward) | 1.5-2.5s |
+The registered strings are referenced by the deployed `.auto`/`.path` files — do not
+rename them without updating the autos in `src/main/deploy/pathplanner/`.
+
+| Name | Command | Timeout |
+|------|---------|---------|
+| `spinUpShooter` | RunShooterCommand (fast RPM) | 1.5s |
+| `spinUpShooterSlow` | RunShooterCommand (slow RPM) | 1.5s |
+| `score` | GooberAlign → spin up → FuelHandling forward → stop | staged |
+| `scorePreload` | Spin up → FuelHandling forward → stop (no vision) | staged |
+| `visionScore` | (GooberAlign ∥ AutoGooba) → spin up → shoot → stop | staged |
+| `shoot` | FuelHandlingCommand (forward) | 2.0s |
 | `stopShooter` | InstantCommand → shooter.stop() | - |
-| `intake` | FuelHandlingCommand (reverse) | 2-3s |
-| `runGroundIntake` | RunGroundIntakeCommand | varies |
+| `intake` | FuelHandlingCommand (reverse) | 2.0s |
+| `runGroundIntake` | RunGroundIntakeCommand (also bound as EventTrigger) | none |
 | `deployGooba` | GoobaToggleCommand (deploy) | - |
 | `stowGooba` | GoobaToggleCommand (stow) | - |
-| `autoAimGooba` | AutoGooba (vision-based) | use deadline/timeout |
-| `aimTurret` | Mariosearcommand (multi-cam) | 1.5-2.5s |
-| `alignTurret` | GooberAlign (Limelight-only) | - |
-| `togglePiston1` | TogglePneumaticCommand (piston1) | - |
-| `togglePiston2` | TogglePneumaticCommand (piston2) | - |
+| `autoAimGooba` | AutoGooba (vision-based) | 2.0s |
+| `aimTurret` | MariosEarCommand (multi-cam) | 2.0s |
+| `alignTurret` | GooberAlign (Limelight-only) | 2.0s |
+| `lowerIntake`, `togglePiston1`, `togglePiston2` | No-ops (pneumatics removed; kept so old autos load) | - |
 
 ### Paths & Autos
-- **Paths**: `Center-to-Hub`, `Left-to-Hub`, `Right-to-Hub`, `One`, `Two`, `Three`, `Four`
-- **Autos**: `Squareish Auto`, `Test 3-2-26`
-- Path folder: "Square Practice Paths"
+- **Autos**: `Center Preload - Dumb`, `Center Preload - Vision`, `Left 3-Piece Auto`, `Right 3-Piece Auto`
+- **Paths**: see `src/main/deploy/pathplanner/paths/`
 
 ## CAN ID Map
 
@@ -260,18 +265,18 @@ Commands follow the standard WPILib command-based pattern. Key patterns:
 | 19 | TalonFX (Shooter Intake) | Shooter Intake |
 | 20 | TalonFX (Ground Intake) | Ground Intake |
 | 21 | TalonFX (Climb) | Climb |
-| 25 | CTRE PCM | Pneumatics |
 | 41 | Pigeon2 IMU | Swerve |
 | 51 | TalonFX (Gooba/Hood) | Gooba |
 | 61 | TalonFX (Goober/Turret) | Turret |
 
 ## Patterns & Conventions
 
-- **Naming**: The team uses creative nicknames for subsystems: "Gooba" = hood/arc mechanism, "Goober" = turret, "MariosEar" = multi-camera vision system, "rizz" = Limelight instance, "brick" = MariosEar instance.
+- **Naming**: The team uses creative nicknames for subsystem classes: "Gooba" = hood/arc mechanism, "Goober" = turret, "MariosEar" = multi-camera vision system, "Marcos" = named-command registrar. Instance variables use plain descriptive names (`limelight`, `mariosEar`, `groundIntake`, ...).
+- **Vision mounting**: The Limelight is mounted HORIZONTALLY and CENTERED on the shooter (2026 offseason remount) — `tx` aims the turret, `ty` feeds the distance trig. Re-measure `Constants.Limelight.kMountAngleDegrees`/`kLensHeightMeters` whenever the mount changes.
+- **Hub shifts**: `HubShiftTracker.isOurHubOpen()` implements the REBUILT shift schedule (game data at teleop start + match timer). Driver rumble and the dashboards read it via `RobotContainer.isHubOpenForUs()`.
 - **Constants**: All hardware IDs, PID gains, speeds, and positions live in `Constants.java` inner classes. Comments mark values as `//fixed` when confirmed on hardware.
 - **Marcos.java**: Centralized PathPlanner named command registration, separate from RobotContainer. Named commands must be registered before `AutoBuilder.buildAutoChooser()`.
 - **Motor control**: Phoenix 6 API throughout. TalonFX motors use `DutyCycleOut` for simple speed control, `VelocityVoltage` for RPM control (shooter), and `MotionMagicVoltage` for smooth position control (gooba).
-- **Pneumatics**: `PneumaticSubsystem` is a reusable class instantiated multiple times with different solenoid channel pairs.
 - **Simulation**: MapleSim-backed swerve physics simulation with 0.002s loop period. Simulated robot: 115 lbs, KrakenX60 motors, 1.2 tire COF.
 - **Logging**: DogLog for structured logging (battery, odometry, module states). Telemetry class publishes swerve state to NetworkTables + SignalLogger. HootAutoReplay for timestamp/joystick replay.
 - **Drive input**: Cubic scaling on joystick axes (`Math.pow(abs, 3) * signum`) for fine control at low speeds.
@@ -279,9 +284,10 @@ Commands follow the standard WPILib command-based pattern. Key patterns:
 
 ## Known TODOs / FIXMEs
 
-- `Constants.Gooba.kPositionDeployed = 3.5` marked `[FIXME] Tune this value!`
-- Gooba shot map only has a single entry `(0.0, 0.0)` - needs distance-to-rotation calibration data
-- Goober software limit switches are commented out (in development)
-- ClimbSubsystem brake mode is commented out
-- `isHubOpenForUs()` in RobotContainer reads game-specific message for turn-based scoring (2026 game mechanic)
-- Driver controller has operator-intended bindings still present for testing (per code comment)
+- Gooba shot map (distance m → hood rotations) currently holds PLACEHOLDER values — MUST be recalibrated on the field after the Limelight remount before auto-aim is trusted
+- Verify the turret aim sign after the Limelight remount: if the turret runs away from the target, flip the sign in `GooberAlign` (`-limelight.getTX()`)
+- Re-measure `Constants.Limelight.kMountAngleDegrees` and `kLensHeightMeters` on the new camera mount — `distanceToTarget()` is wrong until then
+- `Constants.Shooter.kFastTargetRPM = 7000` is clamped to `kMaxRPM = 3100` at runtime — raise `kMaxRPM` when the flywheel is trusted at higher speeds
+- `Constants.GroundIntake.kSupplyCurrentLimit = 40` is NOT what the subsystem applies (hardcoded 60A supply / 80A stator after breaker-trip testing — see git history before changing)
+- X56 HOTAS axis/button indices in `Constants.Hotas` need on-hardware verification (docs/X56-HOTAS-SETUP.md)
+- Climb soft limits (1 to 150 rotations) mean the climb cannot run down until it has first risen above 1 rotation after boot

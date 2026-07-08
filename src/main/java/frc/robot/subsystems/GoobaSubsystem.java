@@ -8,13 +8,17 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 
+/**
+ * Gooba = the shooter hood/arc. Kraken X44 under Motion Magic position control,
+ * with an interpolating shot map from target distance (meters) to hood rotations.
+ */
 public class GoobaSubsystem extends SubsystemBase {
     private final TalonFX m_motor = new TalonFX(Constants.Gooba.kMotorId);
-    
-    // The interpolation map that handles the math between your calibrated points
+
+    // Shot map: distance to target (meters) -> hood rotations
     private final InterpolatingDoubleTreeMap shotMap = new InterpolatingDoubleTreeMap();
-    
-    // Motion Magic Request (Smooth position control)
+
+    // Motion Magic Request (smooth position control)
     private final MotionMagicVoltage m_positionControl = new MotionMagicVoltage(0);
 
     public GoobaSubsystem() {
@@ -24,51 +28,45 @@ public class GoobaSubsystem extends SubsystemBase {
         configs.Slot0.kP = Constants.Gooba.kP;
         configs.Slot0.kI = Constants.Gooba.kI;
         configs.Slot0.kD = Constants.Gooba.kD;
-        
+
         // Motion Magic parameters
         configs.MotionMagic.MotionMagicCruiseVelocity = Constants.Gooba.kCruiseVelocity;
         configs.MotionMagic.MotionMagicAcceleration = Constants.Gooba.kAcceleration;
 
-        // Current Limits (Essential for Kraken X44 safety)
+        // Current Limits (essential for Kraken X44 safety)
         configs.CurrentLimits.SupplyCurrentLimit = Constants.Gooba.kSupplyCurrentLimit;
         configs.CurrentLimits.SupplyCurrentLimitEnable = true;
 
-        // --- FIRMWARE SOFT LIMITS ---
+        // Firmware soft limits: hood travel is 0.0 to 10.7 rotations
         configs.SoftwareLimitSwitch.ReverseSoftLimitThreshold = 0.0;
         configs.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
 
-        configs.SoftwareLimitSwitch.ForwardSoftLimitThreshold = 10.7; 
+        configs.SoftwareLimitSwitch.ForwardSoftLimitThreshold = 10.7;
         configs.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
-        // ----------------------------
 
         m_motor.getConfigurator().apply(configs);
-        
+
         m_motor.setNeutralMode(NeutralModeValue.Brake);
         m_motor.setPosition(0);
 
         // ==========================================
-        // YOUR REAL INTERPOLATION MAP
-        // Format: shotMap.put(Limelight_TX, Hood_Position);
+        // SHOT MAP CALIBRATION DATA
+        // Format: shotMap.put(distance_to_target_meters, hood_position_rotations);
+        //
+        // !!! PLACEHOLDER VALUES !!!
+        // The Limelight was remounted (horizontal + centered), which voids the old
+        // angle-keyed calibration. Recalibrate on the field: park at a known
+        // distance, jog the hood until shots land (D-pad up/down prints the
+        // position to "Gooba Fine-Tune Position"), then record the pair here.
         // ==========================================
-        
-        // --- SAFETY DEFAULT ---
-        // This guarantees the map is never empty so the code doesn't crash
-        // before you finish your calibration!
-        shotMap.put(27.3 ,1.0);
-        shotMap.put(-16.8, 2.36);
-        shotMap.put(-18.3, 3.8);
-        shotMap.put(-23.9, 5.1);
-
-
-
-        // TODO: Add your real data points here once you calibrate them!
-        // shotMap.put(YOUR_TX_1, YOUR_HOOD_POS_1);
-        // shotMap.put(YOUR_TX_2, YOUR_HOOD_POS_2);
-        
+        shotMap.put(1.5, 1.0);
+        shotMap.put(3.0, 2.4);
+        shotMap.put(4.5, 3.8);
+        shotMap.put(6.0, 5.1);
     }
 
+    /** Motion Magic move, kept inside the 0.0 to 10.7 rotation soft limits. */
     public void setPosition(double rotations) {
-        // Safe movement inside the 0.0 to 10.7 soft limits
         m_motor.setControl(m_positionControl.withPosition(rotations));
     }
 
@@ -76,16 +74,11 @@ public class GoobaSubsystem extends SubsystemBase {
         return m_motor.getPosition().getValueAsDouble();
     }
 
-    public double getRotationValueFromTx(double tx) {
-        // Removed the .isEmpty() check. It will now safely pull from the map!
-        return shotMap.get(tx);
-    }
-
-    @Override
-    public void periodic(){
-        //double currentPos = m_motor.getPosition().getValueAsDouble();
-
-        //Helpful for calibration - you can view this in your driver station console or push to SmartDashboard
-      //  System.out.println("GOOBA:" + currentPos);
+    /**
+     * Interpolates the shot map for the hood position matching this distance.
+     * Distances outside the calibrated range clamp to the nearest end point.
+     */
+    public double getRotationForDistance(double distanceMeters) {
+        return shotMap.get(distanceMeters);
     }
 }
