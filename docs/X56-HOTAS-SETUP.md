@@ -19,6 +19,11 @@ The X56 is **two separate USB devices** (stick and throttle). In the Driver Stat
 
 Ports are configured in `Constants.Hotas` (`kStickPort` / `kThrottlePort`).
 
+> **The order matters.** If the X56 stick lands in slot 0 the code will read it as
+> the driver Xbox controller. Check the USB tab every time before you enable: the
+> list locks while the robot is enabled, and F1 re-scans it. An Xbox controller that
+> ends up in slot 2 is ignored on purpose, so it can't take over the drive.
+
 ## Verify the axes and buttons FIRST
 
 HID ordering can differ between firmware versions and OSes. Before driving:
@@ -61,14 +66,29 @@ Global Speed Limit still applies on top of the throttle scale.
 
 | X56 control | Action | Xbox equivalent |
 |-------------|--------|-----------------|
-| Trigger | Ground intake in (hold) | Right Trigger |
-| A (red thumb) | Reverse intake / spit (hold) | Left Trigger |
+| Trigger, A | Unbound — ground intake retired | Right/Left Trigger |
 | B, C | Unbound — free for future mechanisms (were the removed pneumatic pistons) | X, A |
 | D | Toggle tank-drive mode | D-Pad Right |
 | Pinkie lever | Re-zero field-centric heading | Left Bumper |
 | Main hat up/down | Climb motor up/down (hold) | D-Pad Up/Down |
 
 `SmartDashboard -> "HOTAS Connected"` shows whether the stick is detected.
+`"HOTAS Throttle Connected"` shows the throttle; if the throttle is missing the robot
+drives at full (global-limited) speed.
+
+The X56 has no rumble motors. When you drive with it you won't feel the HUB-shift
+rumble, so watch the `HUB OPEN` light on the dashboard (the Xbox driver controller
+still rumbles if it's plugged in).
+
+## First drive with the X56 (safety)
+
+1. Put the robot **on blocks**, or set Shuffleboard **Global Speed Limit** to 25%.
+2. Pull the throttle lever all the way back first. That's the 15% crawl setting.
+3. Enable in teleop and touch nothing. The robot must sit still. If it creeps or
+   spins, disable and check the axis numbers in the USB tab.
+4. Push the stick forward. The robot should drive *away from you* (field-centric).
+   Then twist and check the rotation direction. Then push the throttle lever forward
+   and check that the speed goes up.
 
 ## Adding more bindings
 

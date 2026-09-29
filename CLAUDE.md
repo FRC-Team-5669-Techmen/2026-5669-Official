@@ -57,7 +57,7 @@ src/main/java/frc/robot/
 │   ├── MariosEarCommand        # Multi-phase turret aim (Limelight → USB cams)
 │   ├── ManualGoobaCommand      # D-pad jog gooba position up/down
 │   ├── ManualTurretCommand     # D-pad jog turret left/right
-│   ├── RunGroundIntakeCommand  # Run ground intake roller
+│   ├── RunGroundIntakeCommand  # Run ground intake roller (currently unbound — intake retired)
 │   └── RunClimbMotorCommand    # Run climb motor at given speed
 ├── subsystems/
 │   ├── CommandSwerveDrivetrain # CTRE swerve + PathPlanner AutoBuilder + MapleSim
@@ -68,7 +68,7 @@ src/main/java/frc/robot/
 │   ├── Goober                  # Turret motor, duty cycle rotation
 │   ├── LimelightSubsystem      # Limelight NetworkTables (tx/ty/ta/tv/botpose)
 │   ├── MariosEar               # Multi-camera vision: Limelight + 2 PhotonVision USB cams
-│   ├── GroundIntakeSubsystem   # Kraken X44, ground pickup roller
+│   ├── GroundIntakeSubsystem   # Kraken X44, ground pickup roller (RETIRED, unbound)
 │   └── ClimbSubsystem          # Kraken X60, winch motor with soft limits
 ├── generated/
 │   └── TunerConstants.java     # Tuner X generated swerve config (module IDs, offsets, gains)
@@ -115,9 +115,9 @@ This is a 2026 FRC robot with the following mechanical systems:
 - Rotates turret to aim at targets, brake mode
 - Software limit switches commented out (in development)
 
-### Ground Intake
-- **Kraken X44** TalonFX (CAN 20), 75% speed, coast mode
-- 40A supply current limit
+### Ground Intake (RETIRED — 2026 offseason)
+- **Kraken X44** TalonFX (CAN 20) still mounted and configured (coast), but nothing is bound to it in teleop or auto
+- Revive by re-binding `RunGroundIntakeCommand` in `RobotContainer` and the `runGroundIntake` EventTrigger in `Marcos`
 
 ### Climb
 - **Kraken X60** TalonFX (CAN 21), 20% speed
@@ -167,8 +167,7 @@ Commands follow the standard WPILib command-based pattern. Key patterns:
 | Left Stick | Swerve translation (X/Y) with cubic scaling |
 | Right Stick X | Swerve rotation with cubic scaling |
 | Start (held) | Activates button speed limiter (default 50%) |
-| Right Trigger (held) | Ground intake in |
-| Left Trigger (held) | Ground intake reverse (spit out) |
+| Right/Left Trigger | Unbound (ground intake retired) |
 | X, A | Unbound (used to toggle the removed pneumatic pistons) |
 | Left Bumper | Seed field-centric heading |
 | D-Pad Up/Down (held) | Climb motor up/down |
@@ -231,13 +230,12 @@ rename them without updating the autos in `src/main/deploy/pathplanner/`.
 | `shoot` | FuelHandlingCommand (forward) | 2.0s |
 | `stopShooter` | InstantCommand → shooter.stop() | - |
 | `intake` | FuelHandlingCommand (reverse) | 2.0s |
-| `runGroundIntake` | RunGroundIntakeCommand (also bound as EventTrigger) | none |
 | `deployGooba` | GoobaToggleCommand (deploy) | - |
 | `stowGooba` | GoobaToggleCommand (stow) | - |
 | `autoAimGooba` | AutoGooba (vision-based) | 2.0s |
 | `aimTurret` | MariosEarCommand (multi-cam) | 2.0s |
 | `alignTurret` | GooberAlign (Limelight-only) | 2.0s |
-| `lowerIntake`, `togglePiston1`, `togglePiston2` | No-ops (pneumatics removed; kept so old autos load) | - |
+| `lowerIntake`, `togglePiston1`, `togglePiston2`, `runGroundIntake` | No-ops (pneumatics removed / ground intake retired; kept so old autos load cleanly) | - |
 
 ### Paths & Autos
 - **Autos**: `Center Preload - Dumb`, `Center Preload - Vision`, `Left 3-Piece Auto`, `Right 3-Piece Auto`
@@ -290,4 +288,5 @@ rename them without updating the autos in `src/main/deploy/pathplanner/`.
 - `Constants.Shooter.kFastTargetRPM = 7000` is clamped to `kMaxRPM = 3100` at runtime — raise `kMaxRPM` when the flywheel is trusted at higher speeds
 - `Constants.GroundIntake.kSupplyCurrentLimit = 40` is NOT what the subsystem applies (hardcoded 60A supply / 80A stator after breaker-trip testing — see git history before changing)
 - X56 HOTAS axis/button indices in `Constants.Hotas` need on-hardware verification (docs/X56-HOTAS-SETUP.md)
+- Servo mechanism(s) replacing the pneumatics: not built yet, not coded yet (use WPILib `Servo` on a roboRIO PWM port when ready)
 - Climb soft limits (1 to 150 rotations) mean the climb cannot run down until it has first risen above 1 rotation after boot

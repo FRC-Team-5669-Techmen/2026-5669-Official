@@ -45,7 +45,6 @@ import frc.robot.commands.GooberAlign;
 import frc.robot.commands.ManualGoobaCommand;
 import frc.robot.commands.ManualTurretCommand;
 import frc.robot.commands.RunClimbMotorCommand;
-import frc.robot.commands.RunGroundIntakeCommand;
 import frc.robot.commands.RunShooterCommand;
 
 public class RobotContainer {
@@ -90,6 +89,8 @@ public class RobotContainer {
     public final Goober goober = new Goober();
     public final LimelightSubsystem limelight = new LimelightSubsystem();
     public final MariosEar mariosEar = new MariosEar(limelight);
+    // RETIRED: still mounted (CAN 20) and configured so the motor sits safely in
+    // coast, but nothing is bound to it. Re-bind RunGroundIntakeCommand to revive it.
     public final GroundIntakeSubsystem groundIntake = new GroundIntakeSubsystem();
     public final ClimbSubsystem climb = new ClimbSubsystem();
 
@@ -107,7 +108,7 @@ public class RobotContainer {
         DriverStation.silenceJoystickConnectionWarning(true);
 
         Marcos.registerNamedCommands(
-            shooter, index, shooterIntake, gooba, goober, limelight, mariosEar, groundIntake
+            shooter, index, shooterIntake, gooba, goober, limelight, mariosEar
         );
 
         autoChooser = AutoBuilder.buildAutoChooser("Tests");
@@ -206,13 +207,8 @@ public class RobotContainer {
     private void configureDriverBindings() {
         driverController.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
 
-        // Right Trigger: Normal Intake
-        driverController.rightTrigger().whileTrue(new RunGroundIntakeCommand(groundIntake));
-
-        // Left Trigger: Reverse Intake (Spit out)
-        driverController.leftTrigger().whileTrue(reverseGroundIntakeCommand());
-
-        // X and A are unbound (they used to toggle the removed pneumatic pistons)
+        // Right/Left Trigger are unbound: the ground intake is retired (motor still
+        // mounted but unused). X and A are unbound: the pneumatic pistons were removed.
 
         driverController.povUp().whileTrue(new RunClimbMotorCommand(climb, Constants.Climb.kClimbSpeed));
         driverController.povDown().whileTrue(new RunClimbMotorCommand(climb, -Constants.Climb.kClimbSpeed));
@@ -263,11 +259,8 @@ public class RobotContainer {
     private void configureHotasBindings() {
         Trigger hotasConnected = new Trigger(hotas::isConnected);
 
-        // Trigger finger: ground intake in, thumb (A): spit out
-        hotas.trigger().and(hotasConnected).whileTrue(new RunGroundIntakeCommand(groundIntake));
-        hotas.buttonA().and(hotasConnected).whileTrue(reverseGroundIntakeCommand());
-
-        // B and C are unbound (they used to toggle the removed pneumatic pistons)
+        // Trigger and A are unbound (ground intake retired).
+        // B and C are unbound (pneumatic pistons removed).
 
         // D: tank-drive toggle, Pinkie lever: re-zero field-centric heading
         hotas.buttonD().and(hotasConnected).onTrue(new InstantCommand(this::toggleTankDriveMode));
@@ -296,15 +289,6 @@ public class RobotContainer {
         }, shooter));
 
         drivetrain.registerTelemetry(logger::telemeterize);
-    }
-
-    /** Runs the ground intake backwards to spit fuel out, stopping on release. */
-    private Command reverseGroundIntakeCommand() {
-        return new StartEndCommand(
-            () -> groundIntake.runIntake(Constants.GroundIntake.kReverseSpeed),
-            groundIntake::stop,
-            groundIntake
-        );
     }
 
     private void toggleShooterIdleMode() {

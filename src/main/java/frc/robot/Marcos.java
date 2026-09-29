@@ -1,7 +1,6 @@
 package frc.robot;
 
 import com.pathplanner.lib.auto.NamedCommands;
-import com.pathplanner.lib.events.EventTrigger;
 
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -25,8 +24,7 @@ public class Marcos {
         GoobaSubsystem gooba,
         Goober goober,
         LimelightSubsystem limelight,
-        MariosEar mariosEar,
-        GroundIntakeSubsystem groundIntake
+        MariosEar mariosEar
     ) {
         NamedCommands.registerCommand("spinUpShooter",
             new RunShooterCommand(shooter, Constants.Shooter.kFastTargetRPM)
@@ -68,15 +66,6 @@ public class Marcos {
         NamedCommands.registerCommand("intake",
             new FuelHandlingCommand(index, shooterIntake, shooter, false).withTimeout(2.0)
         );
-
-        // No timeout — runs continuously for the rest of auto when triggered
-        NamedCommands.registerCommand("runGroundIntake",
-            new RunGroundIntakeCommand(groundIntake)
-        );
-
-        // Event markers in .path files use EventTrigger, NOT NamedCommands.
-        // This binds the "runGroundIntake" event marker to actually start the command.
-        new EventTrigger("runGroundIntake").onTrue(new RunGroundIntakeCommand(groundIntake));
 
         // Limelight-tracked score: align turret + auto-aim hood, then shoot.
         // Robot must be stopped before calling this — no shooting while moving.
@@ -122,5 +111,14 @@ public class Marcos {
         NamedCommands.registerCommand("lowerIntake", Commands.none());
         NamedCommands.registerCommand("togglePiston1", Commands.none());
         NamedCommands.registerCommand("togglePiston2", Commands.none());
+
+        // ==========================================
+        // GROUND INTAKE RETIRED (2026 offseason).
+        // The "runGroundIntake" event markers in 5 .path files are trigger-only, so
+        // with no EventTrigger bound they simply do nothing. The named command stays
+        // registered as a no-op so nothing logs a missing-command warning.
+        // To revive: new EventTrigger("runGroundIntake").onTrue(new RunGroundIntakeCommand(groundIntake));
+        // ==========================================
+        NamedCommands.registerCommand("runGroundIntake", Commands.none());
     }
 }

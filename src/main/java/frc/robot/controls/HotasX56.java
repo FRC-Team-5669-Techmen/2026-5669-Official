@@ -31,9 +31,14 @@ public class HotasX56 {
         throttle = new CommandJoystick(throttlePort);
     }
 
-    /** True when the flight stick is plugged in and assigned to its port. */
+    /**
+     * True when the flight stick is plugged in and assigned to its port.
+     * An Xbox controller that lands in the stick's USB slot is ignored, so a
+     * mis-ordered DS USB list can't hijack the drive with the wrong axis map.
+     */
     public boolean isConnected() {
-        return DriverStation.isJoystickConnected(stick.getHID().getPort());
+        int port = stick.getHID().getPort();
+        return DriverStation.isJoystickConnected(port) && !DriverStation.getJoystickIsXbox(port);
     }
 
     /** True when the separate throttle unit is plugged in. */
