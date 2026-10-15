@@ -91,15 +91,15 @@ This is a 2026 FRC robot with the following mechanical systems:
 
 ### Shooter System
 - **Leader** TalonFX (CAN 16) + **Follower** TalonFX (CAN 17), aligned
-- Velocity control (VelocityVoltage) at 5000 RPM (fast) / 2500 RPM (slow) / -1000 RPM (reverse)
-- PID: kP=-0.11
+- Velocity control (VelocityVoltage): fast 7000 RPM requested but clamped to `kMaxRPM` = 3100, slow 2500, idle 1700, reverse -1000
+- PID: kP=0.11, kV=0.12
 
 ### Index / Feeder
-- Single TalonFX (CAN 18), duty cycle at 0.5 speed
+- Single TalonFX (CAN 13), VoltageOut with FOC: +12 V forward, -6 V reverse
 - Feeds fuel from intake to shooter, brake mode
 
 ### Shooter Intake
-- Single TalonFX (CAN 19), duty cycle at 0.6 speed
+- Single TalonFX (CAN 15), DutyCycleOut: forward constant 2.0 (saturates at 100%), reverse -0.6
 - Pulls fuel into the shooter path, brake mode
 
 ### Gooba (Hood/Arc)
@@ -111,9 +111,9 @@ This is a 2026 FRC robot with the following mechanical systems:
 - 40A supply current limit
 
 ### Goober (Turret)
-- TalonFX (CAN 61), duty cycle output with 0.25 speed multiplier
+- TalonFX (CAN 14), duty cycle output with 1.0 speed multiplier
 - Rotates turret to aim at targets, brake mode
-- Software limit switches commented out (in development)
+- Firmware soft limits enabled: -25 to +10 rotations
 
 ### Ground Intake (RETIRED — 2026 offseason)
 - **Kraken X44** TalonFX (CAN 20) still mounted and configured (coast), but nothing is bound to it in teleop or auto
@@ -122,7 +122,7 @@ This is a 2026 FRC robot with the following mechanical systems:
 ### Climb
 - **Kraken X60** TalonFX (CAN 21), 20% speed
 - 1:100 gearbox with ratchet mechanism
-- Soft limits: +/- 1000 rotations
+- Soft limits: 1 to 150 rotations
 - 60A supply current limit
 
 ### Vision
@@ -257,15 +257,20 @@ rename them without updating the autos in `src/main/deploy/pathplanner/`.
 | 10 | CANcoder (Front Left) | Swerve |
 | 11 | CANcoder (Back Left) | Swerve |
 | 12 | CANcoder (Back Right) | Swerve |
+| 13 | TalonFX (Index) | Index |
+| 14 | TalonFX (Goober/Turret) | Turret |
+| 15 | TalonFX (Shooter Intake) | Shooter Intake |
 | 16 | TalonFX (Shooter Leader) | Shooter |
 | 17 | TalonFX (Shooter Follower) | Shooter |
-| 18 | TalonFX (Index) | Index |
-| 19 | TalonFX (Shooter Intake) | Shooter Intake |
 | 20 | TalonFX (Ground Intake) | Ground Intake |
 | 21 | TalonFX (Climb) | Climb |
 | 41 | Pigeon2 IMU | Swerve |
 | 51 | TalonFX (Gooba/Hood) | Gooba |
-| 61 | TalonFX (Goober/Turret) | Turret |
+
+All devices are on the roboRIO's built-in CAN bus (`TunerConstants.kCANBus` is `""`). This table is
+checked against `Constants.java` and `TunerConstants.java`, which are the source of truth.
+**Free IDs for new devices:** 18, 19, 22-40, 42-50, 52+. New CTRE devices ship as ID 0, so set the
+ID in Phoenix Tuner X before writing code.
 
 ## Patterns & Conventions
 
