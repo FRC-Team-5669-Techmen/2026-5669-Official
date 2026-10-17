@@ -27,11 +27,9 @@ import frc.robot.controls.HotasX56;
 import frc.robot.generated.TunerConstants;
 
 // Subsystems
-import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
-import frc.robot.subsystems.GoobaSubsystem;
 import frc.robot.subsystems.Goober;
-import frc.robot.subsystems.GroundIntakeSubsystem;
+import frc.robot.subsystems.GroundIntakePivotSubsystem;
 import frc.robot.subsystems.IndexSubsystem;
 import frc.robot.subsystems.LimelightSubsystem;
 import frc.robot.subsystems.MariosEar;
@@ -39,12 +37,9 @@ import frc.robot.subsystems.ShooterIntakeSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 
 // Commands
-import frc.robot.commands.AutoGooba;
 import frc.robot.commands.FeedShooterCommand;
 import frc.robot.commands.GooberAlign;
-import frc.robot.commands.ManualGoobaCommand;
 import frc.robot.commands.ManualTurretCommand;
-import frc.robot.commands.RunClimbMotorCommand;
 import frc.robot.commands.RunShooterCommand;
 
 public class RobotContainer {
@@ -85,14 +80,15 @@ public class RobotContainer {
     public final ShooterSubsystem shooter = new ShooterSubsystem();
     public final IndexSubsystem index = new IndexSubsystem();
     public final ShooterIntakeSubsystem shooterIntake = new ShooterIntakeSubsystem();
-    public final GoobaSubsystem gooba = new GoobaSubsystem();
-    public final Goober goober = new Goober();
+    public final Goober goober = new Goober(); // turret, CAN 14 ("AngleShooter")
     public final LimelightSubsystem limelight = new LimelightSubsystem();
     public final MariosEar mariosEar = new MariosEar(limelight);
-    // RETIRED: still mounted (CAN 20) and configured so the motor sits safely in
-    // coast, but nothing is bound to it. Re-bind RunGroundIntakeCommand to revive it.
-    public final GroundIntakeSubsystem groundIntake = new GroundIntakeSubsystem();
-    public final ClimbSubsystem climb = new ClimbSubsystem();
+    public final GroundIntakePivotSubsystem groundIntakePivot = new GroundIntakePivotSubsystem();
+
+    // Not created on purpose (Oct 2026 rewire):
+    //   - Hood (GoobaSubsystem): no hood motor on the robot anymore.
+    //   - Climb and the old ground intake roller: their CAN IDs (21, 20) now belong
+    //     to the intake pivot motors, so that code was removed.
 
     public final DriverDashboard driverDashboard = new DriverDashboard();
 
@@ -108,7 +104,7 @@ public class RobotContainer {
         DriverStation.silenceJoystickConnectionWarning(true);
 
         Marcos.registerNamedCommands(
-            shooter, index, shooterIntake, gooba, goober, limelight, mariosEar
+            shooter, index, shooterIntake, goober, limelight, mariosEar
         );
 
         autoChooser = AutoBuilder.buildAutoChooser("Tests");
@@ -207,11 +203,12 @@ public class RobotContainer {
     private void configureDriverBindings() {
         driverController.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
 
-        // Right/Left Trigger are unbound: the ground intake is retired (motor still
-        // mounted but unused). X and A are unbound: the pneumatic pistons were removed.
+        // Right/Left Trigger, X and A are unbound (old ground intake roller and
+        // pneumatics are gone).
 
-        driverController.povUp().whileTrue(new RunClimbMotorCommand(climb, Constants.Climb.kClimbSpeed));
-        driverController.povDown().whileTrue(new RunClimbMotorCommand(climb, -Constants.Climb.kClimbSpeed));
+        // D-pad Up/Down: hold to raise/lower the ground intake, let go to stop
+        driverController.povUp().whileTrue(groundIntakePivot.raiseCommand());
+        driverController.povDown().whileTrue(groundIntakePivot.lowerCommand());
 
         driverController.povLeft().onTrue(new InstantCommand(this::toggleShooterIdleMode));
         driverController.povRight().onTrue(new InstantCommand(this::toggleTankDriveMode));
@@ -231,21 +228,10 @@ public class RobotContainer {
             index
         ));
 
-        // 'Y' toggles the hood between stowed and deployed
-        operatorController.y().onTrue(new InstantCommand(() -> {
-            if (Math.abs(gooba.getPosition()) > 1.0) {
-                gooba.setPosition(Constants.Gooba.kPositionStowed);
-            } else {
-                gooba.setPosition(Constants.Gooba.kPositionDeployed);
-            }
-        }, gooba));
+        // Y and D-pad Up/Down are unbound: they moved the hood, which is gone.
 
-        // Left Bumper: track the hub — turret alignment + auto hood angle together
-        operatorController.leftBumper().whileTrue(
-            new GooberAlign(limelight, goober).alongWith(new AutoGooba(gooba, limelight)));
-
-        operatorController.povUp().whileTrue(new ManualGoobaCommand(gooba, false));  // jog hood toward stow
-        operatorController.povDown().whileTrue(new ManualGoobaCommand(gooba, true)); // jog hood toward deploy
+        // Left Bumper: turret tracks the hub with the Limelight
+        operatorController.leftBumper().whileTrue(new GooberAlign(limelight, goober));
 
         operatorController.povLeft().whileTrue(new ManualTurretCommand(goober, -Constants.Turret.kManualJogSpeed));
         operatorController.povRight().whileTrue(new ManualTurretCommand(goober, Constants.Turret.kManualJogSpeed));
@@ -266,9 +252,7 @@ public class RobotContainer {
         hotas.buttonD().and(hotasConnected).onTrue(new InstantCommand(this::toggleTankDriveMode));
         hotas.pinkie().and(hotasConnected).onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
 
-        // Main hat up/down: climb motor
-        hotas.povUp().and(hotasConnected).whileTrue(new RunClimbMotorCommand(climb, Constants.Climb.kClimbSpeed));
-        hotas.povDown().and(hotasConnected).whileTrue(new RunClimbMotorCommand(climb, -Constants.Climb.kClimbSpeed));
+        // Main hat up/down is unbound (it ran the climb, which was removed).
     }
 
     // ==========================================

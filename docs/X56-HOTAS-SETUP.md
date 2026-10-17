@@ -70,7 +70,7 @@ Global Speed Limit still applies on top of the throttle scale.
 | B, C | Unbound — free for future mechanisms (were the removed pneumatic pistons) | X, A |
 | D | Toggle tank-drive mode | D-Pad Right |
 | Pinkie lever | Re-zero field-centric heading | Left Bumper |
-| Main hat up/down | Climb motor up/down (hold) | D-Pad Up/Down |
+| Main hat up/down | Unbound (climb removed; the Xbox D-pad now raises/lowers the intake) | D-Pad Up/Down |
 
 `SmartDashboard -> "HOTAS Connected"` shows whether the stick is detected.
 `"HOTAS Throttle Connected"` shows the throttle; if the throttle is missing the robot

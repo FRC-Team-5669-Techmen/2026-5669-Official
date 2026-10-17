@@ -9,6 +9,9 @@ import frc.robot.Constants;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 
 /**
+ * RETIRED (Oct 2026): the robot has no hood motor right now, so RobotContainer
+ * does not create this. Kept so the hood and auto-aim code can come back easily.
+ *
  * Gooba = the shooter hood/arc. Kraken X44 under Motion Magic position control,
  * with an interpolating shot map from target distance (meters) to hood rotations.
  */

@@ -1,6 +1,8 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.*;
+
+import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import edu.wpi.first.units.measure.AngularVelocity;
 
 public final class Constants {
@@ -76,21 +78,21 @@ public final class Constants {
     }
 
     public static final class Index {
-        public static final int kMotorId = 13;
+        public static final int kMotorId = 13; // Tuner X name: "Spindex"
         public static final boolean kInverted = false;
         public static final double kForwardSpeed = 12.0; // volts
         public static final double kReverseSpeed = -6.0; // volts
     }
 
     public static final class ShooterIntake {
-        public static final int kMotorId = 15;
+        public static final int kMotorId = 15; // Tuner X name: "UpTakeChannelForShooter"
         public static final boolean kInverted = true;
         public static final double kForwardSpeed = 2.0;
         public static final double kReverseSpeed = -0.6;
     }
 
     public static final class Turret {
-        public static final int kMotorId = 14;
+        public static final int kMotorId = 14; // Tuner X name: "AngleShooter"
         public static final double kSpeedMultiplier = 1.0;
         public static final double kManualJogSpeed = 0.2;
         public static final double kSweepSpeed = 1.0;
@@ -113,6 +115,9 @@ public final class Constants {
         public static final double kLoopPeriod = 0.002;
     }
 
+    // RETIRED (Oct 2026): the robot no longer has a hood motor. The hood code is kept
+    // but never created in RobotContainer. ID 51 is empty on the CAN bus; if a hood
+    // comes back, give it a free ID in Tuner X and update kMotorId.
     public static final class Gooba {
         public static final int kMotorId = 51;
         public static final double kP = 2.4;
@@ -125,19 +130,23 @@ public final class Constants {
         public static final double kPositionDeployed = 3.5;
     }
 
-    public static final class GroundIntake {
-        public static final int kMotorId = 20;
-        public static final boolean kInverted = false;
-        public static final double kIntakeSpeed = 0.75;
-        public static final double kReverseSpeed = -0.75; // spit fuel back out
-        public static final double kSupplyCurrentLimit = 40.0;
-    }
+    /**
+     * Ground intake pivot: two motors that raise and lower the intake together.
+     * Motor 20 is the leader (the one the code talks to); motor 21 copies it.
+     */
+    public static final class GroundIntakePivot {
+        public static final int kLeaderId = 20;   // Tuner X name: "Right Ground Intake Raise"
+        public static final int kFollowerId = 21; // Tuner X name: "Left Ground Intake Raise"
 
-    public static final class Climb {
-        public static final int kMotorId = 21;
-        public static final double kClimbSpeed = 0.20;
-        public static final boolean kMotorInverted = false;
-        public static final double kSupplyCurrentLimit = 60.0;
+        // Intake moves the WRONG way? Flip this. It reverses both motors.
+        public static final boolean kLeaderInverted = false;
+
+        // The two motors are mounted mirrored, so 21 spins opposite to 20.
+        // Motors fight (lots of current, no movement)? Change to Aligned.
+        public static final MotorAlignmentValue kFollowerAlignment = MotorAlignmentValue.Opposed;
+
+        public static final double kMoveVolts = 2.0;            // hold-to-move speed (out of ~12 V)
+        public static final double kStatorCurrentLimit = 40.0;  // amps, each motor
     }
 
     public static final class Limelight {
