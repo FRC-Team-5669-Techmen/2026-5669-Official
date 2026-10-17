@@ -145,8 +145,13 @@ public final class Constants {
         // Motors fight (lots of current, no movement)? Change to Aligned.
         public static final MotorAlignmentValue kFollowerAlignment = MotorAlignmentValue.Opposed;
 
-        public static final double kMoveVolts = 2.0;            // hold-to-move speed (out of ~12 V)
-        public static final double kStatorCurrentLimit = 40.0;  // amps, each motor
+        // Speed: volts sent to the motors while a button is held (battery is ~12 V).
+        // Too slow or can't lift? Raise in 0.25 V steps. Too fast? Lower it.
+        public static final double kMoveVolts = 0.75;
+
+        // Strength: the most current each motor may use. Caps how hard it can push
+        // if it jams or hits the end of travel. Raise only if it can't lift the intake.
+        public static final double kStatorCurrentLimit = 20.0;  // amps, each motor
     }
 
     public static final class Limelight {

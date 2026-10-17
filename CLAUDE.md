@@ -119,7 +119,8 @@ This is a 2026 FRC robot with the following mechanical systems:
 ### Ground Intake Pivot (raise/lower)
 - **Leader**: TalonFX CAN 20 ("Right Ground Intake Raise"). The code only ever commands this one.
 - **Follower**: TalonFX CAN 21 ("Left Ground Intake Raise"), set once at startup to copy the leader with `Follower(20, Opposed)` because the two are mounted mirrored
-- Hold-to-move with `VoltageOut` at 2 V (`kMoveVolts`); release = stop. Brake mode, 40 A stator limit on both motors
+- Hold-to-move with `VoltageOut` at 0.75 V (`kMoveVolts`); release = stop. Brake mode, 20 A stator limit on both motors
+- **FOC is turned off** (`withEnableFOC(false)`): these motors are not Pro-licensed, and an unlicensed Talon FX refuses FOC commands
 - **No position control or soft limits yet**: nothing stops it at the end of travel except releasing the button
 - Wrong direction: flip `kLeaderInverted`. Motors fighting: flip `kFollowerAlignment`. Both live in `Constants.GroundIntakePivot`
 - The old ground intake **roller** code was deleted: its motor is gone and its old ID (20) is now the pivot leader
@@ -172,8 +173,8 @@ Commands follow the standard WPILib command-based pattern. Key patterns:
 | Right/Left Trigger | Unbound (old intake roller removed) |
 | X, A | Unbound (used to toggle the removed pneumatic pistons) |
 | Left Bumper | Seed field-centric heading |
-| D-Pad Up (held) | Raise ground intake (2 V) |
-| D-Pad Down (held) | Lower ground intake (2 V) |
+| D-Pad Up (held) | Raise ground intake (0.75 V) |
+| D-Pad Down (held) | Lower ground intake (0.75 V) |
 | D-Pad Left | Toggle shooter idle mode |
 | D-Pad Right | Toggle simulated tank drive |
 
@@ -284,6 +285,7 @@ in Phoenix Tuner X before writing code.
 - **Constants**: All hardware IDs, PID gains, speeds, and positions live in `Constants.java` inner classes. Comments mark values as `//fixed` when confirmed on hardware.
 - **Marcos.java**: Centralized PathPlanner named command registration, separate from RobotContainer. Named commands must be registered before `AutoBuilder.buildAutoChooser()`.
 - **Motor control**: Phoenix 6 API throughout. TalonFX motors use `DutyCycleOut` for simple speed control, `VelocityVoltage` for RPM control (shooter), `MotionMagicVoltage` for smooth position control (retired hood), and `VoltageOut` + `Follower` for the two-motor intake pivot. A follower is set once at startup and must never be sent any other command.
+- **Phoenix Pro licensing / FOC**: Phoenix 6 control requests turn FOC on by default, and FOC is a paid Pro feature. A Talon FX without a Pro license refuses FOC commands and won't move (LED alternates red/green). Check the license badge in Tuner X, and use `.withEnableFOC(false)` for unlicensed motors (the intake pivot does).
 - **Simulation**: MapleSim-backed swerve physics simulation with 0.002s loop period. Simulated robot: 115 lbs, KrakenX60 motors, 1.2 tire COF.
 - **Logging**: DogLog for structured logging (battery, odometry, module states). Telemetry class publishes swerve state to NetworkTables + SignalLogger. HootAutoReplay for timestamp/joystick replay.
 - **Drive input**: Cubic scaling on joystick axes (`Math.pow(abs, 3) * signum`) for fine control at low speeds.
@@ -293,6 +295,7 @@ in Phoenix Tuner X before writing code.
 
 - **Shooter top roller (CAN 18) is not coded**: it won't spin when shooting. Needs a direction and an RPM
 - **Elevator (CAN 19) is not coded**
+- **Check each motor's Pro license badge in Tuner X.** The index (13) asks for FOC explicitly, and the shooter, uptake and turret use the FOC default. Any of them that are unlicensed will refuse to move until switched to `.withEnableFOC(false)`
 - **Intake pivot has no position control or soft limits yet**: record raised/lowered positions from the dashboard ("Intake Pivot Position (rot)") to add them
 - Verify the turret aim sign after the Limelight remount: if the turret runs away from the target, flip the sign in `GooberAlign` (`-limelight.getTX()`)
 - Re-measure `Constants.Limelight.kMountAngleDegrees` and `kLensHeightMeters` on the new camera mount — `distanceToTarget()` is wrong until then

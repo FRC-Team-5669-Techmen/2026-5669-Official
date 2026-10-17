@@ -27,10 +27,13 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
     private final TalonFX leader = new TalonFX(Constants.GroundIntakePivot.kLeaderId);
     private final TalonFX follower = new TalonFX(Constants.GroundIntakePivot.kFollowerId);
 
-    private final VoltageOut voltageRequest = new VoltageOut(0);
+    // FOC must be OFF. CTRE turns on "FOC" by default, but FOC is a paid Phoenix Pro
+    // feature. An unlicensed motor that gets an FOC command refuses to drive (its LED
+    // alternates red/green). That's why motor 20 sat still while 21 copied it.
+    private final VoltageOut voltageRequest = new VoltageOut(0).withEnableFOC(false);
 
     public GroundIntakePivotSubsystem() {
-        // Settings for BOTH motors: brake when stopped, 40 A stator current limit,
+        // Settings for BOTH motors: brake when stopped, the stator current limit,
         // and the direction setting. Giving both motors identical settings means
         // flipping kLeaderInverted can never leave the pair disagreeing.
         TalonFXConfiguration config = new TalonFXConfiguration();
@@ -76,6 +79,10 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
         // move, the motors are fighting: flip kFollowerAlignment.
         SmartDashboard.putNumber("Intake Pivot Leader Amps", leader.getStatorCurrent().getValueAsDouble());
         SmartDashboard.putNumber("Intake Pivot Follower Amps", follower.getStatorCurrent().getValueAsDouble());
+        // Is each motor actually turning? While a D-pad button is held, both should read
+        // about the same size number with OPPOSITE signs (they're mirrored). 0 = not moving.
+        SmartDashboard.putNumber("Intake Pivot Leader Speed (rot/s)", leader.getVelocity().getValueAsDouble());
+        SmartDashboard.putNumber("Intake Pivot Follower Speed (rot/s)", follower.getVelocity().getValueAsDouble());
         // Write down the readings at fully raised and fully lowered, for soft limits later.
         SmartDashboard.putNumber("Intake Pivot Position (rot)", leader.getPosition().getValueAsDouble());
     }
