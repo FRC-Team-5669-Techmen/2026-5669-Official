@@ -146,7 +146,7 @@ public final class Constants {
 
         // In the code, POSITIVE always means UP. If the intake moves the wrong way,
         // flip this (it reverses both motors). Never "fix" direction by changing signs.
-        public static final boolean kLeaderInverted = false;
+        public static final boolean kLeaderInverted = true;  // flipped: both motors ran backwards in testing
 
         // The two motors are mounted mirrored, so 21 spins opposite to 20.
         // Motors fight (lots of current, no movement)? Change to Aligned.
@@ -170,9 +170,9 @@ public final class Constants {
         public static final double kSoftLimitMargin = 0.25;
 
         // ---- Motion Magic speed: how fast the A button moves it (see the speed-up table) ----
-        public static final double kCruiseVelocity = 10.0;  // top speed, rotations per second
-        public static final double kAcceleration = 40.0;    // how fast it reaches top speed (rot/s per second)
-        public static final double kJerk = 400.0;           // how gently it starts/stops accelerating (bigger = sharper)
+        public static final double kCruiseVelocity = 15.0;  // top speed, rotations per second
+        public static final double kAcceleration = 60.0;    // how fast it reaches top speed (rot/s per second)
+        public static final double kJerk = 600.0;           // how gently it starts/stops accelerating (bigger = sharper)
 
         // ---- Holding: how the motors keep it on target ----
         public static final double kP = 3.0;   // push-back strength per rotation of error. Sags = raise, bounces = lower
@@ -180,7 +180,7 @@ public final class Constants {
         public static final double kV = 0.12;  // volts per rot/s, the Kraken's built-in speed constant. Leave it
 
         // Operator D-pad jog speed (volts). The slow speed from the last test.
-        public static final double kJogVolts = 0.75;
+        public static final double kJogVolts = 1.0;
 
         // Strength cap per motor. Limits how hard it can push if it jams or hits an end.
         public static final double kStatorCurrentLimit = 40.0;  // amps, each motor
