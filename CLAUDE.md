@@ -66,7 +66,9 @@ src/main/java/frc/robot/
 │   ├── Goober                  # Turret motor, duty cycle rotation
 │   ├── LimelightSubsystem      # Limelight NetworkTables (tx/ty/ta/tv/botpose)
 │   ├── MariosEar               # Multi-camera vision: Limelight + 2 PhotonVision USB cams
-│   └── GroundIntakePivotSubsystem # 2 TalonFX (20 leader, 21 follower): raise/lower the intake
+│   ├── GroundIntakePivotSubsystem # 2 TalonFX (20 leader, 21 follower): Motion Magic UP/DOWN toggle + jog
+│   ├── ElevatorSubsystem       # Climber, TalonFX 19: hold-to-move up/down
+│   └── IntakeRollerSubsystem   # Ground intake roller PLACEHOLDER (not on CAN yet, disabled by a flag)
 ├── generated/
 │   └── TunerConstants.java     # Tuner X generated swerve config (module IDs, offsets, gains)
 └── sim/
@@ -90,15 +92,15 @@ This is a 2026 FRC robot with the following mechanical systems:
 - **Bottom roller**: TalonFX CAN 16 + CAN 17 (both named "Shooter Bottom" in Tuner X), mounted mirrored.
   The code drives both at the same speed with opposite inversion, which is correct for a mirrored pair.
 - **Top roller**: Kraken X44, CAN 18 ("Shooter Top"). **Not coded yet**, so it does not spin.
-- Velocity control (VelocityVoltage): fast 7000 RPM requested but clamped to `kMaxRPM` = 3100, slow 2500, idle 1700, reverse -1000
+- Velocity control (VelocityVoltage): fast 7000 RPM requested but clamped to `kMaxRPM` = 3100, slow 2500, idle 2000 (Driver D-pad Left), reverse -1000
 - PID: kP=0.11, kV=0.12
 
 ### Index / Feeder
-- Single TalonFX (CAN 13, Tuner X: "Spindex"), VoltageOut with FOC: +12 V forward, -6 V reverse
+- Single TalonFX (CAN 13, Tuner X: "Spindex"), VoltageOut (FOC off, unlicensed): +12 V forward, -6 V reverse
 - Feeds fuel from intake to shooter, brake mode
 
 ### Shooter Intake
-- Single TalonFX (CAN 15, Tuner X: "UpTakeChannelForShooter"), DutyCycleOut: forward constant 2.0 (saturates at 100%), reverse -0.6
+- Single TalonFX (CAN 15, Tuner X: "UpTakeChannelForShooter"), DutyCycleOut (FOC off, unlicensed): forward constant 2.0 (saturates at 100%), reverse -0.6
 - Pulls fuel into the shooter path, brake mode
 
 ### Gooba (Hood/Arc) (RETIRED, Oct 2026)
@@ -112,22 +114,32 @@ This is a 2026 FRC robot with the following mechanical systems:
 - 40A supply current limit
 
 ### Goober (Turret)
-- TalonFX (CAN 14, Tuner X: "AngleShooter"), duty cycle output with 1.0 speed multiplier
+- TalonFX (CAN 14, Tuner X: "AngleShooter"), duty cycle output (FOC off) with 1.0 speed multiplier
 - Rotates turret to aim at targets, brake mode
 - Firmware soft limits enabled: -25 to +10 rotations
 
 ### Ground Intake Pivot (raise/lower)
 - **Leader**: TalonFX CAN 20 ("Right Ground Intake Raise"). The code only ever commands this one.
-- **Follower**: TalonFX CAN 21 ("Left Ground Intake Raise"), set once at startup to copy the leader with `Follower(20, Opposed)` because the two are mounted mirrored
-- Hold-to-move with `VoltageOut` at 0.75 V (`kMoveVolts`); release = stop. Brake mode, 20 A stator limit on both motors
-- **FOC is turned off** (`withEnableFOC(false)`): these motors are not Pro-licensed, and an unlicensed Talon FX refuses FOC commands
-- **No position control or soft limits yet**: nothing stops it at the end of travel except releasing the button
-- Wrong direction: flip `kLeaderInverted`. Motors fighting: flip `kFollowerAlignment`. Both live in `Constants.GroundIntakePivot`
-- The old ground intake **roller** code was deleted: its motor is gone and its old ID (20) is now the pivot leader
+- **Follower**: TalonFX CAN 21 ("Left Ground Intake Raise"), set once at startup to copy the leader with `Follower(20, Opposed)` (mirrored mount). No soft limits on the follower.
+- **Driver A toggles UP/DOWN** with `MotionMagicVoltage` (FOC off). Starts in the UP state; first press = DOWN.
+- **Positive = UP.** At startup the leader's position is zeroed: UP = 0. DOWN (`kDownPosition`) is a measured **negative** number. While it's 0.0, A does nothing and the dashboard says "Intake DOWN position not set". A stops `kDownBackoff` short of DOWN so the motors don't stall into the ground.
+- **Operator D-pad Up/Down** jogs it slowly (`kJogVolts`, VoltageOut, FOC off): used to measure DOWN, then a manual backup.
+- **Soft limits on the leader**: `kSoftLimitMargin` past UP always; past DOWN once DOWN is set.
+- Brake mode, 40 A stator limit on both motors. Speed is set by `kCruiseVelocity` / `kAcceleration` / `kJerk`; holding by `kP` / `kD` / `kV`.
+- **Enabling never moves it**: when the robot disables, the Motion Magic target is cleared, so it sits (brake) until the next A press or jog.
+- Dashboard: "Intake Status", "Intake Position (rot)", "Intake Target (rot)", "Intake Holding Target", both motors' amps and speeds, plus a **"Zero Intake (intake is UP)"** button (works while disabled).
+- Known limit: if the code restarts with the intake DOWN, the zero lands at DOWN and the UP soft limit blocks raising it with the motors. Raise it by hand, then press Zero Intake.
+- Wrong direction: flip `kLeaderInverted`. Motors fighting: flip `kFollowerAlignment`. All in `Constants.GroundIntakePivot`.
 
-### Climb (REMOVED, Oct 2026)
-- The climb motor's old ID (21) now belongs to the intake pivot follower, so the climb code was deleted (it's in git history)
-- An **"Elevator"** motor (CAN 19) is on the robot but **not coded yet**
+### Elevator / Climber (Talon FX 19)
+- Rises, latches on, pulls the robot up. **Hold Driver D-pad Up/Down** to move, release to stop. Positive = UP.
+- `VoltageOut` (FOC off) at `kElevatorVolts` (starts gentle, 1.5 V); direction via `kElevatorInverted`. Brake mode, 40 A stator limit.
+- Position zeroed at startup (it starts fully down). **No soft limits yet**: record top/bottom from "Elevator Position (rot)".
+- The old climb code (motor 21) was deleted; the elevator replaced it.
+
+### Ground Intake Roller (PLACEHOLDER)
+- The roller motor is powered but **not on CAN yet**. `Constants.IntakeRoller.kIntakeRollerEnabled = false` means the TalonFX is never created (no CAN errors) and Driver Right Trigger does nothing.
+- To enable: give it an ID in Tuner X (22 suggested), set `kMotorId`, set the flag true. Then RT spins it at `kRollerVolts` (VoltageOut, FOC off), coast mode, 40 A stator limit.
 
 ### Vision
 - **Limelight**: AprilTag detection, provides tx/ty/ta/tv/botpose via NetworkTables
@@ -142,13 +154,15 @@ This is a 2026 FRC robot with the following mechanical systems:
 |-----------|----------|-------------|-------------|
 | `CommandSwerveDrivetrain` | 8 TalonFX + 4 CANcoder + Pigeon2 | Field/Robot centric | `applyRequest()`, `seedFieldCentric()` |
 | `ShooterSubsystem` | 2 TalonFX (leader/follower) | VelocityVoltage | `runAtRPM(rpm)`, `stop()` |
-| `IndexSubsystem` | 1 TalonFX | DutyCycleOut | `run(speed)`, `stop()` |
-| `ShooterIntakeSubsystem` | 1 TalonFX | DutyCycleOut | `run(speed)`, `stop()` |
+| `IndexSubsystem` | 1 TalonFX | VoltageOut (FOC off) | `run(volts)`, `stop()` |
+| `ShooterIntakeSubsystem` | 1 TalonFX | DutyCycleOut (FOC off) | `run(speed)`, `stop()` |
 | `GoobaSubsystem` (RETIRED, not created) | none | MotionMagicVoltage | `setPosition(rot)`, `getPosition()`, `getRotationForDistance(d)` |
 | `Goober` | 1 TalonFX | DutyCycleOut | `setMotorSpeed(pct)`, `stop()` |
 | `LimelightSubsystem` | Limelight camera | NetworkTables | `getTX()`, `getTY()`, `isValidTarget()`, `distanceToTarget()` |
 | `MariosEar` | 2 PhotonVision + Limelight | PhotonCamera | `limelightHasTarget()`, `getLimelightTX()`, `getLeftResult()`, `getRightResult()` |
-| `GroundIntakePivotSubsystem` | 2 TalonFX (20 leader, 21 follower) | VoltageOut + Follower | `raiseCommand()`, `lowerCommand()`, `setVolts(v)`, `stop()` |
+| `GroundIntakePivotSubsystem` | 2 TalonFX (20 leader, 21 follower) | MotionMagicVoltage + VoltageOut jog + Follower (FOC off) | `toggleCommand()`, `jogUpCommand()`, `jogDownCommand()`, `zeroCommand()`, `stopCommand()` |
+| `ElevatorSubsystem` | 1 TalonFX (19) | VoltageOut (FOC off) | `upCommand()`, `downCommand()`, `setVolts(v)`, `stop()` |
+| `IntakeRollerSubsystem` | 1 TalonFX (not on CAN yet) | VoltageOut (FOC off) | `runCommand()`; does nothing while disabled by flag |
 
 ## Command Architecture
 
@@ -160,45 +174,49 @@ Commands follow the standard WPILib command-based pattern. Key patterns:
 - **`GooberAlign`**: Limelight PID turret alignment on raw tx (camera is centered on the shooter). When no valid target is in view it sweeps the turret between its soft limits hunting for one. Never finishes on its own — bind with whileTrue or a timeout.
 - **`AutoGooba`** (RETIRED with the hood): Continuous auto-aim that maps Limelight distance (m) to hood position via the interpolating shot map, with a moving-average filter on distance.
 - **Instant commands**: `GoobaToggleCommand` (retired) finishes immediately after setting state.
-- **While-held commands**: `ManualTurretCommand` and the intake pivot's `raiseCommand()`/`lowerCommand()` (built with `startEnd`) run while held and stop on release.
+- **While-held commands**: `ManualTurretCommand`, the intake jog, elevator up/down and the roller (built with `startEnd`) run while held and stop on release.
+- **Toggles**: Driver A flips the intake between UP and DOWN (`runOnce`). Operator RB turns `GooberAlign` on/off with `Trigger.toggleOnTrue`.
 
 ## Controller Bindings
 
 ### Driver Controller (Port 0 - Xbox)
-| Input | Action |
-|-------|--------|
-| Left Stick | Swerve translation (X/Y) with cubic scaling |
-| Right Stick X | Swerve rotation with cubic scaling |
-| Start (held) | Activates button speed limiter (default 50%) |
-| Right/Left Trigger | Unbound (old intake roller removed) |
-| X, A | Unbound (used to toggle the removed pneumatic pistons) |
-| Left Bumper | Seed field-centric heading |
-| D-Pad Up (held) | Raise ground intake (0.75 V) |
-| D-Pad Down (held) | Lower ground intake (0.75 V) |
-| D-Pad Left | Toggle shooter idle mode |
-| D-Pad Right | Toggle simulated tank drive |
+This matches the drive team's official map. **LOCKED** = practiced, must stay exactly like this.
+
+| Input | Action | Map |
+|-------|--------|-----|
+| Left Stick | Swerve translate (cubic scaling) | LOCKED |
+| Right Stick | Swerve rotate | LOCKED |
+| Left Bumper | Reset gyro / seed field centric | LOCKED |
+| Right Trigger (hold) | Ground intake roller (does nothing until the roller is on CAN and enabled) | LOCKED |
+| A (press) | Toggle ground intake DOWN / UP (does nothing until `kDownPosition` is set) | LOCKED |
+| X | Reserved, bound to nothing (was the climb piston) | LOCKED |
+| D-Pad Up (hold) | Climb up (elevator 19) | LOCKED |
+| D-Pad Down (hold) | Climb down (elevator 19) | LOCKED |
+| D-Pad Left (press) | Toggle shooter idle at 2000 RPM (press again = off) | LOCKED |
+| Start (hold) | Slow mode (button speed limiter) | LOCKED |
 
 ### Operator Controller (Port 1 - Xbox)
-| Input | Action |
-|-------|--------|
-| Left Trigger (held) | Spin up shooter (fast RPM) |
-| Right Trigger (held) | Feed shooter (index + shooter intake) |
-| B (held) | Rewind index only |
-| Left Bumper (held) | Turret tracks the hub (GooberAlign) |
-| Y, D-Pad Up/Down | Unbound (hood removed) |
-| D-Pad Left/Right (held) | Jog turret left/right |
+| Input | Action | Map |
+|-------|--------|-----|
+| Right Trigger (hold) | Shoot (Spindex + uptake) | LOCKED |
+| Left Trigger (hold) | Shooter windup | LOCKED |
+| Right Bumper (press) | Toggle Limelight auto-aim (turret tracking on/off) | LOCKED |
+| Y | Reserved, bound to nothing (was the "Gooba" hood) | LOCKED |
+| D-Pad Up/Down (hold) | Jog ground intake up/down slowly | OPEN |
+| D-Pad Left/Right (hold) | Manual turret jog | OPEN |
+| B (hold) | Spindex backwards to clear a jam | not on map, kept on purpose |
 
-### HOTAS (Ports 2/3 - Logitech X56, optional)
-Full mapping and setup steps in `docs/X56-HOTAS-SETUP.md`. Stick pitch/roll/twist
-drive the swerve, the right throttle lever is an analog speed governor, and the
-stick buttons mirror the driver Xbox layout. When the stick is unplugged all
-HOTAS bindings are inert and the Xbox controller drives as normal. The main hat is
-unbound now (it ran the climb, which was removed).
+Removed because they weren't on the map: Driver D-pad Right (tank-drive toggle, and tank mode itself) and Operator Left Bumper (aim while held).
+
+### HOTAS (Ports 2/3 - Logitech X56): SWITCHED OFF
+`Constants.Hotas.kEnabled = false`, so only the two Xbox controllers can drive. The code stays in the
+project for practice (set the flag true). Even when on, it can **never** use ports 0 or 1, and it
+ignores an Xbox controller that lands in its slot. See `docs/X56-HOTAS-SETUP.md`.
 
 ### Speed Limiting
 - **Global speed limiter**: Shuffleboard chooser (100%/75%/50%/25%), always active
 - **Button speed limiter**: Shuffleboard chooser (50%/75%/25%/10%), active only while Start is held (Xbox only)
-- **HOTAS throttle**: right throttle lever scales speed 15%-100% on top of the global limiter
+- **HOTAS throttle** (only when HOTAS is switched on): right throttle lever scales speed 15%-100% on top of the global limiter
 
 ### Rumble Feedback (driver controller, TELEOP only)
 - Constant low rumble (0.1) while our HUB is open for scoring (`HubShiftTracker`)
@@ -267,7 +285,7 @@ For swerve it is the module position.
 | 16 | TalonFX | Shooter Bottom | `Constants.Shooter.kLeaderId` |
 | 17 | TalonFX | Shooter Bottom | `Constants.Shooter.kFollowerId` |
 | 18 | TalonFX (Kraken X44) | Shooter Top | **not coded yet** |
-| 19 | TalonFX | Elevator | **not coded yet** |
+| 19 | TalonFX | Elevator | `Constants.Elevator` (climber) |
 | 20 | TalonFX | Right Ground Intake Raise | `Constants.GroundIntakePivot.kLeaderId` |
 | 21 | TalonFX | Left Ground Intake Raise | `Constants.GroundIntakePivot.kFollowerId` |
 | 41 | Pigeon2 | Pigeon 2 | Swerve |
@@ -285,7 +303,7 @@ in Phoenix Tuner X before writing code.
 - **Constants**: All hardware IDs, PID gains, speeds, and positions live in `Constants.java` inner classes. Comments mark values as `//fixed` when confirmed on hardware.
 - **Marcos.java**: Centralized PathPlanner named command registration, separate from RobotContainer. Named commands must be registered before `AutoBuilder.buildAutoChooser()`.
 - **Motor control**: Phoenix 6 API throughout. TalonFX motors use `DutyCycleOut` for simple speed control, `VelocityVoltage` for RPM control (shooter), `MotionMagicVoltage` for smooth position control (retired hood), and `VoltageOut` + `Follower` for the two-motor intake pivot. A follower is set once at startup and must never be sent any other command.
-- **Phoenix Pro licensing / FOC**: Phoenix 6 control requests turn FOC on by default, and FOC is a paid Pro feature. A Talon FX without a Pro license refuses FOC commands and won't move (LED alternates red/green). Check the license badge in Tuner X, and use `.withEnableFOC(false)` for unlicensed motors (the intake pivot does).
+- **Phoenix Pro licensing / FOC**: **only Talon FX 16 and 17 (shooter bottom) have Phoenix Pro.** Phoenix 6 control requests turn FOC on by default, and FOC is a paid Pro feature: an unlicensed Talon FX refuses FOC commands and won't move (LED alternates red/green). **Every control request for any other motor must use `.withEnableFOC(false)`**. All current code does.
 - **Simulation**: MapleSim-backed swerve physics simulation with 0.002s loop period. Simulated robot: 115 lbs, KrakenX60 motors, 1.2 tire COF.
 - **Logging**: DogLog for structured logging (battery, odometry, module states). Telemetry class publishes swerve state to NetworkTables + SignalLogger. HootAutoReplay for timestamp/joystick replay.
 - **Drive input**: Cubic scaling on joystick axes (`Math.pow(abs, 3) * signum`) for fine control at low speeds.
@@ -294,12 +312,12 @@ in Phoenix Tuner X before writing code.
 ## Known TODOs / FIXMEs
 
 - **Shooter top roller (CAN 18) is not coded**: it won't spin when shooting. Needs a direction and an RPM
-- **Elevator (CAN 19) is not coded**
-- **Check each motor's Pro license badge in Tuner X.** The index (13) asks for FOC explicitly, and the shooter, uptake and turret use the FOC default. Any of them that are unlicensed will refuse to move until switched to `.withEnableFOC(false)`
-- **Intake pivot has no position control or soft limits yet**: record raised/lowered positions from the dashboard ("Intake Pivot Position (rot)") to add them
+- **Elevator soft limits**: record top/bottom from "Elevator Position (rot)", then add soft limits. Climbing the full robot may need more than 40 A stator; raise it only after limits are in
+- **Intake DOWN position**: measure with the Operator D-pad jog and set `Constants.GroundIntakePivot.kDownPosition`
+- **Intake roller**: put it on CAN, set `Constants.IntakeRoller.kMotorId`, flip `kIntakeRollerEnabled`
 - Verify the turret aim sign after the Limelight remount: if the turret runs away from the target, flip the sign in `GooberAlign` (`-limelight.getTX()`)
 - Re-measure `Constants.Limelight.kMountAngleDegrees` and `kLensHeightMeters` on the new camera mount — `distanceToTarget()` is wrong until then
 - `Constants.Shooter.kFastTargetRPM = 7000` is clamped to `kMaxRPM = 3100` at runtime — raise `kMaxRPM` when the flywheel is trusted at higher speeds
-- X56 HOTAS axis/button indices in `Constants.Hotas` need on-hardware verification (docs/X56-HOTAS-SETUP.md)
+- X56 HOTAS is switched off; if re-enabled, its axis/button indices need on-hardware verification (docs/X56-HOTAS-SETUP.md)
 - Servo mechanism(s) replacing the pneumatics: not built yet, not coded yet (use WPILib `Servo` on a roboRIO PWM port when ready)
 - Hood retired: the shot map and AutoGooba are unused until a hood comes back

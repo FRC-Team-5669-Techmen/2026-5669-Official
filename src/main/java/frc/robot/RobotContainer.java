@@ -28,9 +28,11 @@ import frc.robot.generated.TunerConstants;
 
 // Subsystems
 import frc.robot.subsystems.CommandSwerveDrivetrain;
+import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.Goober;
 import frc.robot.subsystems.GroundIntakePivotSubsystem;
 import frc.robot.subsystems.IndexSubsystem;
+import frc.robot.subsystems.IntakeRollerSubsystem;
 import frc.robot.subsystems.LimelightSubsystem;
 import frc.robot.subsystems.MariosEar;
 import frc.robot.subsystems.ShooterIntakeSubsystem;
@@ -84,11 +86,10 @@ public class RobotContainer {
     public final LimelightSubsystem limelight = new LimelightSubsystem();
     public final MariosEar mariosEar = new MariosEar(limelight);
     public final GroundIntakePivotSubsystem groundIntakePivot = new GroundIntakePivotSubsystem();
+    public final ElevatorSubsystem elevator = new ElevatorSubsystem();  // climber, CAN 19
+    public final IntakeRollerSubsystem intakeRoller = new IntakeRollerSubsystem(); // placeholder until on CAN
 
-    // Not created on purpose (Oct 2026 rewire):
-    //   - Hood (GoobaSubsystem): no hood motor on the robot anymore.
-    //   - Climb and the old ground intake roller: their CAN IDs (21, 20) now belong
-    //     to the intake pivot motors, so that code was removed.
+    // Not created on purpose: the hood (GoobaSubsystem), since there's no hood motor.
 
     public final DriverDashboard driverDashboard = new DriverDashboard();
 
@@ -96,7 +97,6 @@ public class RobotContainer {
 
     // State Toggles
     private boolean m_isShooterIdle = false;
-    private boolean m_isSimulatedTankDrive = false; // Swerve acts like a traditional tank drive (no strafe)
 
     public RobotContainer() {
         // We intentionally configure more HIDs (Xbox x2 + HOTAS x2) than are usually
@@ -172,16 +172,7 @@ public class RobotContainer {
                 double currentMaxSpeed = maxSpeed * speedMultiplier;
                 double currentMaxAngularRate = maxAngularRate * speedMultiplier;
 
-                // --- TANK DRIVE / NO-STRAFE LOGIC ---
-                if (m_isSimulatedTankDrive) {
-                    // Robot-centric with strafing disabled: stick Y = throttle, rotation = steering
-                    return robotCentricDrive
-                        .withVelocityX(scaledX * currentMaxSpeed)
-                        .withVelocityY(0.0)
-                        .withRotationalRate(scaledRot * currentMaxAngularRate);
-                }
-
-                // --- NORMAL SWERVE DRIVE LOGIC ---
+                // --- SWERVE DRIVE LOGIC ---
                 if ("robot".equals(driveModeChooser.getSelected())) {
                     return robotCentricDrive
                         .withVelocityX(scaledX * currentMaxSpeed)
@@ -200,59 +191,78 @@ public class RobotContainer {
     // ==========================================
     // --- DRIVER CONTROLLER (PORT 0 - XBOX) ---
     // ==========================================
+    // Matches the drive team's official map. LOCKED = practiced, don't change.
+    // (Left Stick = translate, Right Stick = rotate, Start = slow mode are in the
+    // drive command above.)
     private void configureDriverBindings() {
+        // LOCKED Left Bumper: reset gyro / seed field centric
         driverController.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
 
-        // Right/Left Trigger, X and A are unbound (old ground intake roller and
-        // pneumatics are gone).
+        // LOCKED Right Trigger (hold): ground intake roller. Does nothing until the
+        // roller is on CAN and kIntakeRollerEnabled = true.
+        driverController.rightTrigger().whileTrue(intakeRoller.runCommand());
 
-        // D-pad Up/Down: hold to raise/lower the ground intake, let go to stop
-        driverController.povUp().whileTrue(groundIntakePivot.raiseCommand());
-        driverController.povDown().whileTrue(groundIntakePivot.lowerCommand());
+        // LOCKED A (press): toggle ground intake DOWN / UP. Does nothing until
+        // kDownPosition is set.
+        driverController.a().onTrue(groundIntakePivot.toggleCommand());
 
+        // LOCKED X: reserved (was the climb piston). Bind nothing.
+
+        // LOCKED D-pad Up/Down (hold): climb up / down
+        driverController.povUp().whileTrue(elevator.upCommand());
+        driverController.povDown().whileTrue(elevator.downCommand());
+
+        // LOCKED D-pad Left (press): shooter idle at 2000 RPM. Press again to turn it off.
         driverController.povLeft().onTrue(new InstantCommand(this::toggleShooterIdleMode));
-        driverController.povRight().onTrue(new InstantCommand(this::toggleTankDriveMode));
     }
 
     // ==========================================
     // --- OPERATOR CONTROLLER (PORT 1 - XBOX) ---
     // ==========================================
     private void configureOperatorBindings() {
-        operatorController.leftTrigger().whileTrue(new RunShooterCommand(shooter, Constants.Shooter.kFastTargetRPM));
+        // LOCKED Right Trigger (hold): shoot (Spindex + uptake)
         operatorController.rightTrigger().whileTrue(new FeedShooterCommand(index, shooterIntake));
 
-        // 'B' Button independently rewinds the Index Subsystem ONLY
+        // LOCKED Left Trigger (hold): shooter windup
+        operatorController.leftTrigger().whileTrue(new RunShooterCommand(shooter, Constants.Shooter.kFastTargetRPM));
+
+        // LOCKED Right Bumper (press): toggle Limelight auto-aim. First press starts
+        // turret tracking, next press stops it. With no tag in view, the turret sweeps
+        // to look for one. Using the turret jog also stops the auto-aim.
+        operatorController.rightBumper().toggleOnTrue(new GooberAlign(limelight, goober));
+
+        // LOCKED Y: reserved (was the "Gooba" hood). Bind nothing.
+
+        // OPEN D-pad Up/Down (hold): jog the ground intake slowly. Used to measure the
+        // DOWN position, then kept as a manual backup.
+        operatorController.povUp().whileTrue(groundIntakePivot.jogUpCommand());
+        operatorController.povDown().whileTrue(groundIntakePivot.jogDownCommand());
+
+        // OPEN D-pad Left/Right (hold): manual turret jog
+        operatorController.povLeft().whileTrue(new ManualTurretCommand(goober, -Constants.Turret.kManualJogSpeed));
+        operatorController.povRight().whileTrue(new ManualTurretCommand(goober, Constants.Turret.kManualJogSpeed));
+
+        // Not on the map, kept on purpose: B (hold) runs the Spindex backwards to clear a jam
         operatorController.b().whileTrue(new StartEndCommand(
             () -> index.run(Constants.Index.kReverseSpeed),
             index::stop,
             index
         ));
-
-        // Y and D-pad Up/Down are unbound: they moved the hood, which is gone.
-
-        // Left Bumper: turret tracks the hub with the Limelight
-        operatorController.leftBumper().whileTrue(new GooberAlign(limelight, goober));
-
-        operatorController.povLeft().whileTrue(new ManualTurretCommand(goober, -Constants.Turret.kManualJogSpeed));
-        operatorController.povRight().whileTrue(new ManualTurretCommand(goober, Constants.Turret.kManualJogSpeed));
     }
 
     // ==========================================
     // --- HOTAS (PORTS 2 & 3 - X56 STICK + THROTTLE) ---
     // ==========================================
-    // Mirrors the driver Xbox layout so either input device can drive the robot.
-    // Bindings are gated on the stick being plugged in; see docs/X56-HOTAS-SETUP.md.
+    // SWITCHED OFF (Constants.Hotas.kEnabled = false): only the two Xbox controllers
+    // drive. The HOTAS can never use ports 0 or 1. See docs/X56-HOTAS-SETUP.md.
     private void configureHotasBindings() {
+        if (!Constants.Hotas.kEnabled) {
+            return;
+        }
         Trigger hotasConnected = new Trigger(hotas::isConnected);
 
-        // Trigger and A are unbound (ground intake retired).
-        // B and C are unbound (pneumatic pistons removed).
-
-        // D: tank-drive toggle, Pinkie lever: re-zero field-centric heading
-        hotas.buttonD().and(hotasConnected).onTrue(new InstantCommand(this::toggleTankDriveMode));
+        // Pinkie lever: re-zero field-centric heading. All other buttons are unbound.
         hotas.pinkie().and(hotasConnected).onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
-
-        // Main hat up/down is unbound (it ran the climb, which was removed).
     }
 
     // ==========================================
@@ -263,6 +273,13 @@ public class RobotContainer {
         RobotModeTriggers.disabled().whileTrue(
             drivetrain.applyRequest(() -> idle).ignoringDisable(true)
         );
+
+        // When the robot disables, drop the intake's Motion Magic target. Otherwise the
+        // motor would remember it and could move on its own when re-enabled.
+        RobotModeTriggers.disabled().onTrue(groundIntakePivot.stopCommand());
+
+        // Dashboard button for when the code restarts with the intake somewhere other than UP.
+        SmartDashboard.putData("Zero Intake (intake is UP)", groundIntakePivot.zeroCommand());
 
         shooter.setDefaultCommand(new RunCommand(() -> {
             if (m_isShooterIdle) {
@@ -279,12 +296,6 @@ public class RobotContainer {
         m_isShooterIdle = !m_isShooterIdle;
         SmartDashboard.putBoolean("Shooter Idle Active", m_isShooterIdle);
         System.out.println("Shooter Idle State Toggled: " + m_isShooterIdle);
-    }
-
-    private void toggleTankDriveMode() {
-        m_isSimulatedTankDrive = !m_isSimulatedTankDrive;
-        SmartDashboard.putBoolean("Tank Drive Active", m_isSimulatedTankDrive);
-        System.out.println("Tank Drive State Toggled: " + m_isSimulatedTankDrive);
     }
 
     public Command getAutonomousCommand() {

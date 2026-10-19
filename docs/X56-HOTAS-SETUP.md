@@ -1,5 +1,10 @@
 # Logitech G X56 H.O.T.A.S. Setup
 
+> **SWITCHED OFF (Oct 2026).** The drive team competes with two Xbox controllers, so the HOTAS is
+> disabled: `Constants.Hotas.kEnabled = false`. To use it for practice, set it to `true` and redeploy.
+> Even when on, it can never use ports 0 or 1. Only the pinkie lever (reset gyro) is bound; tank
+> mode was removed.
+
 The robot supports the Logitech G X56 flight controller as an alternative driver
 input. The Xbox controllers keep working exactly as before — when the X56 stick is
 unplugged, every HOTAS binding is inert and the drive code falls back to the Xbox
@@ -68,7 +73,7 @@ Global Speed Limit still applies on top of the throttle scale.
 |-------------|--------|-----------------|
 | Trigger, A | Unbound — ground intake retired | Right/Left Trigger |
 | B, C | Unbound — free for future mechanisms (were the removed pneumatic pistons) | X, A |
-| D | Toggle tank-drive mode | D-Pad Right |
+| D | Unbound (tank mode was removed) | — |
 | Pinkie lever | Re-zero field-centric heading | Left Bumper |
 | Main hat up/down | Unbound (climb removed; the Xbox D-pad now raises/lowers the intake) | D-Pad Up/Down |
 

@@ -15,7 +15,8 @@ import frc.robot.Constants;
 /** Goober = the turret. Rotates the shooter toward the hub using duty-cycle output. */
 public class Goober extends SubsystemBase {
     private final TalonFX motor = new TalonFX(Constants.Turret.kMotorId);
-    private final DutyCycleOut request = new DutyCycleOut(0);
+    // FOC off: this motor has no Phoenix Pro license, and an unlicensed motor refuses FOC commands.
+    private final DutyCycleOut request = new DutyCycleOut(0).withEnableFOC(false);
 
     private final PIDController turnPID = new PIDController(
         Constants.Turret.kP, Constants.Turret.kI, Constants.Turret.kD

@@ -22,7 +22,7 @@ public class GoobaSubsystem extends SubsystemBase {
     private final InterpolatingDoubleTreeMap shotMap = new InterpolatingDoubleTreeMap();
 
     // Motion Magic Request (smooth position control)
-    private final MotionMagicVoltage m_positionControl = new MotionMagicVoltage(0);
+    private final MotionMagicVoltage m_positionControl = new MotionMagicVoltage(0).withEnableFOC(false);
 
     public GoobaSubsystem() {
         TalonFXConfiguration configs = new TalonFXConfiguration();

@@ -24,6 +24,10 @@ public final class Constants {
      * Driver Station USB tab before competition. See docs/X56-HOTAS-SETUP.md.
      */
     public static final class Hotas {
+        // SWITCHED OFF: only the two Xbox controllers drive. Set true to use the
+        // X56 for practice. Even when on, it can never use ports 0 or 1.
+        public static final boolean kEnabled = false;
+
         // USB ports (drag the devices to these slots in the DS USB Order tab)
         public static final int kStickPort = 2;
         public static final int kThrottlePort = 3;
@@ -64,7 +68,9 @@ public final class Constants {
         public static final double kReverseRPM = -1000.0;
         public static final double kTestingRPM = 1500.0;
         public static final double kMaxRPM = 3100.0; //7000
-        public static final double kIdleRPM = 1700.0;
+        // Driver D-pad Left idle speed. 2000 RPM = about 33.3 rotations per second
+        // (the shooter code divides by 60 for you).
+        public static final double kIdleRPM = 2000.0;
         public static final double kDecelerateStep = 60.0;
         public static final double kIdleAccelerateStep = 50.0;
         public static final double kP = 0.11;
@@ -138,20 +144,75 @@ public final class Constants {
         public static final int kLeaderId = 20;   // Tuner X name: "Right Ground Intake Raise"
         public static final int kFollowerId = 21; // Tuner X name: "Left Ground Intake Raise"
 
-        // Intake moves the WRONG way? Flip this. It reverses both motors.
+        // In the code, POSITIVE always means UP. If the intake moves the wrong way,
+        // flip this (it reverses both motors). Never "fix" direction by changing signs.
         public static final boolean kLeaderInverted = false;
 
         // The two motors are mounted mirrored, so 21 spins opposite to 20.
         // Motors fight (lots of current, no movement)? Change to Aligned.
         public static final MotorAlignmentValue kFollowerAlignment = MotorAlignmentValue.Opposed;
 
-        // Speed: volts sent to the motors while a button is held (battery is ~12 V).
-        // Too slow or can't lift? Raise in 0.25 V steps. Too fast? Lower it.
-        public static final double kMoveVolts = 0.75;
+        // ---- Positions, in motor rotations ----
+        // At startup the code calls wherever the intake is "UP = 0". Every match starts UP.
+        public static final double kUpPosition = 0.0;
+        // DOWN is below UP, so it's a NEGATIVE number. To measure it: jog down with the
+        // Operator D-pad until the intake JUST touches the ground or hard stop, read
+        // "Intake Position (rot)" on the dashboard, and type that number here.
+        // 0.0 means "not set yet": while it's 0.0, the Driver A button does nothing.
+        public static final double kDownPosition = 0.0;
+        // The A button stops this many rotations SHORT of kDownPosition, so the motors
+        // aren't stalled pushing into the ground.
+        public static final double kDownBackoff = 0.2;
+        // The firmware soft limits sit this far past UP and DOWN.
+        public static final double kSoftLimitMargin = 0.25;
 
-        // Strength: the most current each motor may use. Caps how hard it can push
-        // if it jams or hits the end of travel. Raise only if it can't lift the intake.
-        public static final double kStatorCurrentLimit = 20.0;  // amps, each motor
+        // ---- Motion Magic speed: how fast the A button moves it (see the speed-up table) ----
+        public static final double kCruiseVelocity = 10.0;  // top speed, rotations per second
+        public static final double kAcceleration = 40.0;    // how fast it reaches top speed (rot/s per second)
+        public static final double kJerk = 400.0;           // how gently it starts/stops accelerating (bigger = sharper)
+
+        // ---- Holding: how the motors keep it on target ----
+        public static final double kP = 3.0;   // push-back strength per rotation of error. Sags = raise, bounces = lower
+        public static final double kD = 0.1;   // damping: calms bouncing. Raise a little if it overshoots
+        public static final double kV = 0.12;  // volts per rot/s, the Kraken's built-in speed constant. Leave it
+
+        // Operator D-pad jog speed (volts). The slow speed from the last test.
+        public static final double kJogVolts = 0.75;
+
+        // Strength cap per motor. Limits how hard it can push if it jams or hits an end.
+        public static final double kStatorCurrentLimit = 40.0;  // amps, each motor
+    }
+
+    /**
+     * Climber (an elevator): rises, latches on, then pulls the robot up. Talon FX 19.
+     * Hold Driver D-pad Up/Down to move it, release to stop.
+     */
+    public static final class Elevator {
+        public static final int kMotorId = 19;  // Tuner X name: "Elevator"
+
+        // In the code, positive = UP. If D-pad Up makes it go DOWN, flip this.
+        public static final boolean kElevatorInverted = false;
+
+        // Speed while a D-pad button is held (volts, battery is ~12 V). Starts gentle.
+        // Raise in 0.5 V steps once the direction is confirmed.
+        public static final double kElevatorVolts = 1.5;
+
+        // Strength cap. Probably too low to lift the whole robot; see notes in the PR.
+        public static final double kStatorCurrentLimit = 40.0;  // amps
+    }
+
+    /**
+     * Ground intake ROLLER (the spinning wheels that pick up balls). The motor is
+     * powered but NOT on CAN yet. While kIntakeRollerEnabled is false, the code never
+     * creates the motor (so no CAN errors) and Driver Right Trigger does nothing.
+     * When it's on CAN: set kMotorId to its ID in Tuner X, then set the flag to true.
+     */
+    public static final class IntakeRoller {
+        public static final boolean kIntakeRollerEnabled = false;
+        public static final int kMotorId = 22;  // suggestion: 22 is the first free ID
+        public static final boolean kInverted = false;  // flip if it spins balls OUT instead of in
+        public static final double kRollerVolts = 6.0;  // spin speed while RT is held (volts)
+        public static final double kStatorCurrentLimit = 40.0;  // amps
     }
 
     public static final class Limelight {
