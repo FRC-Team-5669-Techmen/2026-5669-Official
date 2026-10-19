@@ -159,7 +159,10 @@ public final class Constants {
         // Operator D-pad until the intake JUST touches the ground or hard stop, read
         // "Intake Position (rot)" on the dashboard, and type that number here.
         // 0.0 means "not set yet": while it's 0.0, the Driver A button does nothing.
-        public static final double kDownPosition = 0.0;
+        // CURRENT VALUE IS A CAUTIOUS ESTIMATE, NOT MEASURED. From the earlier jog test,
+        // full travel looks like roughly 4 to 7.5 rotations, so -3.5 should stop partway
+        // down rather than drive into the ground. Replace it with the real measured number.
+        public static final double kDownPosition = -3.5;
         // The A button stops this many rotations SHORT of kDownPosition, so the motors
         // aren't stalled pushing into the ground.
         public static final double kDownBackoff = 0.2;
@@ -195,7 +198,7 @@ public final class Constants {
 
         // Speed while a D-pad button is held (volts, battery is ~12 V). Starts gentle.
         // Raise in 0.5 V steps once the direction is confirmed.
-        public static final double kElevatorVolts = 1.5;
+        public static final double kElevatorVolts = 2.0;  // was 1.5 (first test was good)
 
         // Strength cap. Probably too low to lift the whole robot; see notes in the PR.
         public static final double kStatorCurrentLimit = 40.0;  // amps

@@ -133,7 +133,7 @@ This is a 2026 FRC robot with the following mechanical systems:
 
 ### Elevator / Climber (Talon FX 19)
 - Rises, latches on, pulls the robot up. **Hold Driver D-pad Up/Down** to move, release to stop. Positive = UP.
-- `VoltageOut` (FOC off) at `kElevatorVolts` (starts gentle, 1.5 V); direction via `kElevatorInverted`. Brake mode, 40 A stator limit.
+- `VoltageOut` (FOC off) at `kElevatorVolts` (2.0 V after a good first test at 1.5 V); direction via `kElevatorInverted`. Brake mode, 40 A stator limit.
 - Position zeroed at startup (it starts fully down). **No soft limits yet**: record top/bottom from "Elevator Position (rot)".
 - The old climb code (motor 21) was deleted; the elevator replaced it.
 
@@ -313,7 +313,7 @@ in Phoenix Tuner X before writing code.
 
 - **Shooter top roller (CAN 18) is not coded**: it won't spin when shooting. Needs a direction and an RPM
 - **Elevator soft limits**: record top/bottom from "Elevator Position (rot)", then add soft limits. Climbing the full robot may need more than 40 A stator; raise it only after limits are in
-- **Intake DOWN position**: measure with the Operator D-pad jog and set `Constants.GroundIntakePivot.kDownPosition`
+- **Intake DOWN position**: `kDownPosition = -3.5` is a cautious ESTIMATE (stops partway down on purpose). Measure the real value with the Operator D-pad jog and replace it
 - **Intake roller**: put it on CAN, set `Constants.IntakeRoller.kMotorId`, flip `kIntakeRollerEnabled`
 - Verify the turret aim sign after the Limelight remount: if the turret runs away from the target, flip the sign in `GooberAlign` (`-limelight.getTX()`)
 - Re-measure `Constants.Limelight.kMountAngleDegrees` and `kLensHeightMeters` on the new camera mount — `distanceToTarget()` is wrong until then
