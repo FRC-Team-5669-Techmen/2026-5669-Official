@@ -121,9 +121,9 @@ This is a 2026 FRC robot with the following mechanical systems:
 ### Ground Intake Pivot (raise/lower)
 - **Leader**: TalonFX CAN 20 ("Right Ground Intake Raise"). The code only ever commands this one.
 - **Follower**: TalonFX CAN 21 ("Left Ground Intake Raise"), set once at startup to copy the leader with `Follower(20, Opposed)` (mirrored mount). No soft limits on the follower.
-- **Driver A toggles UP/DOWN** with `MotionMagicVoltage` (FOC off). When no target is being held (after startup, a disable or a jog), A decides from the actual position: more than halfway down = go UP, otherwise go DOWN.
+- **Driver A toggles UP/DOWN** with `MotionMagicVoltage` (FOC off). Pure toggle: it remembers the last press and alternates (first press DOWN). Dashboard "Intake Next A Press" shows what the next press will do.
 - **Positive = UP.** UP = 0 comes from the Talon FX starting at 0 when the robot is **powered on** with the intake up. The code does **not** re-zero at startup, so deploying new code keeps the true position. If the zero is ever wrong: power off, push the intake up by hand, power on (or press Zero Intake while it's up). DOWN (`kDownPosition`) is a measured **negative** number. While it's 0.0, A does nothing and the dashboard says "Intake DOWN position not set". A stops `kDownBackoff` short of DOWN so the motors don't stall into the ground.
-- **Operator D-pad Up/Down** jogs it slowly (`kJogVolts`, VoltageOut, FOC off): used to measure DOWN, then a manual backup.
+- **Operator D-pad Up/Down** jogs it slowly (`kJogVolts`, VoltageOut, FOC off). The jog is a manual override: it **ignores the soft limits** while held (they come back on release), so it can always recover the intake if the zero is off.
 - **Soft limits on the leader**: `kSoftLimitMargin` past UP always; past DOWN once DOWN is set.
 - Brake mode, 40 A stator limit on both motors. Speed is set by `kCruiseVelocity` / `kAcceleration` / `kJerk`; holding by `kP` / `kD` / `kV`.
 - **Enabling never moves it**: when the robot disables, the Motion Magic target is cleared, so it sits (brake) until the next A press or jog.

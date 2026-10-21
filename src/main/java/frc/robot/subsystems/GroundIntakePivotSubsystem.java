@@ -1,5 +1,6 @@
 package frc.robot.subsystems;
 
+import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
@@ -37,6 +38,10 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
     private boolean isHolding = false; // true while Motion Magic is holding a target
     private double targetPosition = GroundIntakePivot.kUpPosition;
 
+    // Soft limits ON for the A button, OFF only while the Operator D-pad jog is held.
+    private final SoftwareLimitSwitchConfigs softLimitsOn;
+    private final SoftwareLimitSwitchConfigs softLimitsOff = new SoftwareLimitSwitchConfigs(); // all off
+
     public GroundIntakePivotSubsystem() {
         // Follower gets the shared settings only. No soft limits on the follower: its own
         // position counts the opposite way (it's mirrored), so they'd stop it at the wrong time.
@@ -64,6 +69,7 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
             leaderConfig.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
         }
         leader.getConfigurator().apply(leaderConfig);
+        softLimitsOn = leaderConfig.SoftwareLimitSwitch;
 
         // NO zeroing here on purpose. A Talon FX starts counting from 0 when the robot is
         // POWERED ON, and every match starts with the intake UP, so power-on gives UP = 0.
@@ -101,11 +107,7 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
         if (!isDownPositionValid()) {
             return; // the dashboard "Intake Status" says why
         }
-        if (!isHolding) {
-            // After a code restart, a disable, or a jog there's no target to flip, so go by
-            // where the intake actually is: more than halfway down counts as DOWN.
-            isDown = leader.getPosition().getValueAsDouble() < downTarget() / 2.0;
-        }
+        // Simple toggle: remember the last press and go the other way this time.
         isDown = !isDown;
         goTo(isDown ? downTarget() : GroundIntakePivot.kUpPosition);
     }
@@ -145,12 +147,26 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
 
     /** Operator D-pad Up: hold to jog up slowly, release to stop. */
     public Command jogUpCommand() {
-        return startEnd(() -> jog(GroundIntakePivot.kJogVolts), this::stop);
+        return startEnd(() -> startJog(GroundIntakePivot.kJogVolts), this::endJog);
     }
 
     /** Operator D-pad Down: hold to jog down slowly, release to stop. */
     public Command jogDownCommand() {
-        return startEnd(() -> jog(-GroundIntakePivot.kJogVolts), this::stop);
+        return startEnd(() -> startJog(-GroundIntakePivot.kJogVolts), this::endJog);
+    }
+
+    /**
+     * The jog is the manual override: it ignores the soft limits so it can ALWAYS bring
+     * the intake back, even if the position numbers are off. It's slow, and letting go stops it.
+     */
+    private void startJog(double volts) {
+        leader.getConfigurator().apply(softLimitsOff);
+        jog(volts);
+    }
+
+    private void endJog() {
+        stop();
+        leader.getConfigurator().apply(softLimitsOn); // soft limits back on for the A button
     }
 
     /** Runs when the robot disables, so re-enabling can never move the intake by itself. */
@@ -176,6 +192,7 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         SmartDashboard.putString("Intake Status", status());
+        SmartDashboard.putString("Intake Next A Press", isDown ? "goes UP" : "goes DOWN");
         SmartDashboard.putNumber("Intake Position (rot)", leader.getPosition().getValueAsDouble());
         // Left side (follower). It may count the opposite way, so compare the SIZE with
         // "Intake Position": if the right says -4.3 and the left says 3.8, the left is
