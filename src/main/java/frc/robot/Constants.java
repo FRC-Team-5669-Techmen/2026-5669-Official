@@ -170,9 +170,9 @@ public final class Constants {
         public static final double kSoftLimitMargin = 0.25;
 
         // ---- Motion Magic speed: how fast the A button moves it (see the speed-up table) ----
-        public static final double kCruiseVelocity = 20.0;  // top speed, rotations per second
-        public static final double kAcceleration = 90.0;    // how fast it reaches top speed (rot/s per second)
-        public static final double kJerk = 900.0;           // how gently it starts/stops accelerating (bigger = sharper)
+        public static final double kCruiseVelocity = 25.0;  // top speed, rotations per second
+        public static final double kAcceleration = 130.0;   // how fast it reaches top speed (rot/s per second)
+        public static final double kJerk = 1300.0;          // how gently it starts/stops accelerating (bigger = sharper)
 
         // ---- Holding: how the motors keep it on target ----
         public static final double kP = 3.0;   // push-back strength per rotation of error. Sags = raise, bounces = lower

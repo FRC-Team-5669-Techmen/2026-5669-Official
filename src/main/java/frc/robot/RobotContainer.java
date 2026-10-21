@@ -321,6 +321,10 @@ public class RobotContainer {
             shooter.getCurrentRpm());
 
         SmartDashboard.putBoolean("HUB OPEN", isHubOpen);
+        // Which Xbox controller is which: slot 0 = DRIVER, slot 1 = OPERATOR in the
+        // Driver Station USB tab. Driver A / Right Trigger / D-pad only work from slot 0.
+        SmartDashboard.putBoolean("Driver Controller (slot 0)", DriverStation.isJoystickConnected(0));
+        SmartDashboard.putBoolean("Operator Controller (slot 1)", DriverStation.isJoystickConnected(1));
         SmartDashboard.putBoolean("HOTAS Connected", hotas.isConnected());
         SmartDashboard.putBoolean("HOTAS Throttle Connected", hotas.isThrottleConnected());
     }

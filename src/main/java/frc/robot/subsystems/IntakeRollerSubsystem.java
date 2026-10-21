@@ -61,5 +61,10 @@ public class IntakeRollerSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         SmartDashboard.putBoolean("Intake Roller Enabled", motor != null);
+        if (motor != null) {
+            // While Right Trigger is held, speed should be well above 0.
+            SmartDashboard.putNumber("Intake Roller Speed (rot/s)", motor.getVelocity().getValueAsDouble());
+            SmartDashboard.putNumber("Intake Roller Amps", motor.getStatorCurrent().getValueAsDouble());
+        }
     }
 }

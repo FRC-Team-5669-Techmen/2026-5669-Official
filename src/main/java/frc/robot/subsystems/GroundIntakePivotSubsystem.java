@@ -65,10 +65,10 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
         }
         leader.getConfigurator().apply(leaderConfig);
 
-        // Every match starts with the intake UP: call this spot UP = 0. The follower is
-        // zeroed too, only so the dashboard can show how far the left side lags.
-        leader.setPosition(GroundIntakePivot.kUpPosition);
-        follower.setPosition(0);
+        // NO zeroing here on purpose. A Talon FX starts counting from 0 when the robot is
+        // POWERED ON, and every match starts with the intake UP, so power-on gives UP = 0.
+        // Deploying new code does NOT power-cycle the motors, so they keep the true position.
+        // (Zeroing here used to make every deploy re-zero wherever the intake happened to be.)
 
         // Tell motor 21 to copy motor 20. Opposed = spin the opposite way (mirrored mount).
         follower.setControl(new Follower(GroundIntakePivot.kLeaderId, GroundIntakePivot.kFollowerAlignment));
@@ -100,6 +100,11 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
     public void toggleUpDown() {
         if (!isDownPositionValid()) {
             return; // the dashboard "Intake Status" says why
+        }
+        if (!isHolding) {
+            // After a code restart, a disable, or a jog there's no target to flip, so go by
+            // where the intake actually is: more than halfway down counts as DOWN.
+            isDown = leader.getPosition().getValueAsDouble() < downTarget() / 2.0;
         }
         isDown = !isDown;
         goTo(isDown ? downTarget() : GroundIntakePivot.kUpPosition);
