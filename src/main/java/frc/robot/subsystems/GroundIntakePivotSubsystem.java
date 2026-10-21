@@ -65,8 +65,10 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
         }
         leader.getConfigurator().apply(leaderConfig);
 
-        // Every match starts with the intake UP: call this spot UP = 0.
+        // Every match starts with the intake UP: call this spot UP = 0. The follower is
+        // zeroed too, only so the dashboard can show how far the left side lags.
         leader.setPosition(GroundIntakePivot.kUpPosition);
+        follower.setPosition(0);
 
         // Tell motor 21 to copy motor 20. Opposed = spin the opposite way (mirrored mount).
         follower.setControl(new Follower(GroundIntakePivot.kLeaderId, GroundIntakePivot.kFollowerAlignment));
@@ -126,6 +128,7 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
     public void zeroAtUp() {
         stop();
         leader.setPosition(GroundIntakePivot.kUpPosition);
+        follower.setPosition(0);
         isDown = false;
         targetPosition = GroundIntakePivot.kUpPosition;
     }
@@ -169,6 +172,10 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
     public void periodic() {
         SmartDashboard.putString("Intake Status", status());
         SmartDashboard.putNumber("Intake Position (rot)", leader.getPosition().getValueAsDouble());
+        // Left side (follower). It may count the opposite way, so compare the SIZE with
+        // "Intake Position": if the right says -4.3 and the left says 3.8, the left is
+        // about 0.5 rotations behind.
+        SmartDashboard.putNumber("Intake Left Side Position (rot)", follower.getPosition().getValueAsDouble());
         SmartDashboard.putNumber("Intake Target (rot)", targetPosition);
         SmartDashboard.putBoolean("Intake Holding Target", isHolding);
         // If both amps climb high but it doesn't move, the motors are fighting: flip kFollowerAlignment.

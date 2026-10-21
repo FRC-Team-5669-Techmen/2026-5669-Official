@@ -159,10 +159,10 @@ public final class Constants {
         // Operator D-pad until the intake JUST touches the ground or hard stop, read
         // "Intake Position (rot)" on the dashboard, and type that number here.
         // 0.0 means "not set yet": while it's 0.0, the Driver A button does nothing.
-        // CURRENT VALUE IS A CAUTIOUS ESTIMATE, NOT MEASURED. From the earlier jog test,
-        // full travel looks like roughly 4 to 7.5 rotations, so -3.5 should stop partway
-        // down rather than drive into the ground. Replace it with the real measured number.
-        public static final double kDownPosition = -3.5;
+        // STILL AN ESTIMATE (was -3.5, which stopped partway). More negative = goes further
+        // down. Raise it in small steps (-4.5 -> -5.0 -> -5.5...) until it reaches the floor.
+        // The DOWN soft limit follows this number automatically (kSoftLimitMargin past it).
+        public static final double kDownPosition = -4.5;
         // The A button stops this many rotations SHORT of kDownPosition, so the motors
         // aren't stalled pushing into the ground.
         public static final double kDownBackoff = 0.2;
@@ -170,9 +170,9 @@ public final class Constants {
         public static final double kSoftLimitMargin = 0.25;
 
         // ---- Motion Magic speed: how fast the A button moves it (see the speed-up table) ----
-        public static final double kCruiseVelocity = 15.0;  // top speed, rotations per second
-        public static final double kAcceleration = 60.0;    // how fast it reaches top speed (rot/s per second)
-        public static final double kJerk = 600.0;           // how gently it starts/stops accelerating (bigger = sharper)
+        public static final double kCruiseVelocity = 20.0;  // top speed, rotations per second
+        public static final double kAcceleration = 90.0;    // how fast it reaches top speed (rot/s per second)
+        public static final double kJerk = 900.0;           // how gently it starts/stops accelerating (bigger = sharper)
 
         // ---- Holding: how the motors keep it on target ----
         public static final double kP = 3.0;   // push-back strength per rotation of error. Sags = raise, bounces = lower
@@ -211,8 +211,8 @@ public final class Constants {
      * When it's on CAN: set kMotorId to its ID in Tuner X, then set the flag to true.
      */
     public static final class IntakeRoller {
-        public static final boolean kIntakeRollerEnabled = false;
-        public static final int kMotorId = 22;  // suggestion: 22 is the first free ID
+        public static final boolean kIntakeRollerEnabled = true;  // on CAN now (Oct 2026)
+        public static final int kMotorId = 22;  // Tuner X name: "Intake motor(22)"
         public static final boolean kInverted = false;  // flip if it spins balls OUT instead of in
         public static final double kRollerVolts = 6.0;  // spin speed while RT is held (volts)
         public static final double kStatorCurrentLimit = 40.0;  // amps

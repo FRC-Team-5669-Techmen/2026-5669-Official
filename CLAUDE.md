@@ -68,7 +68,7 @@ src/main/java/frc/robot/
 │   ├── MariosEar               # Multi-camera vision: Limelight + 2 PhotonVision USB cams
 │   ├── GroundIntakePivotSubsystem # 2 TalonFX (20 leader, 21 follower): Motion Magic UP/DOWN toggle + jog
 │   ├── ElevatorSubsystem       # Climber, TalonFX 19: hold-to-move up/down
-│   └── IntakeRollerSubsystem   # Ground intake roller PLACEHOLDER (not on CAN yet, disabled by a flag)
+│   └── IntakeRollerSubsystem   # Ground intake roller, TalonFX 22: hold Driver RT to spin
 ├── generated/
 │   └── TunerConstants.java     # Tuner X generated swerve config (module IDs, offsets, gains)
 └── sim/
@@ -137,9 +137,9 @@ This is a 2026 FRC robot with the following mechanical systems:
 - Position zeroed at startup (it starts fully down). **No soft limits yet**: record top/bottom from "Elevator Position (rot)".
 - The old climb code (motor 21) was deleted; the elevator replaced it.
 
-### Ground Intake Roller (PLACEHOLDER)
-- The roller motor is powered but **not on CAN yet**. `Constants.IntakeRoller.kIntakeRollerEnabled = false` means the TalonFX is never created (no CAN errors) and Driver Right Trigger does nothing.
-- To enable: give it an ID in Tuner X (22 suggested), set `kMotorId`, set the flag true. Then RT spins it at `kRollerVolts` (VoltageOut, FOC off), coast mode, 40 A stator limit.
+### Ground Intake Roller (Talon FX 22)
+- On CAN as ID 22 ("Intake motor(22)"), Pro-licensed. **Hold Driver Right Trigger** to spin it at `kRollerVolts` (VoltageOut, FOC off), coast mode, 40 A stator limit.
+- Spins balls out instead of in? Flip `Constants.IntakeRoller.kInverted`. `kIntakeRollerEnabled = false` turns it off entirely (motor never created).
 
 ### Vision
 - **Limelight**: AprilTag detection, provides tx/ty/ta/tv/botpose via NetworkTables
@@ -162,7 +162,7 @@ This is a 2026 FRC robot with the following mechanical systems:
 | `MariosEar` | 2 PhotonVision + Limelight | PhotonCamera | `limelightHasTarget()`, `getLimelightTX()`, `getLeftResult()`, `getRightResult()` |
 | `GroundIntakePivotSubsystem` | 2 TalonFX (20 leader, 21 follower) | MotionMagicVoltage + VoltageOut jog + Follower (FOC off) | `toggleCommand()`, `jogUpCommand()`, `jogDownCommand()`, `zeroCommand()`, `stopCommand()` |
 | `ElevatorSubsystem` | 1 TalonFX (19) | VoltageOut (FOC off) | `upCommand()`, `downCommand()`, `setVolts(v)`, `stop()` |
-| `IntakeRollerSubsystem` | 1 TalonFX (not on CAN yet) | VoltageOut (FOC off) | `runCommand()`; does nothing while disabled by flag |
+| `IntakeRollerSubsystem` | 1 TalonFX (22) | VoltageOut (FOC off) | `runCommand()` |
 
 ## Command Architecture
 
@@ -187,7 +187,7 @@ This matches the drive team's official map. **LOCKED** = practiced, must stay ex
 | Left Stick | Swerve translate (cubic scaling) | LOCKED |
 | Right Stick | Swerve rotate | LOCKED |
 | Left Bumper | Reset gyro / seed field centric | LOCKED |
-| Right Trigger (hold) | Ground intake roller (does nothing until the roller is on CAN and enabled) | LOCKED |
+| Right Trigger (hold) | Ground intake roller (Talon FX 22) | LOCKED |
 | A (press) | Toggle ground intake DOWN / UP (does nothing until `kDownPosition` is set) | LOCKED |
 | X | Reserved, bound to nothing (was the climb piston) | LOCKED |
 | D-Pad Up (hold) | Climb up (elevator 19) | LOCKED |
@@ -288,11 +288,12 @@ For swerve it is the module position.
 | 19 | TalonFX | Elevator | `Constants.Elevator` (climber) |
 | 20 | TalonFX | Right Ground Intake Raise | `Constants.GroundIntakePivot.kLeaderId` |
 | 21 | TalonFX | Left Ground Intake Raise | `Constants.GroundIntakePivot.kFollowerId` |
+| 22 | TalonFX (Pro) | Intake motor(22) | `Constants.IntakeRoller` (ground intake roller) |
 | 41 | Pigeon2 | Pigeon 2 | Swerve |
 
 All devices are on the roboRIO's built-in CAN bus (`TunerConstants.kCANBus` is `""`), no CANivore.
 IDs 51 and 61 no longer exist. The retired hood code still says 51 but is never created.
-**Free IDs for new devices:** 22-40, 42-50, 52+. New CTRE devices ship as ID 0, so set the ID
+**Free IDs for new devices:** 23-40, 42-50, 52+. New CTRE devices ship as ID 0, so set the ID
 in Phoenix Tuner X before writing code.
 
 ## Patterns & Conventions
@@ -303,7 +304,7 @@ in Phoenix Tuner X before writing code.
 - **Constants**: All hardware IDs, PID gains, speeds, and positions live in `Constants.java` inner classes. Comments mark values as `//fixed` when confirmed on hardware.
 - **Marcos.java**: Centralized PathPlanner named command registration, separate from RobotContainer. Named commands must be registered before `AutoBuilder.buildAutoChooser()`.
 - **Motor control**: Phoenix 6 API throughout. TalonFX motors use `DutyCycleOut` for simple speed control, `VelocityVoltage` for RPM control (shooter), `MotionMagicVoltage` for smooth position control (retired hood), and `VoltageOut` + `Follower` for the two-motor intake pivot. A follower is set once at startup and must never be sent any other command.
-- **Phoenix Pro licensing / FOC**: **only Talon FX 16 and 17 (shooter bottom) have Phoenix Pro.** Phoenix 6 control requests turn FOC on by default, and FOC is a paid Pro feature: an unlicensed Talon FX refuses FOC commands and won't move (LED alternates red/green). **Every control request for any other motor must use `.withEnableFOC(false)`**. All current code does.
+- **Phoenix Pro licensing / FOC**: **only Talon FX 16, 17 (shooter bottom) and 22 (intake roller) have Phoenix Pro.** Phoenix 6 control requests turn FOC on by default, and FOC is a paid Pro feature: an unlicensed Talon FX refuses FOC commands and won't move (LED alternates red/green). **Every control request for any other motor must use `.withEnableFOC(false)`**. All current code does.
 - **Simulation**: MapleSim-backed swerve physics simulation with 0.002s loop period. Simulated robot: 115 lbs, KrakenX60 motors, 1.2 tire COF.
 - **Logging**: DogLog for structured logging (battery, odometry, module states). Telemetry class publishes swerve state to NetworkTables + SignalLogger. HootAutoReplay for timestamp/joystick replay.
 - **Drive input**: Cubic scaling on joystick axes (`Math.pow(abs, 3) * signum`) for fine control at low speeds.
@@ -313,8 +314,9 @@ in Phoenix Tuner X before writing code.
 
 - **Shooter top roller (CAN 18) is not coded**: it won't spin when shooting. Needs a direction and an RPM
 - **Elevator soft limits**: record top/bottom from "Elevator Position (rot)", then add soft limits. Climbing the full robot may need more than 40 A stator; raise it only after limits are in
-- **Intake DOWN position**: `kDownPosition = -3.5` is a cautious ESTIMATE (stops partway down on purpose). Measure the real value with the Operator D-pad jog and replace it
-- **Intake roller**: put it on CAN, set `Constants.IntakeRoller.kMotorId`, flip `kIntakeRollerEnabled`
+- **Intake DOWN position**: `kDownPosition = -4.5` is still an ESTIMATE. Step it more negative until the intake reaches the floor (the DOWN soft limit follows it)
+- **Intake roller**: confirm spin direction (`kInverted`) and speed (`kRollerVolts`) on the robot
+- **Intake pivot left side lags** behind the right when lowering. The follower copies voltage, not position, so it can't correct itself. Check mechanics first (rubbing, loose shaft collar/sprocket, slipping belt, hitting the bumper/floor first). If the mechanics are clean, the next software step is position control on both motors
 - Verify the turret aim sign after the Limelight remount: if the turret runs away from the target, flip the sign in `GooberAlign` (`-limelight.getTX()`)
 - Re-measure `Constants.Limelight.kMountAngleDegrees` and `kLensHeightMeters` on the new camera mount — `distanceToTarget()` is wrong until then
 - `Constants.Shooter.kFastTargetRPM = 7000` is clamped to `kMaxRPM = 3100` at runtime — raise `kMaxRPM` when the flywheel is trusted at higher speeds
