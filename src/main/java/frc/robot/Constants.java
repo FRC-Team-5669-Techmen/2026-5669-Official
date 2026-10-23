@@ -188,6 +188,9 @@ public final class Constants {
         // until they feel the top hard stop, then call that spot UP = 0. A wrong zero
         // fixes itself on every UP press.
         public static final double kSeatVolts = 1.0;
+        // After finding the top, hold this many rotations BELOW it, so the motors aren't
+        // pressing into the hard stop (that pressing is the light stall/hum at the top).
+        public static final double kUpHoldOffset = 0.1;
         // DOWN: if the motors stall on the floor before reaching DOWN, they stop pushing.
         // Stall = more than kStallAmps while slower than kStallSpeed, for kStallSeconds.
         public static final double kStallAmps = 15.0;

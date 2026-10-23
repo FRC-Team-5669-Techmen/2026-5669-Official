@@ -143,13 +143,18 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
         leader.stopMotor();
     }
 
+    /** Where UP is held: a hair below the top hard stop, so the motors aren't pressing into it. */
+    private static double upHoldTarget() {
+        return GroundIntakePivot.kUpPosition - GroundIntakePivot.kUpHoldOffset;
+    }
+
     /** UP finished: if it really pushed against the top hard stop, call that spot UP = 0. Then hold UP. */
     private void finishUp() {
         if (stalled) {
             leader.setPosition(GroundIntakePivot.kUpPosition);
             follower.setPosition(0);
         }
-        goTo(GroundIntakePivot.kUpPosition);
+        goTo(upHoldTarget());
     }
 
     /** DOWN: move down, then stop pushing once it's there or resting on the floor. */
@@ -164,8 +169,8 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
     /** UP: move up, then push gently until it feels the top hard stop, re-zero there, hold. */
     private Command upMove() {
         return Commands.sequence(
-            runOnce(() -> goTo(GroundIntakePivot.kUpPosition)),
-            Commands.waitUntil(() -> stalled || isNear(GroundIntakePivot.kUpPosition))
+            runOnce(() -> goTo(upHoldTarget())),
+            Commands.waitUntil(() -> stalled || isNear(upHoldTarget()))
                 .withTimeout(GroundIntakePivot.kMoveTimeout),
             runOnce(() -> setVolts(GroundIntakePivot.kSeatVolts)),
             Commands.waitUntil(() -> stalled)
