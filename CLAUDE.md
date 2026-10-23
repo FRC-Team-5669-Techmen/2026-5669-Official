@@ -122,7 +122,7 @@ This is a 2026 FRC robot with the following mechanical systems:
 - **Leader**: TalonFX CAN 20 ("Right Ground Intake Raise"). The code only ever commands this one.
 - **Follower**: TalonFX CAN 21 ("Left Ground Intake Raise"), set once at startup to copy the leader with `Follower(20, Opposed)` (mirrored mount). No soft limits on the follower.
 - **Driver A toggles UP/DOWN** (FOC off). Pure toggle: it remembers the last press and alternates (first press DOWN). The A command is instant and schedules a fresh move, so every press counts even mid-move. Dashboard "Intake Next A Press" shows what the next press will do.
-  - **DOWN**: Motion Magic down; once near the target **or stalled on the floor**, it stops pushing and rests in brake (no humming).
+  - **DOWN**: Motion Magic down; once it has **arrived (close and stopped moving) or stalled on the floor**, it stops pushing and rests in brake (no humming). Waiting for arrival keeps both sides under motor control the whole way; stopping early let the intake free-fall and the sides drifted apart.
   - **UP**: Motion Magic up, then a gentle push (`kSeatVolts`) until it **stalls against the top hard stop**; that spot is re-zeroed as UP = 0 and held. A wrong zero fixes itself on every UP press.
   - "Stall" = more than `kStallAmps` while slower than `kStallSpeed` for `kStallSeconds` (dashboard "Intake Stalled").
 - **Positive = UP.** UP = 0 comes from the Talon FX starting at 0 when the robot is **powered on** with the intake up. The code does **not** re-zero at startup, so deploying new code keeps the true position. If the zero is ever wrong: power off, push the intake up by hand, power on (or press Zero Intake while it's up). DOWN (`kDownPosition`) is a measured **negative** number. While it's 0.0, A does nothing and the dashboard says "Intake DOWN position not set". A stops `kDownBackoff` short of DOWN so the motors don't stall into the ground.
@@ -316,9 +316,9 @@ in Phoenix Tuner X before writing code.
 
 - **Shooter top roller (CAN 18) is not coded**: it won't spin when shooting. Needs a direction and an RPM
 - **Elevator soft limits**: record top/bottom from "Elevator Position (rot)", then add soft limits. Climbing the full robot may need more than 40 A stator; raise it only after limits are in
-- **Intake DOWN position**: `kDownPosition = -4.5` is still an ESTIMATE. Step it more negative until the intake reaches the floor (the DOWN soft limit follows it)
+- **Intake DOWN position**: `kDownPosition = -5.7`, measured Oct 23 (floor: right -5.73, left -5.83). Re-measure if the intake or its gearing changes
 - **Intake roller**: confirm spin direction (`kInverted`) and speed (`kRollerVolts`) on the robot
-- **Intake pivot left side lags** behind the right when lowering. The follower copies voltage, not position, so it can't correct itself. Check mechanics first (rubbing, loose shaft collar/sprocket, slipping belt, hitting the bumper/floor first). If the mechanics are clean, the next software step is position control on both motors
+- **Intake pivot sync**: Oct 23 Elastic data showed the two sides within ~0.03 rot while driven and ~0.1 rot at rest, so they're well coupled; the drift came from an unpowered free-fall after stopping early (fixed). Dual position control isn't needed unless that changes
 - Verify the turret aim sign after the Limelight remount: if the turret runs away from the target, flip the sign in `GooberAlign` (`-limelight.getTX()`)
 - Re-measure `Constants.Limelight.kMountAngleDegrees` and `kLensHeightMeters` on the new camera mount — `distanceToTarget()` is wrong until then
 - `Constants.Shooter.kFastTargetRPM = 7000` is clamped to `kMaxRPM = 3100` at runtime — raise `kMaxRPM` when the flywheel is trusted at higher speeds

@@ -49,6 +49,7 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
     private final Debouncer stallDebouncer =
         new Debouncer(GroundIntakePivot.kStallSeconds, Debouncer.DebounceType.kRising);
     private boolean stalled = false;
+    private double leaderSpeed = 0.0; // rot/s, updated every loop in periodic()
 
     // DOWN soft limit ON normally, everything OFF only while the Operator D-pad jog is held.
     private final SoftwareLimitSwitchConfigs softLimitsOn;
@@ -161,7 +162,11 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
     private Command downMove() {
         return Commands.sequence(
             runOnce(() -> goTo(downTarget())),
-            Commands.waitUntil(() -> stalled || isNear(downTarget()))
+            // Keep driving until it has actually ARRIVED (close AND stopped moving), so the
+            // motors control the whole way down. Stopping early let it free-fall the last
+            // part, and each side fell at its own speed (that was the "out of sync").
+            Commands.waitUntil(() -> stalled
+                    || (isNear(downTarget()) && Math.abs(leaderSpeed) < GroundIntakePivot.kStallSpeed))
                 .withTimeout(GroundIntakePivot.kMoveTimeout),
             runOnce(this::stop)); // rest in brake mode: no pushing, no humming
     }
@@ -246,6 +251,7 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         double speed = leader.getVelocity().getValueAsDouble();
+        leaderSpeed = speed;
         double amps = leader.getStatorCurrent().getValueAsDouble();
         stalled = stallDebouncer.calculate(
             Math.abs(speed) < GroundIntakePivot.kStallSpeed

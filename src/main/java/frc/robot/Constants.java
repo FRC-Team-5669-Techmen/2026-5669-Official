@@ -159,13 +159,13 @@ public final class Constants {
         // Operator D-pad until the intake JUST touches the ground or hard stop, read
         // "Intake Position (rot)" on the dashboard, and type that number here.
         // 0.0 means "not set yet": while it's 0.0, the Driver A button does nothing.
-        // STILL AN ESTIMATE (was -3.5, which stopped partway). More negative = goes further
-        // down. Raise it in small steps (-4.5 -> -5.0 -> -5.5...) until it reaches the floor.
-        // The DOWN soft limit follows this number automatically (kSoftLimitMargin past it).
-        public static final double kDownPosition = -4.5;
+        // MEASURED on the robot (Oct 23, Elastic): resting on the floor, the right side
+        // (motor 20) read -5.73 and the left -5.83. -5.7 = just above the floor.
+        // More negative = further down. The DOWN soft limit follows this number.
+        public static final double kDownPosition = -5.7;
         // The A button stops this many rotations SHORT of kDownPosition, so the motors
         // aren't stalled pushing into the ground.
-        public static final double kDownBackoff = 0.2;
+        public static final double kDownBackoff = 0.1;
         // The DOWN soft limit sits this far past kDownPosition. (No UP soft limit: the top
         // hard stop is the UP reference, see kSeatVolts.)
         public static final double kSoftLimitMargin = 0.25;
