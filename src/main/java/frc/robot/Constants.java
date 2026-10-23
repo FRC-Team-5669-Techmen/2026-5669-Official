@@ -166,8 +166,7 @@ public final class Constants {
         // The A button stops this many rotations SHORT of kDownPosition, so the motors
         // aren't stalled pushing into the ground.
         public static final double kDownBackoff = 0.1;
-        // The DOWN soft limit sits this far past kDownPosition. (No UP soft limit: the top
-        // hard stop is the UP reference, see kSeatVolts.)
+        // The DOWN soft limit sits this far past kDownPosition. (No UP soft limit.)
         public static final double kSoftLimitMargin = 0.25;
 
         // ---- Motion Magic speed: how fast the A button moves it (see the speed-up table) ----
@@ -183,29 +182,19 @@ public final class Constants {
         // Operator D-pad jog speed (volts). The slow speed from the last test.
         public static final double kJogVolts = 1.0;
 
-        // ---- Feeling for the ends ("stall" = pushing hard but not moving) ----
-        // UP: after Motion Magic gets near UP, the motors push up gently at this voltage
-        // until they feel the top hard stop, then call that spot UP = 0. A wrong zero
-        // fixes itself on every UP press.
-        public static final double kSeatVolts = 1.0;
-        // After finding the top, it backs off to this many rotations BELOW it, so the motors
-        // aren't pressing into the hard stop.
-        public static final double kUpHoldOffset = 0.1;
-        // Resting UP: once it's back at UP and has stopped moving, the motors LET GO (brake
-        // mode, silent). Holding it there was the buzz at the top. It lets go once it's
-        // within kUpSettleTolerance of UP. If it ever sags more than kUpSagTolerance below
-        // UP, the motors lift it back, then let go again. Lifting back too often? Raise
-        // kUpSagTolerance a little.
-        public static final double kUpSettleTolerance = 0.2;  // rotations
-        public static final double kUpSagTolerance = 0.4;     // rotations
-        // DOWN: if the motors stall on the floor before reaching DOWN, they stop pushing.
+        // ---- UP: how far below the top the A button stops ----
+        // The A button sends it UP to this many rotations BELOW the top hard stop, so it
+        // never touches the top. Bigger = stops lower. Smaller = closer to the top.
+        public static final double kUpHoldOffset = 0.2;
+
+        // ---- DOWN: feeling the floor ("stall" = pushing hard but not moving) ----
+        // If the motors stall on the floor before reaching DOWN, they stop pushing.
         // Stall = more than kStallAmps while slower than kStallSpeed, for kStallSeconds.
         public static final double kStallAmps = 15.0;
         public static final double kStallSpeed = 0.5;     // rot/s
         public static final double kStallSeconds = 0.2;
         public static final double kAtTargetTolerance = 0.3; // "close enough", in rotations
         public static final double kMoveTimeout = 2.0;       // seconds, safety cap on a move
-        public static final double kSeatTimeout = 3.0;       // seconds, safety cap on the gentle push
 
         // Strength cap per motor. Limits how hard it can push if it jams or hits an end.
         public static final double kStatorCurrentLimit = 40.0;  // amps, each motor

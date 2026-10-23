@@ -25,9 +25,8 @@ import frc.robot.Constants.GroundIntakePivot;
  * <ul>
  *   <li>DOWN: Motion Magic down smoothly. Once it gets there, or the motors feel it
  *       resting on the floor (a "stall"), it stops pushing and rests in brake mode.</li>
- *   <li>UP: Motion Magic up smoothly, then a gentle push until the motors feel the top
- *       hard stop. That spot becomes UP = 0, so a wrong zero fixes itself. Then it backs
- *       off a hair and the motors let go (brake mode, silent). If it sags, they lift it back.</li>
+ *   <li>UP: Motion Magic up smoothly to a little below the top (kUpHoldOffset), and hold
+ *       there. It never touches the top hard stop.</li>
  * </ul>
  * Operator D-pad Up/Down jogs it slowly by hand (manual override).
  *
@@ -70,8 +69,7 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
         leaderConfig.MotionMagic.MotionMagicAcceleration = GroundIntakePivot.kAcceleration;
         leaderConfig.MotionMagic.MotionMagicJerk = GroundIntakePivot.kJerk;
 
-        // No UP soft limit on purpose: the top hard stop is how the code finds UP (see the
-        // UP move below). A soft limit there, measured from a wrong zero, is what blocked
+        // No UP soft limit on purpose: one measured from a wrong zero is what blocked
         // raising before. DOWN soft limit: just past DOWN, once DOWN is set.
         if (isDownPositionValid()) {
             leaderConfig.SoftwareLimitSwitch.ReverseSoftLimitThreshold =
@@ -82,7 +80,8 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
         softLimitsOn = leaderConfig.SoftwareLimitSwitch;
 
         // NO zeroing here on purpose: deploying code must not re-zero wherever the intake
-        // happens to be. The first UP press finds the true top by itself.
+        // happens to be. UP = 0 comes from powering on with the intake up (or the
+        // "Zero Intake" dashboard button).
 
         // Tell motor 21 to copy motor 20. Opposed = spin the opposite way (mirrored mount).
         follower.setControl(new Follower(GroundIntakePivot.kLeaderId, GroundIntakePivot.kFollowerAlignment));
@@ -145,18 +144,9 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
         leader.stopMotor();
     }
 
-    /** Where UP is held: a hair below the top hard stop, so the motors aren't pressing into it. */
+    /** Where UP is held: a little below the top hard stop, so the motors never press into it. */
     private static double upHoldTarget() {
         return GroundIntakePivot.kUpPosition - GroundIntakePivot.kUpHoldOffset;
-    }
-
-    /** UP finished: if it really pushed against the top hard stop, call that spot UP = 0. Then back off to UP. */
-    private void finishUp() {
-        if (stalled) {
-            leader.setPosition(GroundIntakePivot.kUpPosition);
-            follower.setPosition(0);
-        }
-        goTo(upHoldTarget());
     }
 
     /** DOWN: move down, then stop pushing once it's there or resting on the floor. */
@@ -172,35 +162,9 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
             runOnce(this::stop)); // rest in brake mode: no pushing, no humming
     }
 
-    /** UP: move up, push gently until it feels the top hard stop, re-zero there, back off, then rest. */
+    /** UP: Motion Magic to a little below the top (kUpHoldOffset) and hold there. */
     private Command upMove() {
-        return Commands.sequence(
-            runOnce(() -> goTo(upHoldTarget())),
-            Commands.waitUntil(() -> stalled || isNear(upHoldTarget()))
-                .withTimeout(GroundIntakePivot.kMoveTimeout),
-            runOnce(() -> setVolts(GroundIntakePivot.kSeatVolts)),
-            Commands.waitUntil(() -> stalled)
-                .withTimeout(GroundIntakePivot.kSeatTimeout),
-            runOnce(this::finishUp),
-            restUp());
-    }
-
-    /**
-     * Resting UP: once it's back at UP and still, the motors let go (brake mode, no buzz).
-     * Holding it with the motors was the buzz at the top. If it sags past kUpSagTolerance,
-     * lift it back to UP, then let go again. Runs until the next A press, a jog, or disable.
-     */
-    private Command restUp() {
-        return run(() -> {
-            if (isHolding) {
-                if (Math.abs(leaderSpeed) < GroundIntakePivot.kStallSpeed
-                        && position() > upHoldTarget() - GroundIntakePivot.kUpSettleTolerance) {
-                    stop(); // at UP and still: let go
-                }
-            } else if (position() < upHoldTarget() - GroundIntakePivot.kUpSagTolerance) {
-                goTo(upHoldTarget()); // sagged: lift it back
-            }
-        });
+        return runOnce(() -> goTo(upHoldTarget()));
     }
 
     /**
