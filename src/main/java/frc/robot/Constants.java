@@ -188,9 +188,16 @@ public final class Constants {
         // until they feel the top hard stop, then call that spot UP = 0. A wrong zero
         // fixes itself on every UP press.
         public static final double kSeatVolts = 1.0;
-        // After finding the top, hold this many rotations BELOW it, so the motors aren't
-        // pressing into the hard stop (that pressing is the light stall/hum at the top).
+        // After finding the top, it backs off to this many rotations BELOW it, so the motors
+        // aren't pressing into the hard stop.
         public static final double kUpHoldOffset = 0.1;
+        // Resting UP: once it's back at UP and has stopped moving, the motors LET GO (brake
+        // mode, silent). Holding it there was the buzz at the top. It lets go once it's
+        // within kUpSettleTolerance of UP. If it ever sags more than kUpSagTolerance below
+        // UP, the motors lift it back, then let go again. Lifting back too often? Raise
+        // kUpSagTolerance a little.
+        public static final double kUpSettleTolerance = 0.2;  // rotations
+        public static final double kUpSagTolerance = 0.4;     // rotations
         // DOWN: if the motors stall on the floor before reaching DOWN, they stop pushing.
         // Stall = more than kStallAmps while slower than kStallSpeed, for kStallSeconds.
         public static final double kStallAmps = 15.0;

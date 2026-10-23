@@ -26,7 +26,8 @@ import frc.robot.Constants.GroundIntakePivot;
  *   <li>DOWN: Motion Magic down smoothly. Once it gets there, or the motors feel it
  *       resting on the floor (a "stall"), it stops pushing and rests in brake mode.</li>
  *   <li>UP: Motion Magic up smoothly, then a gentle push until the motors feel the top
- *       hard stop. That spot becomes UP = 0, so a wrong zero fixes itself.</li>
+ *       hard stop. That spot becomes UP = 0, so a wrong zero fixes itself. Then it backs
+ *       off a hair and the motors let go (brake mode, silent). If it sags, they lift it back.</li>
  * </ul>
  * Operator D-pad Up/Down jogs it slowly by hand (manual override).
  *
@@ -149,7 +150,7 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
         return GroundIntakePivot.kUpPosition - GroundIntakePivot.kUpHoldOffset;
     }
 
-    /** UP finished: if it really pushed against the top hard stop, call that spot UP = 0. Then hold UP. */
+    /** UP finished: if it really pushed against the top hard stop, call that spot UP = 0. Then back off to UP. */
     private void finishUp() {
         if (stalled) {
             leader.setPosition(GroundIntakePivot.kUpPosition);
@@ -171,7 +172,7 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
             runOnce(this::stop)); // rest in brake mode: no pushing, no humming
     }
 
-    /** UP: move up, then push gently until it feels the top hard stop, re-zero there, hold. */
+    /** UP: move up, push gently until it feels the top hard stop, re-zero there, back off, then rest. */
     private Command upMove() {
         return Commands.sequence(
             runOnce(() -> goTo(upHoldTarget())),
@@ -180,7 +181,26 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
             runOnce(() -> setVolts(GroundIntakePivot.kSeatVolts)),
             Commands.waitUntil(() -> stalled)
                 .withTimeout(GroundIntakePivot.kSeatTimeout),
-            runOnce(this::finishUp));
+            runOnce(this::finishUp),
+            restUp());
+    }
+
+    /**
+     * Resting UP: once it's back at UP and still, the motors let go (brake mode, no buzz).
+     * Holding it with the motors was the buzz at the top. If it sags past kUpSagTolerance,
+     * lift it back to UP, then let go again. Runs until the next A press, a jog, or disable.
+     */
+    private Command restUp() {
+        return run(() -> {
+            if (isHolding) {
+                if (Math.abs(leaderSpeed) < GroundIntakePivot.kStallSpeed
+                        && position() > upHoldTarget() - GroundIntakePivot.kUpSettleTolerance) {
+                    stop(); // at UP and still: let go
+                }
+            } else if (position() < upHoldTarget() - GroundIntakePivot.kUpSagTolerance) {
+                goTo(upHoldTarget()); // sagged: lift it back
+            }
+        });
     }
 
     /**
