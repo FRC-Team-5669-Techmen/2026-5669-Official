@@ -124,7 +124,7 @@ public final class Constants {
         // kEndPosition is only a backup, used when nothing is saved: type the
         // "Turret Far End (rot)" number here too. 0.0 = none: until the far end is set,
         // auto-aim does nothing and NOTHING stops the turret past 270°, so watch the wires.
-        // MEASURED Oct 24 (Elastic): the far end read 32.49. 32.4 = a hair inside it.
+        // Oct 24: the far end first read 32.49; the team then decided on 36.
         public static final double kEndPosition = 36;
         // "Set Turret Far End" refuses to save anything closer to HOME than this (rotations),
         // so pressing it by mistake at HOME can't lock the turret in place.
