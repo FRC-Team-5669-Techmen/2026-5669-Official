@@ -42,7 +42,7 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
     private final MotionMagicVoltage positionRequest = new MotionMagicVoltage(0).withEnableFOC(false);
     private final VoltageOut voltageRequest = new VoltageOut(0).withEnableFOC(false);
 
-    private boolean isDown = false;    // every match starts UP
+    private boolean isDown = false;    // set in the constructor from where the intake really is
     private boolean isHolding = false; // true while Motion Magic is holding a target
     private double targetPosition = GroundIntakePivot.kUpPosition;
 
@@ -83,6 +83,12 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
         // NO zeroing here on purpose: deploying code must not re-zero wherever the intake
         // happens to be. UP = 0 comes from powering on with the intake up (or the
         // "Zero Intake" dashboard button).
+
+        // But DO check where it is right now: below halfway counts as DOWN, so after a code
+        // redeploy with the intake down, the first A press raises it. (This only helps if
+        // the robot stayed powered on. At power-on the motors read 0, which looks like UP.)
+        double startPosition = leader.getPosition().waitForUpdate(0.25).getValueAsDouble();
+        isDown = startPosition < (GroundIntakePivot.kUpPosition + GroundIntakePivot.kDownPosition) / 2;
 
         // Tell motor 21 to copy motor 20. Opposed = spin the opposite way (mirrored mount).
         follower.setControl(new Follower(GroundIntakePivot.kLeaderId, GroundIntakePivot.kFollowerAlignment));
