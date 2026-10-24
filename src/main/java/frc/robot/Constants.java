@@ -153,7 +153,11 @@ public final class Constants {
         public static final MotorAlignmentValue kFollowerAlignment = MotorAlignmentValue.Opposed;
 
         // ---- Positions, in motor rotations ----
-        // At startup the code calls wherever the intake is "UP = 0". Every match starts UP.
+        // The motors call wherever the intake is at POWER-ON "UP = 0". So before every
+        // power-on, push the intake ALL the way up until it touches the top. (Or, with the
+        // robot on, push it up and press "Zero Intake" in Elastic.) If it sagged even a
+        // little, every position is off by that much: Oct 25 it was 0.9 low, so DOWN hit
+        // the floor at full speed and UP stopped too low for the brake to hold it.
         public static final double kUpPosition = 0.0;
         // DOWN is below UP, so it's a NEGATIVE number. To measure it: jog down with the
         // Operator D-pad until the intake JUST touches the ground or hard stop, read
@@ -185,11 +189,17 @@ public final class Constants {
         // ---- UP: how far below the top the A button stops ----
         // The A button sends it UP to this many rotations BELOW the top hard stop, so it
         // never touches the top. Bigger = stops lower. Smaller = closer to the top.
-        // Once it gets there it stops pushing and rests in brake mode, same as DOWN.
+        // It keeps HOLDING it there (a faint hum is normal), so it can't drop mid-match.
         public static final double kUpHoldOffset = 0.5;  // 0.5 = the right UP spot (Oct 24 test)
 
+        // ---- ZERO WRONG warning ----
+        // If DOWN stops more than this many rotations short of the floor, UP = 0 must be
+        // wrong, and "Intake Status" says ZERO WRONG. (A ball under the intake can also
+        // trigger it; the next clean DOWN clears it.)
+        public static final double kZeroWrongTolerance = 0.3;
+
         // ---- Feeling an end ("stall" = pushing hard but not moving) ----
-        // If the motors stall against something (floor or top) during a move, they stop pushing.
+        // If the motors stall against something during DOWN, they stop pushing.
         // Stall = more than kStallAmps while slower than kStallSpeed, for kStallSeconds.
         public static final double kStallAmps = 15.0;
         public static final double kStallSpeed = 0.5;     // rot/s

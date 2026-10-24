@@ -23,15 +23,17 @@ import frc.robot.Constants.GroundIntakePivot;
  *
  * <p>Driver A toggles: first press DOWN, next press UP, and so on.
  * <ul>
- *   <li>DOWN: Motion Magic down smoothly to just above the floor (kDownBackoff).</li>
- *   <li>UP: Motion Magic up smoothly to a little below the top (kUpHoldOffset). It never
- *       touches the top hard stop.</li>
+ *   <li>DOWN: Motion Magic down smoothly to just above the floor (kDownBackoff). Once it
+ *       gets there (or stalls on something), it stops pushing and rests on the floor.</li>
+ *   <li>UP: Motion Magic up smoothly to a little below the top (kUpHoldOffset), and KEEPS
+ *       HOLDING it there so it can't drop mid-match. It never touches the top hard stop.</li>
  * </ul>
- * Both work the same way: once it gets there (or the motors feel it stall against
- * something), it stops pushing and rests in brake mode.
  * Operator D-pad Up/Down jogs it slowly by hand (manual override).
  *
  * <p>Positions are in motor rotations, and POSITIVE = UP. DOWN is a negative number.
+ * The motors count from where the intake was at power-on (no sensor knows the real angle),
+ * so the intake MUST be pushed all the way up before power-on. If it wasn't, the first
+ * DOWN stops short of the floor and "Intake Status" says ZERO WRONG.
  */
 public class GroundIntakePivotSubsystem extends SubsystemBase {
     private final TalonFX leader = new TalonFX(GroundIntakePivot.kLeaderId);
@@ -45,6 +47,8 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
     private boolean isDown = false;    // set in the constructor from where the intake really is
     private boolean isHolding = false; // true while Motion Magic is holding a target
     private double targetPosition = GroundIntakePivot.kUpPosition;
+    // How far short of the floor the last DOWN stopped. Big = UP = 0 is wrong. See downMove().
+    private double zeroError = 0.0;
 
     // "Stalled" = pushing hard but not moving, for a moment. Updated every loop in periodic().
     private final Debouncer stallDebouncer =
@@ -157,20 +161,38 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
     }
 
     /**
-     * One move, used for BOTH DOWN and UP: Motion Magic to the target, then stop pushing
-     * once it has arrived, and rest in brake mode (no pushing, no humming).
+     * DOWN: Motion Magic down, then stop pushing once it has arrived and rest on the floor
+     * in brake mode (gravity keeps it there, no humming).
      */
-    private Command moveTo(double target) {
+    private Command downMove() {
         return Commands.sequence(
-            runOnce(() -> goTo(target)),
+            runOnce(() -> goTo(downTarget())),
             // Keep driving until it has actually ARRIVED (close AND stopped moving), so the
             // motors control the whole way. Stopping early let it free-fall, and each side
             // fell at its own speed (that was the "out of sync"). If it stalls against
-            // something (the floor, the top), it stops right away instead of pushing.
+            // something, it stops right away instead of pushing.
             Commands.waitUntil(() -> stalled
-                    || (isNear(target) && Math.abs(leaderSpeed) < GroundIntakePivot.kStallSpeed))
+                    || (isNear(downTarget()) && Math.abs(leaderSpeed) < GroundIntakePivot.kStallSpeed))
                 .withTimeout(GroundIntakePivot.kMoveTimeout),
-            runOnce(this::stop));
+            runOnce(() -> {
+                // Stopped well short of the floor? Then UP = 0 is wrong (it wasn't all the way
+                // up at power-on), and every position is off by this much. Elastic says so.
+                zeroError = position() - downTarget();
+                stop();
+            }));
+    }
+
+    /**
+     * UP: Motion Magic up to a little below the top, then KEEP HOLDING it there until the
+     * next press, so it can't drop mid-match while the robot moves around. Holding takes a
+     * little power, so a faint hum at UP is normal.
+     */
+    private Command upMove() {
+        return runOnce(() -> goTo(upTarget()));
+    }
+
+    private boolean isZeroWrong() {
+        return zeroError > GroundIntakePivot.kZeroWrongTolerance;
     }
 
     /**
@@ -184,7 +206,7 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
                 return; // the dashboard "Intake Status" says why
             }
             isDown = !isDown; // remember the press, go the other way this time
-            CommandScheduler.getInstance().schedule(moveTo(isDown ? downTarget() : upTarget()));
+            CommandScheduler.getInstance().schedule(isDown ? downMove() : upMove());
         });
     }
 
@@ -225,6 +247,7 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
             follower.setPosition(0);
             isDown = false;
             targetPosition = GroundIntakePivot.kUpPosition;
+            zeroError = 0.0;
         }).ignoringDisable(true).withName("Zero Intake");
     }
 
@@ -234,6 +257,9 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
         }
         if (!isDownPositionValid()) {
             return "Intake DOWN position must be a negative number below UP";
+        }
+        if (isZeroWrong()) {
+            return String.format("ZERO WRONG by %.1f: push intake up, press Zero Intake", zeroError);
         }
         return isDown ? "DOWN" : "UP";
     }
