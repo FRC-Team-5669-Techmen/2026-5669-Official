@@ -137,7 +137,7 @@ This is a 2026 FRC robot with the following mechanical systems:
 ### Elevator / Climber (Talon FX 19)
 - Rises, latches on, pulls the robot up. **Hold Driver D-pad Up/Down** to move, release to stop. Positive = UP.
 - `VoltageOut` (FOC off) at `kElevatorVolts` (2.0 V after a good first test at 1.5 V); direction via `kElevatorInverted`. Brake mode, 40 A stator limit.
-- **Soft limits** (`kTopLimit` / `kBottomLimit`): the motor stops by itself just before the top and bottom, even with the D-pad held, so it never stalls into the ends. **Not measured yet**: while `kTopLimit` is 0.0 the limits are off (dashboard "Elevator Status" says so). Measure from "Elevator Position (rot)": just below the top, just above the bottom.
+- **Soft limits** (`kTopLimit` / `kBottomLimit`): the motor stops by itself at the top and bottom, even with the D-pad held, so it never stalls into the ends. **Measured Oct 24: `kTopLimit` = 125.1, `kBottomLimit` = 0.0, so the limits are ON** (the code turns them on whenever top > bottom). 0.0 is the power-on spot (fully down), so D-pad Down brings it all the way back to where it started; if it ever bangs or stalls at the bottom, use a small positive number instead (like 0.5). Dashboard "Elevator Status" shows OK / At TOP limit / At BOTTOM limit. Re-measure from "Elevator Position (rot)" if the elevator's gearing changes.
 - **0 = power-on position, so power on with the elevator fully DOWN.** The code does **not** re-zero at startup (a redeploy with the elevator up would put the limits in the wrong place). Dashboard buttons: **"Zero Elevator (elevator is DOWN)"** and **"Elevator Limits OFF (recovery)"** (click to turn limits off, click again to turn them back on; for when it was powered on with the elevator up and a limit blocks the D-pad). No stall detection on purpose: during a climb the motor is slow and working hard, which looks like a stall, and cutting power there would drop the robot.
 - The old climb code (motor 21) was deleted; the elevator replaced it.
 
@@ -317,7 +317,7 @@ in Phoenix Tuner X before writing code.
 ## Known TODOs / FIXMEs
 
 - **Shooter top roller (CAN 18) is not coded**: it won't spin when shooting. Needs a direction and an RPM
-- **Elevator soft limits**: code is in, but `kTopLimit` / `kBottomLimit` are still 0.0 (off). Measure them from "Elevator Position (rot)". Climbing the full robot may need more than 40 A stator; raise it only after limits are in
+- **Elevator**: soft limits are measured and on (`kTopLimit` = 125.1, `kBottomLimit` = 0.0, Oct 24). Climbing the full robot may need more than 40 A stator; now that the limits are in, it's OK to raise `kStatorCurrentLimit` in small steps if a real climb stalls
 - **Intake DOWN position**: `kDownPosition = -5.7`, measured Oct 23 (floor: right -5.73, left -5.83). Re-measure if the intake or its gearing changes
 - **Intake roller**: confirm spin direction (`kInverted`) and speed (`kRollerVolts`) on the robot
 - **Intake pivot sync**: Oct 23 Elastic data showed the two sides within ~0.03 rot while driven and ~0.1 rot at rest, so they're well coupled; the drift came from an unpowered free-fall after stopping early (fixed). Dual position control isn't needed unless that changes
