@@ -8,7 +8,7 @@ import frc.robot.subsystems.LimelightSubsystem;
 /**
  * PID-aligns the turret onto the Limelight target. While no valid target is in
  * view, the turret sweeps back and forth across its range hunting for one.
- * Does nothing until the turret's far end (kEndPosition) is measured.
+ * Does nothing until the turret's far end is set ("Set Turret Far End" dashboard button).
  *
  * <p>Never finishes on its own — bind with whileTrue() in teleop or add
  * .withTimeout() in autos (Marcos already does).

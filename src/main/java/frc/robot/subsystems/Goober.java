@@ -1,5 +1,6 @@
 package frc.robot.subsystems;
 
+import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -9,6 +10,8 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.filter.LinearFilter;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -18,8 +21,12 @@ import frc.robot.Constants.Turret;
  * Goober = the turret (Talon FX 14). Turns the shooter, and the Limelight on it, toward the hub.
  *
  * <p>Positive = turning RIGHT = away from HOME. HOME (0) is one end of the ~270° travel and
- * {@link Turret#kEndPosition} is the other. Past either end there's nothing but the wires running
- * up to the turret, so the motor's soft limits stop it at both ends.
+ * the far end is the other. Past either end there's nothing but the wires running up to the
+ * turret, so the motor's soft limits stop it at both ends.
+ *
+ * <p>The far end is set from the dashboard: jog to it, press "Set Turret Far End". It's saved on
+ * the roboRIO (WPILib Preferences), so it survives power-offs and deploys.
+ * {@link Turret#kEndPosition} is only used if nothing is saved.
  */
 public class Goober extends SubsystemBase {
     private final TalonFX motor = new TalonFX(Turret.kMotorId);
@@ -33,6 +40,13 @@ public class Goober extends SubsystemBase {
 
     private String aimStatus = "OFF"; // what auto-aim is doing, for the dashboard
 
+    // Saved on the roboRIO under this name (Elastic shows it under "Preferences").
+    private static final String kEndPreferenceKey = "Turret End Position (rot)";
+    // Far end in motor rotations from HOME. 0 = not set: no far-end limit, auto-aim off.
+    private double endPosition = Preferences.getDouble(kEndPreferenceKey, 0.0) > 0.0
+        ? Preferences.getDouble(kEndPreferenceKey, 0.0)
+        : Turret.kEndPosition;
+
     public Goober() {
         TalonFXConfiguration configs = new TalonFXConfiguration();
         configs.MotorOutput.NeutralMode = NeutralModeValue.Brake;
@@ -42,12 +56,7 @@ public class Goober extends SubsystemBase {
         configs.CurrentLimits.StatorCurrentLimit = Turret.kStatorCurrentLimit;
         configs.CurrentLimits.StatorCurrentLimitEnable = true;
 
-        // HOME end: it can never turn left past HOME.
-        configs.SoftwareLimitSwitch.ReverseSoftLimitThreshold = 0.0;
-        configs.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
-        // Far end: only once kEndPosition is measured.
-        configs.SoftwareLimitSwitch.ForwardSoftLimitThreshold = Turret.kEndPosition;
-        configs.SoftwareLimitSwitch.ForwardSoftLimitEnable = endMeasured();
+        configs.SoftwareLimitSwitch = limitConfigs();
 
         motor.getConfigurator().apply(configs);
         turnPID.setTolerance(Turret.kToleranceDegrees);
@@ -57,14 +66,26 @@ public class Goober extends SubsystemBase {
         // turret on the HOME mark (or the "Zero Turret" dashboard button).
     }
 
-    /** True once the far end (kEndPosition) is measured. Until then auto-aim does nothing. */
+    /** True once the far end is set. Until then auto-aim does nothing. */
     public boolean endMeasured() {
-        return Turret.kEndPosition > 0.0;
+        return endPosition > 0.0;
+    }
+
+    /** Soft limits: HOME side (0) always, far side only once it's set. */
+    private SoftwareLimitSwitchConfigs limitConfigs() {
+        SoftwareLimitSwitchConfigs limits = new SoftwareLimitSwitchConfigs();
+        // HOME end: it can never turn left past HOME.
+        limits.ReverseSoftLimitThreshold = 0.0;
+        limits.ReverseSoftLimitEnable = true;
+        // Far end (kEndDegrees from HOME): it can never turn right past it.
+        limits.ForwardSoftLimitThreshold = endPosition;
+        limits.ForwardSoftLimitEnable = endMeasured();
+        return limits;
     }
 
     /** Motor rotations per degree the turret turns. */
     private double rotationsPerDegree() {
-        return Turret.kEndPosition / Turret.kEndDegrees;
+        return endPosition / Turret.kEndDegrees;
     }
 
     /** Lowest position auto-aim and the search sweep use (kAimMarginDegrees right of HOME). */
@@ -74,7 +95,7 @@ public class Goober extends SubsystemBase {
 
     /** Highest position auto-aim and the search sweep use (kAimMarginDegrees short of the far end). */
     public double aimMaxPosition() {
-        return Turret.kEndPosition - aimMinPosition();
+        return endPosition - aimMinPosition();
     }
 
     /** Percent power, positive = turn RIGHT (away from HOME). */
@@ -123,7 +144,7 @@ public class Goober extends SubsystemBase {
         return motor.getPosition().getValueAsDouble();
     }
 
-    /** Degrees from HOME (0 = HOME, kEndDegrees = far end). Reads 0 until kEndPosition is measured. */
+    /** Degrees from HOME (0 = HOME, kEndDegrees = far end). Reads 0 until the far end is set. */
     public double getAngleDegrees() {
         return endMeasured() ? getPosition() / rotationsPerDegree() : 0.0;
     }
@@ -146,18 +167,48 @@ public class Goober extends SubsystemBase {
         return runOnce(() -> motor.setPosition(0)).ignoringDisable(true).withName("Zero Turret");
     }
 
+    /**
+     * The "Set Turret Far End (turret at far end)" dashboard button: the turret's current spot
+     * becomes the far end (kEndDegrees from HOME), saved on the roboRIO. Works while disabled.
+     */
+    public Command setEndCommand() {
+        return runOnce(() -> {
+            double position = getPosition();
+            if (position < Turret.kMinEndPosition) {
+                DriverStation.reportWarning("Turret far end NOT saved: the turret is at HOME."
+                    + " Jog it Right to the far end first.", false);
+                return;
+            }
+            endPosition = position;
+            Preferences.setDouble(kEndPreferenceKey, position);
+            motor.getConfigurator().apply(limitConfigs());
+        }).ignoringDisable(true).withName("Set Turret Far End");
+    }
+
+    /**
+     * The "Clear Turret Far End" dashboard button: forgets the saved far end (back to
+     * kEndPosition, which is 0.0 = no far-end limit), so it can be measured again.
+     */
+    public Command clearEndCommand() {
+        return runOnce(() -> {
+            Preferences.setDouble(kEndPreferenceKey, 0.0);
+            endPosition = Turret.kEndPosition;
+            motor.getConfigurator().apply(limitConfigs());
+        }).ignoringDisable(true).withName("Clear Turret Far End");
+    }
+
     private String status() {
-        if (Turret.kEndPosition < 0.0) {
+        if (endPosition < 0.0) {
             return "BACKWARDS: flip kMotorInverted, re-measure kEndPosition";
         }
         if (!endMeasured()) {
-            return "Far end not set: jog Right to it, read Turret Position";
+            return "Far end NOT set: NO 270 limit! Jog to it, press Set Turret Far End";
         }
         double position = getPosition();
         if (position <= 0.0) {
             return "At HOME end";
         }
-        if (position >= Turret.kEndPosition) {
+        if (position >= endPosition) {
             return "At FAR end";
         }
         return "OK";
@@ -169,6 +220,7 @@ public class Goober extends SubsystemBase {
         SmartDashboard.putString("Turret Auto-Aim", aimStatus);
         SmartDashboard.putNumber("Turret Position (rot)", getPosition());
         SmartDashboard.putNumber("Turret Angle (deg)", getAngleDegrees());
+        SmartDashboard.putNumber("Turret Far End (rot)", endPosition);
         SmartDashboard.putNumber("Turret Amps", motor.getStatorCurrent().getValueAsDouble());
     }
 }

@@ -228,7 +228,7 @@ public class RobotContainer {
         // LOCKED Right Bumper (press): toggle Limelight auto-aim. First press starts
         // turret tracking, next press stops it. With no tag in view, the turret sweeps
         // to look for one. Using the turret jog also stops the auto-aim. Does nothing
-        // until the turret's far end (kEndPosition) is measured.
+        // until the turret's far end is set ("Set Turret Far End" dashboard button).
         operatorController.rightBumper().toggleOnTrue(new GooberAlign(limelight, goober));
 
         // LOCKED Y: reserved (was the "Gooba" hood). Bind nothing.
@@ -294,6 +294,9 @@ public class RobotContainer {
 
         // Turret: zero button, only for when the turret is sitting exactly on its HOME mark.
         SmartDashboard.putData("Zero Turret (turret at HOME)", goober.zeroCommand());
+        // Turret 270° limit: jog to the far end and press Set. Clear forgets it (to re-measure).
+        SmartDashboard.putData("Set Turret Far End (turret at far end)", goober.setEndCommand());
+        SmartDashboard.putData("Clear Turret Far End", goober.clearEndCommand());
 
         shooter.setDefaultCommand(new RunCommand(() -> {
             if (m_isShooterIdle) {

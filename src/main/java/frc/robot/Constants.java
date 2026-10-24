@@ -117,13 +117,17 @@ public final class Constants {
         public static final boolean kMotorInverted = false;
 
         // ---- Range, in motor rotations from HOME (dashboard "Turret Position (rot)") ----
-        // HOME is 0. The far end is kEndPosition. To measure it: power on at HOME, hold Operator
-        // D-pad Right until the turret is just SHORT of where the wires get tight, read
-        // "Turret Position (rot)", and type that number here. It must be POSITIVE (negative
-        // means kMotorInverted is wrong).
-        // 0.0 = not measured yet: auto-aim does nothing and the D-pad jog has no far-end
-        // limit, so watch the wires while jogging.
+        // HOME is 0. The far end (270° from HOME) is set from the DASHBOARD: power on at HOME,
+        // hold Operator D-pad Right until the turret is just SHORT of where the wires get
+        // tight, press "Set Turret Far End (turret at far end)". It's saved on the roboRIO
+        // and shows as "Turret Far End (rot)".
+        // kEndPosition is only a backup, used when nothing is saved: type the
+        // "Turret Far End (rot)" number here too. 0.0 = none: until the far end is set,
+        // auto-aim does nothing and NOTHING stops the turret past 270°, so watch the wires.
         public static final double kEndPosition = 0.0;
+        // "Set Turret Far End" refuses to save anything closer to HOME than this (rotations),
+        // so pressing it by mistake at HOME can't lock the turret in place.
+        public static final double kMinEndPosition = 1.0;
         // How far kEndPosition is from HOME, in degrees. Turns rotations into degrees.
         public static final double kEndDegrees = 270.0;
         // Auto-aim and the search sweep stay this far inside each end, so they never push on
