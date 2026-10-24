@@ -11,8 +11,9 @@ import frc.robot.Constants;
 public class IndexSubsystem extends SubsystemBase {
     private final TalonFX motor = new TalonFX(Constants.Index.kMotorId);
     
-    // MAXIMUM OVERDRIVE: Request 12V and force FOC for a 15% speed/torque boost (requires Phoenix Pro)
-    private final VoltageOut request = new VoltageOut(0).withEnableFOC(true);
+    // FOC off: this motor has no Phoenix Pro license, and an unlicensed motor refuses
+    // FOC commands. (Only the shooter motors 16 and 17 are licensed.)
+    private final VoltageOut request = new VoltageOut(0).withEnableFOC(false);
 
     public IndexSubsystem() {
         TalonFXConfiguration config = new TalonFXConfiguration();

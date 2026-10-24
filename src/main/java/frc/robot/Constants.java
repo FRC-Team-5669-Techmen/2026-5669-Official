@@ -1,6 +1,8 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.*;
+
+import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import edu.wpi.first.units.measure.AngularVelocity;
 
 public final class Constants {
@@ -22,6 +24,10 @@ public final class Constants {
      * Driver Station USB tab before competition. See docs/X56-HOTAS-SETUP.md.
      */
     public static final class Hotas {
+        // SWITCHED OFF: only the two Xbox controllers drive. Set true to use the
+        // X56 for practice. Even when on, it can never use ports 0 or 1.
+        public static final boolean kEnabled = false;
+
         // USB ports (drag the devices to these slots in the DS USB Order tab)
         public static final int kStickPort = 2;
         public static final int kThrottlePort = 3;
@@ -62,7 +68,9 @@ public final class Constants {
         public static final double kReverseRPM = -1000.0;
         public static final double kTestingRPM = 1500.0;
         public static final double kMaxRPM = 3100.0; //7000
-        public static final double kIdleRPM = 1700.0;
+        // Driver D-pad Left idle speed. 2000 RPM = about 33.3 rotations per second
+        // (the shooter code divides by 60 for you).
+        public static final double kIdleRPM = 2000.0;
         public static final double kDecelerateStep = 60.0;
         public static final double kIdleAccelerateStep = 50.0;
         public static final double kP = 0.11;
@@ -76,21 +84,21 @@ public final class Constants {
     }
 
     public static final class Index {
-        public static final int kMotorId = 13;
+        public static final int kMotorId = 13; // Tuner X name: "Spindex"
         public static final boolean kInverted = false;
         public static final double kForwardSpeed = 12.0; // volts
         public static final double kReverseSpeed = -6.0; // volts
     }
 
     public static final class ShooterIntake {
-        public static final int kMotorId = 15;
+        public static final int kMotorId = 15; // Tuner X name: "UpTakeChannelForShooter"
         public static final boolean kInverted = true;
         public static final double kForwardSpeed = 2.0;
         public static final double kReverseSpeed = -0.6;
     }
 
     public static final class Turret {
-        public static final int kMotorId = 14;
+        public static final int kMotorId = 14; // Tuner X name: "AngleShooter"
         public static final double kSpeedMultiplier = 1.0;
         public static final double kManualJogSpeed = 0.2;
         public static final double kSweepSpeed = 1.0;
@@ -113,6 +121,9 @@ public final class Constants {
         public static final double kLoopPeriod = 0.002;
     }
 
+    // RETIRED (Oct 2026): the robot no longer has a hood motor. The hood code is kept
+    // but never created in RobotContainer. ID 51 is empty on the CAN bus; if a hood
+    // comes back, give it a free ID in Tuner X and update kMotorId.
     public static final class Gooba {
         public static final int kMotorId = 51;
         public static final double kP = 2.4;
@@ -125,19 +136,113 @@ public final class Constants {
         public static final double kPositionDeployed = 3.5;
     }
 
-    public static final class GroundIntake {
-        public static final int kMotorId = 20;
-        public static final boolean kInverted = false;
-        public static final double kIntakeSpeed = 0.75;
-        public static final double kReverseSpeed = -0.75; // spit fuel back out
-        public static final double kSupplyCurrentLimit = 40.0;
+    /**
+     * Ground intake pivot: two motors that raise and lower the intake together.
+     * Motor 20 is the leader (the one the code talks to); motor 21 copies it.
+     */
+    public static final class GroundIntakePivot {
+        public static final int kLeaderId = 20;   // Tuner X name: "Right Ground Intake Raise"
+        public static final int kFollowerId = 21; // Tuner X name: "Left Ground Intake Raise"
+
+        // In the code, POSITIVE always means UP. If the intake moves the wrong way,
+        // flip this (it reverses both motors). Never "fix" direction by changing signs.
+        public static final boolean kLeaderInverted = true;  // flipped: both motors ran backwards in testing
+
+        // The two motors are mounted mirrored, so 21 spins opposite to 20.
+        // Motors fight (lots of current, no movement)? Change to Aligned.
+        public static final MotorAlignmentValue kFollowerAlignment = MotorAlignmentValue.Opposed;
+
+        // ---- Positions, in motor rotations ----
+        // At startup the code calls wherever the intake is "UP = 0". Every match starts UP.
+        public static final double kUpPosition = 0.0;
+        // DOWN is below UP, so it's a NEGATIVE number. To measure it: jog down with the
+        // Operator D-pad until the intake JUST touches the ground or hard stop, read
+        // "Intake Position (rot)" on the dashboard, and type that number here.
+        // 0.0 means "not set yet": while it's 0.0, the Driver A button does nothing.
+        // MEASURED on the robot (Oct 23, Elastic): resting on the floor, the right side
+        // (motor 20) read -5.73 and the left -5.83. -5.7 = just above the floor.
+        // More negative = further down. The DOWN soft limit follows this number.
+        public static final double kDownPosition = -5.7;
+        // The A button stops this many rotations SHORT of kDownPosition, so the motors
+        // aren't stalled pushing into the ground.
+        public static final double kDownBackoff = 0.1;
+        // The DOWN soft limit sits this far past kDownPosition. (No UP soft limit.)
+        public static final double kSoftLimitMargin = 0.25;
+
+        // ---- Motion Magic speed: how fast the A button moves it (see the speed-up table) ----
+        public static final double kCruiseVelocity = 25.0;  // top speed, rotations per second
+        public static final double kAcceleration = 130.0;   // how fast it reaches top speed (rot/s per second)
+        public static final double kJerk = 1300.0;          // how gently it starts/stops accelerating (bigger = sharper)
+
+        // ---- Holding: how the motors keep it on target ----
+        public static final double kP = 3.0;   // push-back strength per rotation of error. Sags = raise, bounces = lower
+        public static final double kD = 0.1;   // damping: calms bouncing. Raise a little if it overshoots
+        public static final double kV = 0.12;  // volts per rot/s, the Kraken's built-in speed constant. Leave it
+
+        // Operator D-pad jog speed (volts). The slow speed from the last test.
+        public static final double kJogVolts = 1.0;
+
+        // ---- UP: how far below the top the A button stops ----
+        // The A button sends it UP to this many rotations BELOW the top hard stop, so it
+        // never touches the top. Bigger = stops lower. Smaller = closer to the top.
+        // Once it gets there it stops pushing and rests in brake mode, same as DOWN.
+        public static final double kUpHoldOffset = 0.5;  // 0.5 = the right UP spot (Oct 24 test)
+
+        // ---- Feeling an end ("stall" = pushing hard but not moving) ----
+        // If the motors stall against something (floor or top) during a move, they stop pushing.
+        // Stall = more than kStallAmps while slower than kStallSpeed, for kStallSeconds.
+        public static final double kStallAmps = 15.0;
+        public static final double kStallSpeed = 0.5;     // rot/s
+        public static final double kStallSeconds = 0.2;
+        public static final double kAtTargetTolerance = 0.3; // "close enough", in rotations
+        public static final double kMoveTimeout = 2.0;       // seconds, safety cap on a move
+
+        // Strength cap per motor. Limits how hard it can push if it jams or hits an end.
+        public static final double kStatorCurrentLimit = 40.0;  // amps, each motor
     }
 
-    public static final class Climb {
-        public static final int kMotorId = 21;
-        public static final double kClimbSpeed = 0.20;
-        public static final boolean kMotorInverted = false;
-        public static final double kSupplyCurrentLimit = 60.0;
+    /**
+     * Climber (an elevator): rises, latches on, then pulls the robot up. Talon FX 19.
+     * Hold Driver D-pad Up/Down to move it, release to stop.
+     */
+    public static final class Elevator {
+        public static final int kMotorId = 19;  // Tuner X name: "Elevator"
+
+        // In the code, positive = UP. If D-pad Up makes it go DOWN, flip this.
+        public static final boolean kElevatorInverted = false;
+
+        // Speed while a D-pad button is held (volts, battery is ~12 V). Starts gentle.
+        // Raise in 0.5 V steps once the direction is confirmed.
+        public static final double kElevatorVolts = 2.0;  // was 1.5 (first test was good)
+
+        // Strength cap. Probably too low to lift the whole robot; see notes in the PR.
+        public static final double kStatorCurrentLimit = 40.0;  // amps
+
+        // ---- Soft limits: the motor stops by itself just before the top and the bottom ----
+        // Even with the D-pad still held, it stops there, so it never stalls into the ends.
+        // Positions are in motor rotations, from "Elevator Position (rot)" on the dashboard.
+        // 0 = where it was at power-on, so ALWAYS power on with the elevator fully DOWN.
+        // To measure:
+        //   1. Hold D-pad Up until it's just BELOW the top (not touching). Type that number in kTopLimit.
+        //   2. Hold D-pad Down until it's just ABOVE the bottom. Type that number in kBottomLimit
+        //      (a small number, a bit above 0).
+        // While kTopLimit is 0.0 the limits are OFF (not measured yet).
+        public static final double kTopLimit = 0.0;
+        public static final double kBottomLimit = 0.0;
+    }
+
+    /**
+     * Ground intake ROLLER (the spinning wheels that pick up balls). The motor is
+     * powered but NOT on CAN yet. While kIntakeRollerEnabled is false, the code never
+     * creates the motor (so no CAN errors) and Driver Right Trigger does nothing.
+     * When it's on CAN: set kMotorId to its ID in Tuner X, then set the flag to true.
+     */
+    public static final class IntakeRoller {
+        public static final boolean kIntakeRollerEnabled = true;  // on CAN now (Oct 2026)
+        public static final int kMotorId = 22;  // Tuner X name: "Intake motor(22)"
+        public static final boolean kInverted = false;  // flip if it spins balls OUT instead of in
+        public static final double kRollerVolts = 6.0;  // spin speed while RT is held (volts)
+        public static final double kStatorCurrentLimit = 40.0;  // amps
     }
 
     public static final class Limelight {
