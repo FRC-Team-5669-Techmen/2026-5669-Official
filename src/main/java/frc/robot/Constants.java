@@ -185,10 +185,11 @@ public final class Constants {
         // ---- UP: how far below the top the A button stops ----
         // The A button sends it UP to this many rotations BELOW the top hard stop, so it
         // never touches the top. Bigger = stops lower. Smaller = closer to the top.
-        public static final double kUpHoldOffset = 0.2;
+        // Once it gets there it stops pushing and rests in brake mode, same as DOWN.
+        public static final double kUpHoldOffset = 0.5;  // 0.5 = the right UP spot (Oct 24 test)
 
-        // ---- DOWN: feeling the floor ("stall" = pushing hard but not moving) ----
-        // If the motors stall on the floor before reaching DOWN, they stop pushing.
+        // ---- Feeling an end ("stall" = pushing hard but not moving) ----
+        // If the motors stall against something (floor or top) during a move, they stop pushing.
         // Stall = more than kStallAmps while slower than kStallSpeed, for kStallSeconds.
         public static final double kStallAmps = 15.0;
         public static final double kStallSpeed = 0.5;     // rot/s

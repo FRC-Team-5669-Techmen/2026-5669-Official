@@ -23,11 +23,12 @@ import frc.robot.Constants.GroundIntakePivot;
  *
  * <p>Driver A toggles: first press DOWN, next press UP, and so on.
  * <ul>
- *   <li>DOWN: Motion Magic down smoothly. Once it gets there, or the motors feel it
- *       resting on the floor (a "stall"), it stops pushing and rests in brake mode.</li>
- *   <li>UP: Motion Magic up smoothly to a little below the top (kUpHoldOffset), and hold
- *       there. It never touches the top hard stop.</li>
+ *   <li>DOWN: Motion Magic down smoothly to just above the floor (kDownBackoff).</li>
+ *   <li>UP: Motion Magic up smoothly to a little below the top (kUpHoldOffset). It never
+ *       touches the top hard stop.</li>
  * </ul>
+ * Both work the same way: once it gets there (or the motors feel it stall against
+ * something), it stops pushing and rests in brake mode.
  * Operator D-pad Up/Down jogs it slowly by hand (manual override).
  *
  * <p>Positions are in motor rotations, and POSITIVE = UP. DOWN is a negative number.
@@ -144,27 +145,26 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
         leader.stopMotor();
     }
 
-    /** Where UP is held: a little below the top hard stop, so the motors never press into it. */
-    private static double upHoldTarget() {
+    /** Where the A button sends it for UP: a little below the top hard stop, so it never touches it. */
+    private static double upTarget() {
         return GroundIntakePivot.kUpPosition - GroundIntakePivot.kUpHoldOffset;
     }
 
-    /** DOWN: move down, then stop pushing once it's there or resting on the floor. */
-    private Command downMove() {
+    /**
+     * One move, used for BOTH DOWN and UP: Motion Magic to the target, then stop pushing
+     * once it has arrived, and rest in brake mode (no pushing, no humming).
+     */
+    private Command moveTo(double target) {
         return Commands.sequence(
-            runOnce(() -> goTo(downTarget())),
+            runOnce(() -> goTo(target)),
             // Keep driving until it has actually ARRIVED (close AND stopped moving), so the
-            // motors control the whole way down. Stopping early let it free-fall the last
-            // part, and each side fell at its own speed (that was the "out of sync").
+            // motors control the whole way. Stopping early let it free-fall, and each side
+            // fell at its own speed (that was the "out of sync"). If it stalls against
+            // something (the floor, the top), it stops right away instead of pushing.
             Commands.waitUntil(() -> stalled
-                    || (isNear(downTarget()) && Math.abs(leaderSpeed) < GroundIntakePivot.kStallSpeed))
+                    || (isNear(target) && Math.abs(leaderSpeed) < GroundIntakePivot.kStallSpeed))
                 .withTimeout(GroundIntakePivot.kMoveTimeout),
-            runOnce(this::stop)); // rest in brake mode: no pushing, no humming
-    }
-
-    /** UP: Motion Magic to a little below the top (kUpHoldOffset) and hold there. */
-    private Command upMove() {
-        return runOnce(() -> goTo(upHoldTarget()));
+            runOnce(this::stop));
     }
 
     /**
@@ -178,7 +178,7 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
                 return; // the dashboard "Intake Status" says why
             }
             isDown = !isDown; // remember the press, go the other way this time
-            CommandScheduler.getInstance().schedule(isDown ? downMove() : upMove());
+            CommandScheduler.getInstance().schedule(moveTo(isDown ? downTarget() : upTarget()));
         });
     }
 
