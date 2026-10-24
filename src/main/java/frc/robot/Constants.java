@@ -125,7 +125,7 @@ public final class Constants {
         // "Turret Far End (rot)" number here too. 0.0 = none: until the far end is set,
         // auto-aim does nothing and NOTHING stops the turret past 270°, so watch the wires.
         // MEASURED Oct 24 (Elastic): the far end read 32.49. 32.4 = a hair inside it.
-        public static final double kEndPosition = 32.4;
+        public static final double kEndPosition = 36;
         // "Set Turret Far End" refuses to save anything closer to HOME than this (rotations),
         // so pressing it by mistake at HOME can't lock the turret in place.
         public static final double kMinEndPosition = 1.0;
