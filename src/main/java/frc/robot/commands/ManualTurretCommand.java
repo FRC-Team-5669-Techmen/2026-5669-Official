@@ -9,7 +9,8 @@ public class ManualTurretCommand extends Command {
 
     /**
      * @param turret The turret subsystem (Goober)
-     * @param speed  The percent output to run the motor (-1.0 to 1.0)
+     * @param speed  The percent output to run the motor (-1.0 to 1.0), positive = turn RIGHT.
+     *               The turret's soft limits stop it at HOME and at the far end.
      */
     public ManualTurretCommand(Goober turret, double speed) {
         m_turret = turret;

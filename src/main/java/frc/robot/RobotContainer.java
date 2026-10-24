@@ -34,7 +34,6 @@ import frc.robot.subsystems.GroundIntakePivotSubsystem;
 import frc.robot.subsystems.IndexSubsystem;
 import frc.robot.subsystems.IntakeRollerSubsystem;
 import frc.robot.subsystems.LimelightSubsystem;
-import frc.robot.subsystems.MariosEar;
 import frc.robot.subsystems.ShooterIntakeSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 
@@ -84,12 +83,12 @@ public class RobotContainer {
     public final ShooterIntakeSubsystem shooterIntake = new ShooterIntakeSubsystem();
     public final Goober goober = new Goober(); // turret, CAN 14 ("AngleShooter")
     public final LimelightSubsystem limelight = new LimelightSubsystem();
-    public final MariosEar mariosEar = new MariosEar(limelight);
     public final GroundIntakePivotSubsystem groundIntakePivot = new GroundIntakePivotSubsystem();
     public final ElevatorSubsystem elevator = new ElevatorSubsystem();  // climber, CAN 19
     public final IntakeRollerSubsystem intakeRoller = new IntakeRollerSubsystem(); // placeholder until on CAN
 
-    // Not created on purpose: the hood (GoobaSubsystem), since there's no hood motor.
+    // Not created on purpose: the hood (GoobaSubsystem), since there's no hood motor, and
+    // MariosEar (the 2 PhotonVision USB cameras), since the Limelight is the only camera.
 
     public final DriverDashboard driverDashboard = new DriverDashboard();
 
@@ -104,7 +103,7 @@ public class RobotContainer {
         DriverStation.silenceJoystickConnectionWarning(true);
 
         Marcos.registerNamedCommands(
-            shooter, index, shooterIntake, goober, limelight, mariosEar
+            shooter, index, shooterIntake, goober, limelight
         );
 
         autoChooser = AutoBuilder.buildAutoChooser("Tests");
@@ -228,7 +227,8 @@ public class RobotContainer {
 
         // LOCKED Right Bumper (press): toggle Limelight auto-aim. First press starts
         // turret tracking, next press stops it. With no tag in view, the turret sweeps
-        // to look for one. Using the turret jog also stops the auto-aim.
+        // to look for one. Using the turret jog also stops the auto-aim. Does nothing
+        // until the turret's far end (kEndPosition) is measured.
         operatorController.rightBumper().toggleOnTrue(new GooberAlign(limelight, goober));
 
         // LOCKED Y: reserved (was the "Gooba" hood). Bind nothing.
@@ -238,9 +238,15 @@ public class RobotContainer {
         operatorController.povUp().whileTrue(groundIntakePivot.jogUpCommand());
         operatorController.povDown().whileTrue(groundIntakePivot.jogDownCommand());
 
-        // OPEN D-pad Left/Right (hold): manual turret jog
-        operatorController.povLeft().whileTrue(new ManualTurretCommand(goober, -Constants.Turret.kManualJogSpeed));
-        operatorController.povRight().whileTrue(new ManualTurretCommand(goober, Constants.Turret.kManualJogSpeed));
+        // OPEN D-pad Left/Right (hold): manual turret jog. Right = turn right (away from HOME).
+        // The diagonals count too: a D-pad often reads Right as Up-Right or Down-Right for a moment,
+        // and with plain Left/Right that stopped and restarted the turret (it stuttered).
+        Trigger turretJogLeft = operatorController.povLeft()
+            .or(operatorController.povUpLeft()).or(operatorController.povDownLeft());
+        Trigger turretJogRight = operatorController.povRight()
+            .or(operatorController.povUpRight()).or(operatorController.povDownRight());
+        turretJogLeft.whileTrue(new ManualTurretCommand(goober, -Constants.Turret.kManualJogSpeed));
+        turretJogRight.whileTrue(new ManualTurretCommand(goober, Constants.Turret.kManualJogSpeed));
 
         // Not on the map, kept on purpose: B (hold) runs the Spindex backwards to clear a jam
         operatorController.b().whileTrue(new StartEndCommand(
@@ -285,6 +291,9 @@ public class RobotContainer {
         // the soft limits off in case it was powered on with the elevator up.
         SmartDashboard.putData("Zero Elevator (elevator is DOWN)", elevator.zeroCommand());
         SmartDashboard.putData("Elevator Limits OFF (recovery)", elevator.limitsOffCommand());
+
+        // Turret: zero button, only for when the turret is sitting exactly on its HOME mark.
+        SmartDashboard.putData("Zero Turret (turret at HOME)", goober.zeroCommand());
 
         shooter.setDefaultCommand(new RunCommand(() -> {
             if (m_isShooterIdle) {

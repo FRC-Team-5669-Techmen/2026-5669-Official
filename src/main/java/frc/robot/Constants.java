@@ -97,11 +97,45 @@ public final class Constants {
         public static final double kReverseSpeed = -0.6;
     }
 
+    /**
+     * Turret ("Goober"), Talon FX 14. Turns the shooter, and the Limelight on it, about 270°.
+     *
+     * <p>HOME = one END of the travel, lined up with the spot mark. From HOME it can only turn
+     * RIGHT (clockwise seen from above) about 270°, then back. It can't go all the way around
+     * because the motor and Limelight wires run up to it. Nothing else stops it, so the soft
+     * limits below are what protect the wires.
+     *
+     * <p>ALWAYS power on with the turret on the HOME mark: the motor calls wherever it is at
+     * power-on "0". Deploying code does NOT re-zero it.
+     */
     public static final class Turret {
         public static final int kMotorId = 14; // Tuner X name: "AngleShooter"
+
+        // In the code, POSITIVE = turning RIGHT = away from HOME. Test: at HOME, TAP Operator
+        // D-pad Right. It must turn RIGHT (away from home, like the photos). If it turns LEFT
+        // (past home, into the wires), stop and flip this.
+        public static final boolean kMotorInverted = false;
+
+        // ---- Range, in motor rotations from HOME (dashboard "Turret Position (rot)") ----
+        // HOME is 0. The far end is kEndPosition. To measure it: power on at HOME, hold Operator
+        // D-pad Right until the turret is just SHORT of where the wires get tight, read
+        // "Turret Position (rot)", and type that number here. It must be POSITIVE (negative
+        // means kMotorInverted is wrong).
+        // 0.0 = not measured yet: auto-aim does nothing and the D-pad jog has no far-end
+        // limit, so watch the wires while jogging.
+        public static final double kEndPosition = 0.0;
+        // How far kEndPosition is from HOME, in degrees. Turns rotations into degrees.
+        public static final double kEndDegrees = 270.0;
+        // Auto-aim and the search sweep stay this far inside each end, so they never push on
+        // the limits. The D-pad jog can go all the way to the ends.
+        public static final double kAimMarginDegrees = 10.0;
+
+        // Strength cap. Low on purpose: limits how hard it can pull on the wires if it gets stuck.
+        public static final double kStatorCurrentLimit = 30.0;  // amps
+
         public static final double kSpeedMultiplier = 1.0;
-        public static final double kManualJogSpeed = 0.2;
-        public static final double kSweepSpeed = 1.0;
+        // Operator D-pad Left/Right speed (percent power). Was 0.2; slower is easier to aim by hand.
+        public static final double kManualJogSpeed = 0.12;
         // Slow scan speed used while hunting for a target with no Limelight lock
         public static final double kSearchSpeed = 0.15;
 
@@ -256,7 +290,12 @@ public final class Constants {
     }
 
     public static final class Limelight {
-        public static final int[] kValidTargetIds = {10, 18, 21, 26, 5, 2};
+        // HUB AprilTags the turret may aim at: the tag in the MIDDLE of each of the 3 hub faces
+        // we shoot at (the face toward the center of the field is left out). Checked against
+        // the official WPILib 2026 field layout. Once the Driver Station says our alliance, the
+        // Limelight only looks for OUR 3 (both hubs until then), so it never aims at theirs.
+        public static final int[] kRedHubTagIds = {2, 5, 10};
+        public static final int[] kBlueHubTagIds = {18, 21, 26};
 
         // Offseason remount: camera is horizontal and centered on the shooter,
         // so tx aims the turret directly and ty feeds the distance trig in

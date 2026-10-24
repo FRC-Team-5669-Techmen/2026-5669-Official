@@ -7,7 +7,8 @@ import frc.robot.subsystems.LimelightSubsystem;
 
 /**
  * PID-aligns the turret onto the Limelight target. While no valid target is in
- * view, the turret sweeps back and forth between its soft limits hunting for one.
+ * view, the turret sweeps back and forth across its range hunting for one.
+ * Does nothing until the turret's far end (kEndPosition) is measured.
  *
  * <p>Never finishes on its own — bind with whileTrue() in teleop or add
  * .withTimeout() in autos (Marcos already does).
@@ -16,7 +17,8 @@ public class GooberAlign extends Command {
     private final LimelightSubsystem limelight;
     private final Goober turret;
 
-    private int seekDirection = 1; // 1 = sweep right, -1 = sweep left
+    private int seekDirection = 1; // 1 = sweep right (away from HOME), -1 = sweep left
+    private boolean hadTarget = false;
 
     public GooberAlign(LimelightSubsystem limelight, Goober turret) {
         this.limelight = limelight;
@@ -26,26 +28,44 @@ public class GooberAlign extends Command {
 
     @Override
     public void initialize() {
-        seekDirection = 1;
+        // Sweep toward whichever end is further away first
+        double middle = (turret.aimMinPosition() + turret.aimMaxPosition()) / 2.0;
+        seekDirection = turret.getPosition() < middle ? 1 : -1;
+        hadTarget = false;
         // Drop stale samples from the previous alignment run
         turret.resetAimFilter();
     }
 
     @Override
     public void execute() {
+        // Until the far end is measured the code doesn't know where the wires are,
+        // so auto-aim must not move the turret at all.
+        if (!turret.endMeasured()) {
+            turret.stop();
+            turret.setAimStatus("OFF: far end not set");
+            return;
+        }
+
         if (limelight.isValidTarget()) {
-            // Camera is centered on the shooter, so raw tx aims the turret directly.
-            // If the turret runs AWAY from the target after a remount, flip this sign.
-            turret.aimAtTarget(-limelight.getTX());
+            // Found the tag again: forget the samples from the last time we saw it
+            if (!hadTarget) {
+                turret.resetAimFilter();
+            }
+            hadTarget = true;
+            // The camera is centered on the shooter and turns with it, so raw tx aims the
+            // turret directly. tx > 0 = tag on the RIGHT, and positive output turns RIGHT.
+            turret.aimAtTarget(limelight.getTX());
         } else {
-            // Hunt for the target: bounce between the firmware soft limits (+10 / -25)
+            hadTarget = false;
+            // Hunt for the target: bounce between the aim limits (just inside both ends)
             double currentPosition = turret.getPosition();
-            if (currentPosition >= 9.5) {
-                seekDirection = -1; // Hit right limit, sweep left
-            } else if (currentPosition <= -24.5) {
-                seekDirection = 1;  // Hit left limit, sweep right
+            if (currentPosition >= turret.aimMaxPosition()) {
+                seekDirection = -1; // Reached the far end, sweep back left
+            } else if (currentPosition <= turret.aimMinPosition()) {
+                seekDirection = 1;  // Reached HOME, sweep right
             }
             turret.setMotorSpeed(seekDirection * Constants.Turret.kSearchSpeed);
+            turret.setAimStatus("SEARCHING");
         }
     }
 
@@ -59,5 +79,6 @@ public class GooberAlign extends Command {
     @Override
     public void end(boolean interrupted) {
         turret.stop();
+        turret.setAimStatus("OFF");
     }
 }

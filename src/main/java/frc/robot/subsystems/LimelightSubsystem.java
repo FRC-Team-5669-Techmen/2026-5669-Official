@@ -1,10 +1,16 @@
 package frc.robot.subsystems;
 
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.stream.IntStream;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants;
@@ -31,6 +37,13 @@ public class LimelightSubsystem extends SubsystemBase {
     private final NetworkTableEntry botposeTargetSpace;
     private final NetworkTableEntry tid;
 
+    // Tag IDs the turret may aim at right now: our hub's 3 once the alliance is known, both hubs before.
+    private static final int[] kBothHubTagIds = IntStream.concat(
+        Arrays.stream(Constants.Limelight.kRedHubTagIds),
+        Arrays.stream(Constants.Limelight.kBlueHubTagIds)).toArray();
+    private int[] allowedTagIds = kBothHubTagIds;
+    private Optional<Alliance> filterAlliance = Optional.empty(); // alliance the filter was last set for
+
     public LimelightSubsystem() {
         // Adjust the table name if your limelight publishes under a different key.
         table = NetworkTableInstance.getDefault().getTable("limelight");
@@ -42,8 +55,9 @@ public class LimelightSubsystem extends SubsystemBase {
         botposeTargetSpace = table.getEntry("botpose_targetspace");
         tid = table.getEntry("tid");
 
-        // Tell the Limelight to ONLY track the IDs in the Constants file
-        LimelightHelpers.SetFiducialIDFiltersOverride("limelight", Constants.Limelight.kValidTargetIds);
+        // Tell the Limelight to ONLY track hub tags. periodic() narrows this to OUR hub
+        // as soon as the Driver Station reports the alliance.
+        LimelightHelpers.SetFiducialIDFiltersOverride("limelight", allowedTagIds);
     }
 
     /** Horizontal angle to the target in degrees (positive = target to the right). */
@@ -91,14 +105,14 @@ public class LimelightSubsystem extends SubsystemBase {
         return (int) tid.getInteger(-1);
     }
 
-    /** Returns true ONLY if the limelight sees a target AND its ID is in the approved list. */
+    /** Returns true ONLY if the limelight sees a target AND it's one of OUR hub's tags. */
     public boolean isValidTarget() {
         if (!isTargetAvailable()) {
             return false;
         }
 
         int currentID = getID();
-        for (int validID : Constants.Limelight.kValidTargetIds) {
+        for (int validID : allowedTagIds) {
             if (currentID == validID) {
                 return true;
             }
@@ -130,8 +144,26 @@ public class LimelightSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
+        // Aim only at OUR hub once the Driver Station says which alliance we are. Keeps
+        // checking, because the alliance can change before a match starts.
+        Optional<Alliance> alliance = DriverStation.getAlliance();
+        if (!alliance.equals(filterAlliance)) {
+            filterAlliance = alliance;
+            if (alliance.isEmpty()) {
+                allowedTagIds = kBothHubTagIds;
+            } else if (alliance.get() == Alliance.Red) {
+                allowedTagIds = Constants.Limelight.kRedHubTagIds;
+            } else {
+                allowedTagIds = Constants.Limelight.kBlueHubTagIds;
+            }
+            LimelightHelpers.SetFiducialIDFiltersOverride("limelight", allowedTagIds);
+        }
+
         // Publish vision data to SmartDashboard for tuning and debugging.
         SmartDashboard.putNumber("Limelight tx", getTX());
+        SmartDashboard.putNumber("Limelight Tag ID", getID());
+        SmartDashboard.putString("Limelight Aiming At", alliance.isEmpty() ? "both hubs (no alliance yet)"
+            : alliance.get() == Alliance.Red ? "RED hub (tags 2, 5, 10)" : "BLUE hub (tags 18, 21, 26)");
         SmartDashboard.putNumber("Limelight distance (m)", distanceToTarget());
     }
 }

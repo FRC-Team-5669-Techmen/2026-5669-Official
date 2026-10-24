@@ -21,8 +21,7 @@ public class Marcos {
         IndexSubsystem index,
         ShooterIntakeSubsystem shooterIntake,
         Goober goober,
-        LimelightSubsystem limelight,
-        MariosEar mariosEar
+        LimelightSubsystem limelight
     ) {
         NamedCommands.registerCommand("spinUpShooter",
             new RunShooterCommand(shooter, Constants.Shooter.kFastTargetRPM)
@@ -79,8 +78,10 @@ public class Marcos {
             )
         );
 
+        // Used to run MariosEarCommand (Limelight + 2 USB cameras). The robot only has the
+        // Limelight, so this is now the same Limelight aim as "alignTurret".
         NamedCommands.registerCommand("aimTurret",
-            new MariosEarCommand(mariosEar, goober).withTimeout(2.0)
+            new GooberAlign(limelight, goober).withTimeout(2.0)
         );
 
         NamedCommands.registerCommand("alignTurret",

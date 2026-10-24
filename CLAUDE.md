@@ -27,7 +27,7 @@
 |---------|---------|
 | Phoenix6 (26.1.1) | CTRE TalonFX motors, CANcoders, Pigeon2 IMU |
 | PathPlannerLib (2026.1.2) | Autonomous path following |
-| PhotonVision (photonlib) | USB camera AprilTag detection via PhotonCamera |
+| PhotonVision (photonlib) | USB camera AprilTag detection via PhotonCamera (unused: no USB cameras on the robot) |
 | DogLog | Telemetry logging (NT publish, DS capture, PDH logging) |
 | MapleSim (0.4.0-beta) | Physics simulation for swerve drivetrain |
 | WPILib NewCommands | Command-based framework |
@@ -54,7 +54,7 @@ src/main/java/frc/robot/
 │   ├── GoobaToggleCommand      # Deploy/stow gooba (RETIRED: no hood motor)
 │   ├── AutoGooba               # Auto-aim gooba using Limelight shot map (RETIRED)
 │   ├── GooberAlign             # PID turret align w/ search sweep (Limelight)
-│   ├── MariosEarCommand        # Multi-phase turret aim (Limelight → USB cams)
+│   ├── MariosEarCommand        # Multi-phase turret aim (Limelight → USB cams) (RETIRED: no USB cams)
 │   ├── ManualGoobaCommand      # D-pad jog gooba position up/down (RETIRED)
 │   └── ManualTurretCommand     # D-pad jog turret left/right
 ├── subsystems/
@@ -63,9 +63,9 @@ src/main/java/frc/robot/
 │   ├── IndexSubsystem          # Single TalonFX ("Spindex"), feeds the shooter
 │   ├── ShooterIntakeSubsystem  # Single TalonFX, feeds fuel to shooter
 │   ├── GoobaSubsystem          # Hood, Motion Magic position (RETIRED: no hood motor, not created)
-│   ├── Goober                  # Turret motor, duty cycle rotation
+│   ├── Goober                  # Turret motor, duty cycle rotation, ~270° from HOME with soft limits
 │   ├── LimelightSubsystem      # Limelight NetworkTables (tx/ty/ta/tv/botpose)
-│   ├── MariosEar               # Multi-camera vision: Limelight + 2 PhotonVision USB cams
+│   ├── MariosEar               # Multi-camera vision: Limelight + 2 PhotonVision USB cams (RETIRED, not created)
 │   ├── GroundIntakePivotSubsystem # 2 TalonFX (20 leader, 21 follower): Motion Magic UP/DOWN toggle + jog
 │   ├── ElevatorSubsystem       # Climber, TalonFX 19: hold-to-move up/down
 │   └── IntakeRollerSubsystem   # Ground intake roller, TalonFX 22: hold Driver RT to spin
@@ -114,9 +114,14 @@ This is a 2026 FRC robot with the following mechanical systems:
 - 40A supply current limit
 
 ### Goober (Turret)
-- TalonFX (CAN 14, Tuner X: "AngleShooter"), duty cycle output (FOC off) with 1.0 speed multiplier
-- Rotates turret to aim at targets, brake mode
-- Firmware soft limits enabled: -25 to +10 rotations
+- TalonFX (CAN 14, Tuner X: "AngleShooter"), duty cycle output (FOC off), brake mode, 30 A stator limit (low on purpose, to go easy on the wires).
+- Turns the shooter **and the Limelight** (the camera rides on the turret). The Pigeon is on the frame, so turning the turret doesn't affect the gyro.
+- **Range: about 270°, not 360°.** The motor and Limelight wires run up to the turret, and they are the only thing that stops it. **HOME** = one END of the travel, lined up with the spot mark. From HOME it can only turn **RIGHT** (clockwise seen from above) about 270°, then back.
+- **0 = power-on position, so always power on with the turret on the HOME mark.** The code does **not** re-zero at startup. Dashboard button **"Zero Turret (turret at HOME)"** (works while disabled). If it was powered on somewhere else: power off, turn it by hand to the mark, power on.
+- **Positive = turning RIGHT = away from HOME.** If Operator D-pad Right turns it LEFT, flip `kMotorInverted`.
+- **Soft limits**: HOME side at 0 (always on). Far side at `kEndPosition` (motor rotations from HOME), on once it's measured. **Not measured yet (0.0)**: auto-aim does nothing ("Turret Auto-Aim" says so) and the D-pad jog has no far-end limit, so watch the wires. To measure: power on at HOME, hold Operator D-pad Right until it's just short of where the wires get tight, read "Turret Position (rot)", type it into `kEndPosition` (must be positive). `kEndDegrees` (270) turns rotations into degrees.
+- Auto-aim and the search sweep stay `kAimMarginDegrees` (10°) inside both ends. If the tag is further around than that, auto-aim stops and says TAG OUT OF REACH.
+- Dashboard: "Turret Status" (setup / At HOME end / At FAR end / OK), "Turret Auto-Aim" (OFF / SEARCHING / TRACKING / LOCKED / TAG OUT OF REACH), "Turret Position (rot)", "Turret Angle (deg)" (0 = HOME), "Turret Amps".
 
 ### Ground Intake Pivot (raise/lower)
 - **Leader**: TalonFX CAN 20 ("Right Ground Intake Raise"). The code only ever commands this one.
@@ -146,11 +151,12 @@ This is a 2026 FRC robot with the following mechanical systems:
 - Spins balls out instead of in? Flip `Constants.IntakeRoller.kInverted`. `kIntakeRollerEnabled = false` turns it off entirely (motor never created).
 
 ### Vision
-- **Limelight**: AprilTag detection, provides tx/ty/ta/tv/botpose via NetworkTables
-  - Mounted HORIZONTALLY and CENTERED on the shooter (2026 offseason remount): tx aims the turret, ty drives the distance trig
+- **Limelight**: the robot's **only** camera. AprilTag detection, provides tx/ty/ta/tv/tid/botpose via NetworkTables (table name `limelight`). Model not confirmed (newer black finned body, no green LED ring; likely a 3G or 4): the web UI at `http://limelight.local:5801` shows it.
+  - Mounted HORIZONTALLY and CENTERED on the shooter, **on the turret**, so it turns with it: tx aims the turret (tx > 0 = tag to the right), ty drives the distance trig
+  - **Hub tags only, and only OURS**: the turret aims at the center tag of each of the 3 hub faces we shoot at. Red hub = 2, 5, 10; blue hub = 18, 21, 26 (checked against the WPILib 2026 field layout). Until the Driver Station reports the alliance it accepts both; after that only ours (dashboard "Limelight Aiming At"). For practice, set the team station (Red/Blue) in the Driver Station.
+  - Dashboard: "Limelight tx", "Limelight Tag ID", "Limelight Aiming At", "Limelight distance (m)"
   - Distance-to-target calculation using trigonometry (`distanceToTarget()`)
-- **PhotonVision USB cameras**: "Left" and "Right" cameras for wide-angle target search
-- **MariosEar**: Fuses all 3 cameras into a multi-phase turret aiming pipeline
+- **PhotonVision USB cameras / MariosEar (RETIRED, Oct 2026)**: there are no USB cameras on the robot. `MariosEar` and `MariosEarCommand` are kept but never created.
 
 ## Subsystem Responsibilities
 
@@ -161,9 +167,9 @@ This is a 2026 FRC robot with the following mechanical systems:
 | `IndexSubsystem` | 1 TalonFX | VoltageOut (FOC off) | `run(volts)`, `stop()` |
 | `ShooterIntakeSubsystem` | 1 TalonFX | DutyCycleOut (FOC off) | `run(speed)`, `stop()` |
 | `GoobaSubsystem` (RETIRED, not created) | none | MotionMagicVoltage | `setPosition(rot)`, `getPosition()`, `getRotationForDistance(d)` |
-| `Goober` | 1 TalonFX | DutyCycleOut | `setMotorSpeed(pct)`, `stop()` |
+| `Goober` | 1 TalonFX (14) | DutyCycleOut (FOC off) + soft limits | `setMotorSpeed(pct)`, `aimAtTarget(tx)`, `zeroCommand()`, `stop()` |
 | `LimelightSubsystem` | Limelight camera | NetworkTables | `getTX()`, `getTY()`, `isValidTarget()`, `distanceToTarget()` |
-| `MariosEar` | 2 PhotonVision + Limelight | PhotonCamera | `limelightHasTarget()`, `getLimelightTX()`, `getLeftResult()`, `getRightResult()` |
+| `MariosEar` (RETIRED, not created) | none (no USB cameras) | PhotonCamera | `limelightHasTarget()`, `getLimelightTX()`, `getLeftResult()`, `getRightResult()` |
 | `GroundIntakePivotSubsystem` | 2 TalonFX (20 leader, 21 follower) | MotionMagicVoltage + VoltageOut jog + Follower (FOC off) | `toggleCommand()`, `jogUpCommand()`, `jogDownCommand()`, `zeroCommand()`, `stopCommand()` |
 | `ElevatorSubsystem` | 1 TalonFX (19) | VoltageOut (FOC off) + soft limits | `upCommand()`, `downCommand()`, `zeroCommand()`, `limitsOffCommand()`, `setVolts(v)`, `stop()` |
 | `IntakeRollerSubsystem` | 1 TalonFX (22) | VoltageOut (FOC off) | `runCommand()` |
@@ -174,8 +180,8 @@ Commands follow the standard WPILib command-based pattern. Key patterns:
 
 - **`FuelHandlingCommand`**: The core shooting/intake command. Coordinates index + shooterIntake + shooter simultaneously. `isForward=true` shoots, `isForward=false` reverses/intakes (-1000 RPM). Runs while held (autos add timeouts).
 - **`FeedShooterCommand`**: Runs index + shooter intake only, so the shooter can be spun up independently (operator layout).
-- **`MariosEarCommand`**: Multi-phase turret aiming with priority: (1) Limelight PID tracking → (2) Left USB cam coarse search → (3) Right USB cam coarse search → (4) stop.
-- **`GooberAlign`**: Limelight PID turret alignment on raw tx (camera is centered on the shooter). When no valid target is in view it sweeps the turret between its soft limits hunting for one. Never finishes on its own — bind with whileTrue or a timeout.
+- **`MariosEarCommand`** (RETIRED, no USB cameras): Multi-phase turret aiming with priority: (1) Limelight PID tracking → (2) Left USB cam coarse search → (3) Right USB cam coarse search → (4) stop. Don't revive it as is: it swings at 100% power and ignores the turret's range.
+- **`GooberAlign`**: Limelight PID turret alignment on raw tx (camera is centered on the shooter): tx > 0 (tag on the right) turns the turret right. When no valid target is in view it sweeps the turret between just inside HOME and just inside the far end hunting for one. Does nothing until `kEndPosition` is measured. Never finishes on its own — bind with whileTrue or a timeout.
 - **`AutoGooba`** (RETIRED with the hood): Continuous auto-aim that maps Limelight distance (m) to hood position via the interpolating shot map, with a moving-average filter on distance.
 - **Instant commands**: `GoobaToggleCommand` (retired) finishes immediately after setting state.
 - **While-held commands**: `ManualTurretCommand`, the intake jog, elevator up/down and the roller (built with `startEnd`) run while held and stop on release.
@@ -207,7 +213,7 @@ This matches the drive team's official map. **LOCKED** = practiced, must stay ex
 | Right Bumper (press) | Toggle Limelight auto-aim (turret tracking on/off) | LOCKED |
 | Y | Reserved, bound to nothing (was the "Gooba" hood) | LOCKED |
 | D-Pad Up/Down (hold) | Jog ground intake up/down slowly | OPEN |
-| D-Pad Left/Right (hold) | Manual turret jog | OPEN |
+| D-Pad Left/Right (hold) | Manual turret jog (Right = turn right, away from HOME; diagonals count, so it doesn't stutter) | OPEN |
 | B (hold) | Spindex backwards to clear a jam | not on map, kept on purpose |
 
 Removed because they weren't on the map: Driver D-pad Right (tank-drive toggle, and tank mode itself) and Operator Left Bumper (aim while held).
@@ -255,7 +261,7 @@ rename them without updating the autos in `src/main/deploy/pathplanner/`.
 | `shoot` | FuelHandlingCommand (forward) | 2.0s |
 | `stopShooter` | InstantCommand → shooter.stop() | - |
 | `intake` | FuelHandlingCommand (reverse) | 2.0s |
-| `aimTurret` | MariosEarCommand (multi-cam) | 2.0s |
+| `aimTurret` | GooberAlign (Limelight-only; was MariosEarCommand, no USB cameras now) | 2.0s |
 | `alignTurret` | GooberAlign (Limelight-only) | 2.0s |
 | `lowerIntake`, `togglePiston1`, `togglePiston2`, `runGroundIntake`, `deployGooba`, `stowGooba`, `autoAimGooba` | No-ops (pneumatics, intake roller and hood removed; kept so old autos load cleanly) | - |
 
@@ -302,7 +308,7 @@ in Phoenix Tuner X before writing code.
 
 ## Patterns & Conventions
 
-- **Naming**: The team uses creative nicknames for subsystem classes: "Gooba" = hood/arc mechanism, "Goober" = turret, "MariosEar" = multi-camera vision system, "Marcos" = named-command registrar. Instance variables use plain descriptive names (`limelight`, `mariosEar`, `groundIntakePivot`, ...).
+- **Naming**: The team uses creative nicknames for subsystem classes: "Gooba" = hood/arc mechanism (retired), "Goober" = turret (easy to mix up with Gooba), "MariosEar" = multi-camera vision system (retired), "Marcos" = named-command registrar. Instance variables use plain descriptive names (`limelight`, `goober`, `groundIntakePivot`, ...).
 - **Vision mounting**: The Limelight is mounted HORIZONTALLY and CENTERED on the shooter (2026 offseason remount) — `tx` aims the turret, `ty` feeds the distance trig. Re-measure `Constants.Limelight.kMountAngleDegrees`/`kLensHeightMeters` whenever the mount changes.
 - **Hub shifts**: `HubShiftTracker.isOurHubOpen()` implements the REBUILT shift schedule (game data at teleop start + match timer). Driver rumble and the dashboards read it via `RobotContainer.isHubOpenForUs()`.
 - **Constants**: All hardware IDs, PID gains, speeds, and positions live in `Constants.java` inner classes. Comments mark values as `//fixed` when confirmed on hardware.
@@ -320,7 +326,8 @@ in Phoenix Tuner X before writing code.
 - **Intake DOWN position**: `kDownPosition = -5.7`, measured Oct 23 (floor: right -5.73, left -5.83). Re-measure if the intake or its gearing changes
 - **Intake roller**: confirm spin direction (`kInverted`) and speed (`kRollerVolts`) on the robot
 - **Intake pivot sync**: Oct 23 Elastic data showed the two sides within ~0.03 rot while driven and ~0.1 rot at rest, so they're well coupled; the drift came from an unpowered free-fall after stopping early (fixed). Dual position control isn't needed unless that changes
-- Verify the turret aim sign after the Limelight remount: if the turret runs away from the target, flip the sign in `GooberAlign` (`-limelight.getTX()`)
+- **Turret setup**: measure `kEndPosition` (see the Goober section; auto-aim is off until then) and confirm D-pad Right turns it right (else flip `kMotorInverted`). Then check the aim: a tag held to the right of the camera must read a positive "Limelight tx" (if negative, the image is flipped in the Limelight settings), and auto-aim must turn toward the tag
+- **Limelight pose into odometry is wrong with the camera on the turret**: `CommandSwerveDrivetrain.periodic()` feeds MegaTag2 poses into odometry, but MegaTag2 assumes the camera is fixed to the frame. Any turret angle other than the one set in the Limelight UI gives a wrong position (autos can drive to the wrong place). It also passes the raw Pigeon yaw instead of the drivetrain heading. Swerve code, so not changed yet: waiting on the programming lead's OK
 - Re-measure `Constants.Limelight.kMountAngleDegrees` and `kLensHeightMeters` on the new camera mount — `distanceToTarget()` is wrong until then
 - `Constants.Shooter.kFastTargetRPM = 7000` is clamped to `kMaxRPM = 3100` at runtime — raise `kMaxRPM` when the flywheel is trusted at higher speeds
 - X56 HOTAS is switched off; if re-enabled, its axis/button indices need on-hardware verification (docs/X56-HOTAS-SETUP.md)
