@@ -38,12 +38,24 @@ public class HotasX56 {
      */
     public boolean isConnected() {
         int port = stick.getHID().getPort();
+        if (!isAllowed(port)) {
+            return false;
+        }
         return DriverStation.isJoystickConnected(port) && !DriverStation.getJoystickIsXbox(port);
     }
 
     /** True when the separate throttle unit is plugged in. */
     public boolean isThrottleConnected() {
-        return DriverStation.isJoystickConnected(throttle.getHID().getPort());
+        int port = throttle.getHID().getPort();
+        return isAllowed(port) && DriverStation.isJoystickConnected(port);
+    }
+
+    /**
+     * The HOTAS only works when switched on in Constants, and NEVER on ports 0 or 1:
+     * those belong to the competition Xbox controllers.
+     */
+    private static boolean isAllowed(int port) {
+        return Constants.Hotas.kEnabled && port >= 2;
     }
 
     // ==========================================

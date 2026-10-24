@@ -10,7 +10,8 @@ import frc.robot.Constants;
 
 public class ShooterIntakeSubsystem extends SubsystemBase {
     private final TalonFX motor = new TalonFX(Constants.ShooterIntake.kMotorId);
-    private final DutyCycleOut request = new DutyCycleOut(0);
+    // FOC off: this motor has no Phoenix Pro license, and an unlicensed motor refuses FOC commands.
+    private final DutyCycleOut request = new DutyCycleOut(0).withEnableFOC(false);
 
     public ShooterIntakeSubsystem() {
         TalonFXConfiguration config = new TalonFXConfiguration();
