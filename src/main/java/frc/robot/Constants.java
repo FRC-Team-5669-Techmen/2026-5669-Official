@@ -217,6 +217,18 @@ public final class Constants {
 
         // Strength cap. Probably too low to lift the whole robot; see notes in the PR.
         public static final double kStatorCurrentLimit = 40.0;  // amps
+
+        // ---- Soft limits: the motor stops by itself just before the top and the bottom ----
+        // Even with the D-pad still held, it stops there, so it never stalls into the ends.
+        // Positions are in motor rotations, from "Elevator Position (rot)" on the dashboard.
+        // 0 = where it was at power-on, so ALWAYS power on with the elevator fully DOWN.
+        // To measure:
+        //   1. Hold D-pad Up until it's just BELOW the top (not touching). Type that number in kTopLimit.
+        //   2. Hold D-pad Down until it's just ABOVE the bottom. Type that number in kBottomLimit
+        //      (a small number, a bit above 0).
+        // While kTopLimit is 0.0 the limits are OFF (not measured yet).
+        public static final double kTopLimit = 0.0;
+        public static final double kBottomLimit = 0.0;
     }
 
     /**

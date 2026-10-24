@@ -136,7 +136,8 @@ This is a 2026 FRC robot with the following mechanical systems:
 ### Elevator / Climber (Talon FX 19)
 - Rises, latches on, pulls the robot up. **Hold Driver D-pad Up/Down** to move, release to stop. Positive = UP.
 - `VoltageOut` (FOC off) at `kElevatorVolts` (2.0 V after a good first test at 1.5 V); direction via `kElevatorInverted`. Brake mode, 40 A stator limit.
-- Position zeroed at startup (it starts fully down). **No soft limits yet**: record top/bottom from "Elevator Position (rot)".
+- **Soft limits** (`kTopLimit` / `kBottomLimit`): the motor stops by itself just before the top and bottom, even with the D-pad held, so it never stalls into the ends. **Not measured yet**: while `kTopLimit` is 0.0 the limits are off (dashboard "Elevator Status" says so). Measure from "Elevator Position (rot)": just below the top, just above the bottom.
+- **0 = power-on position, so power on with the elevator fully DOWN.** The code does **not** re-zero at startup (a redeploy with the elevator up would put the limits in the wrong place). Dashboard buttons: **"Zero Elevator (elevator is DOWN)"** and **"Elevator Limits OFF (recovery)"** (click to turn limits off, click again to turn them back on; for when it was powered on with the elevator up and a limit blocks the D-pad). No stall detection on purpose: during a climb the motor is slow and working hard, which looks like a stall, and cutting power there would drop the robot.
 - The old climb code (motor 21) was deleted; the elevator replaced it.
 
 ### Ground Intake Roller (Talon FX 22)
@@ -163,7 +164,7 @@ This is a 2026 FRC robot with the following mechanical systems:
 | `LimelightSubsystem` | Limelight camera | NetworkTables | `getTX()`, `getTY()`, `isValidTarget()`, `distanceToTarget()` |
 | `MariosEar` | 2 PhotonVision + Limelight | PhotonCamera | `limelightHasTarget()`, `getLimelightTX()`, `getLeftResult()`, `getRightResult()` |
 | `GroundIntakePivotSubsystem` | 2 TalonFX (20 leader, 21 follower) | MotionMagicVoltage + VoltageOut jog + Follower (FOC off) | `toggleCommand()`, `jogUpCommand()`, `jogDownCommand()`, `zeroCommand()`, `stopCommand()` |
-| `ElevatorSubsystem` | 1 TalonFX (19) | VoltageOut (FOC off) | `upCommand()`, `downCommand()`, `setVolts(v)`, `stop()` |
+| `ElevatorSubsystem` | 1 TalonFX (19) | VoltageOut (FOC off) + soft limits | `upCommand()`, `downCommand()`, `zeroCommand()`, `limitsOffCommand()`, `setVolts(v)`, `stop()` |
 | `IntakeRollerSubsystem` | 1 TalonFX (22) | VoltageOut (FOC off) | `runCommand()` |
 
 ## Command Architecture
@@ -315,7 +316,7 @@ in Phoenix Tuner X before writing code.
 ## Known TODOs / FIXMEs
 
 - **Shooter top roller (CAN 18) is not coded**: it won't spin when shooting. Needs a direction and an RPM
-- **Elevator soft limits**: record top/bottom from "Elevator Position (rot)", then add soft limits. Climbing the full robot may need more than 40 A stator; raise it only after limits are in
+- **Elevator soft limits**: code is in, but `kTopLimit` / `kBottomLimit` are still 0.0 (off). Measure them from "Elevator Position (rot)". Climbing the full robot may need more than 40 A stator; raise it only after limits are in
 - **Intake DOWN position**: `kDownPosition = -5.7`, measured Oct 23 (floor: right -5.73, left -5.83). Re-measure if the intake or its gearing changes
 - **Intake roller**: confirm spin direction (`kInverted`) and speed (`kRollerVolts`) on the robot
 - **Intake pivot sync**: Oct 23 Elastic data showed the two sides within ~0.03 rot while driven and ~0.1 rot at rest, so they're well coupled; the drift came from an unpowered free-fall after stopping early (fixed). Dual position control isn't needed unless that changes
