@@ -91,7 +91,7 @@ This is a 2026 FRC robot with the following mechanical systems:
 ### Shooter System
 - **Bottom roller**: TalonFX CAN 16 + CAN 17 (both named "Shooter Bottom" in Tuner X), mounted mirrored.
   The code drives both at the same speed with opposite inversion, which is correct for a mirrored pair.
-- **Top roller**: Kraken X44, CAN 18 ("Shooter Top"). **Not coded yet**, so it does not spin.
+- **Top roller**: belted to the bottom roller, so it spins whenever the bottom roller does. **Nothing to code.** A Kraken X44 still shows on CAN as 18 ("Shooter Top"); the code never commands it. If it is attached to that belt, keep it in coast (the Talon FX default) or take it off: brake mode would drag the belt, and giving it its own speed would fight the bottom roller.
 - Velocity control (VelocityVoltage): fast 7000 RPM requested but clamped to `kMaxRPM` = 3100, slow 2500, idle 2000 (Driver D-pad Left), reverse -1000
 - PID: kP=0.11, kV=0.12
 
@@ -288,7 +288,7 @@ For swerve it is the module position.
 | 15 | TalonFX | UpTakeChannelForShooter | `Constants.ShooterIntake` |
 | 16 | TalonFX | Shooter Bottom | `Constants.Shooter.kLeaderId` |
 | 17 | TalonFX | Shooter Bottom | `Constants.Shooter.kFollowerId` |
-| 18 | TalonFX (Kraken X44) | Shooter Top | **not coded yet** |
+| 18 | TalonFX (Kraken X44) | Shooter Top | not used: top roller is belted to the bottom roller |
 | 19 | TalonFX | Elevator | `Constants.Elevator` (climber) |
 | 20 | TalonFX | Right Ground Intake Raise | `Constants.GroundIntakePivot.kLeaderId` |
 | 21 | TalonFX | Left Ground Intake Raise | `Constants.GroundIntakePivot.kFollowerId` |
@@ -316,7 +316,6 @@ in Phoenix Tuner X before writing code.
 
 ## Known TODOs / FIXMEs
 
-- **Shooter top roller (CAN 18) is not coded**: it won't spin when shooting. Needs a direction and an RPM
 - **Elevator soft limits**: code is in, but `kTopLimit` / `kBottomLimit` are still 0.0 (off). Measure them from "Elevator Position (rot)". Climbing the full robot may need more than 40 A stator; raise it only after limits are in
 - **Intake DOWN position**: `kDownPosition = -5.7`, measured Oct 23 (floor: right -5.73, left -5.83). Re-measure if the intake or its gearing changes
 - **Intake roller**: confirm spin direction (`kInverted`) and speed (`kRollerVolts`) on the robot
