@@ -237,7 +237,7 @@ public final class Constants {
         //   2. Hold D-pad Down until it's just ABOVE the bottom. Type that number in kBottomLimit
         //      (a small number, a bit above 0).
         // While kTopLimit is 0.0 the limits are OFF (not measured yet).
-        public static final double kTopLimit = 0.0;
+        public static final double kTopLimit = 125.1;
         public static final double kBottomLimit = 0.0;
     }
 
