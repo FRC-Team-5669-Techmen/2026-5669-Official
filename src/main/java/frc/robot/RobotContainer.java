@@ -30,17 +30,19 @@ import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.Goober;
+import frc.robot.subsystems.GoobaSubsystem;
 import frc.robot.subsystems.GroundIntakePivotSubsystem;
 import frc.robot.subsystems.IndexSubsystem;
 import frc.robot.subsystems.IntakeRollerSubsystem;
 import frc.robot.subsystems.LimelightSubsystem;
-import frc.robot.subsystems.MariosEar;
 import frc.robot.subsystems.ShooterIntakeSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 
 // Commands
+import frc.robot.commands.AutoGooba;
 import frc.robot.commands.FeedShooterCommand;
 import frc.robot.commands.GooberAlign;
+import frc.robot.commands.ManualGoobaCommand;
 import frc.robot.commands.ManualTurretCommand;
 import frc.robot.commands.RunShooterCommand;
 
@@ -84,12 +86,13 @@ public class RobotContainer {
     public final ShooterIntakeSubsystem shooterIntake = new ShooterIntakeSubsystem();
     public final Goober goober = new Goober(); // turret, CAN 14 ("AngleShooter")
     public final LimelightSubsystem limelight = new LimelightSubsystem();
-    public final MariosEar mariosEar = new MariosEar(limelight);
     public final GroundIntakePivotSubsystem groundIntakePivot = new GroundIntakePivotSubsystem();
     public final ElevatorSubsystem elevator = new ElevatorSubsystem();  // climber, CAN 19
-    public final IntakeRollerSubsystem intakeRoller = new IntakeRollerSubsystem(); // placeholder until on CAN
+    public final IntakeRollerSubsystem intakeRoller = new IntakeRollerSubsystem(); // ground intake roller, CAN 22
+    public final GoobaSubsystem gooba = new GoobaSubsystem(); // hood, CAN 18 ("Shooter Top")
 
-    // Not created on purpose: the hood (GoobaSubsystem), since there's no hood motor.
+    // Not created on purpose: MariosEar (the 2 PhotonVision USB cameras), since the
+    // Limelight is the only camera.
 
     public final DriverDashboard driverDashboard = new DriverDashboard();
 
@@ -104,7 +107,7 @@ public class RobotContainer {
         DriverStation.silenceJoystickConnectionWarning(true);
 
         Marcos.registerNamedCommands(
-            shooter, index, shooterIntake, goober, limelight, mariosEar
+            shooter, index, shooterIntake, goober, limelight, gooba
         );
 
         autoChooser = AutoBuilder.buildAutoChooser("Tests");
@@ -202,6 +205,10 @@ public class RobotContainer {
         // roller is on CAN and kIntakeRollerEnabled = true.
         driverController.rightTrigger().whileTrue(intakeRoller.runCommand());
 
+        // Left Trigger (hold): ground intake roller BACKWARDS, to spit balls out.
+        // Added Oct 25 by the programming lead (was unused).
+        driverController.leftTrigger().whileTrue(intakeRoller.reverseCommand());
+
         // LOCKED A (press): toggle ground intake DOWN / UP. Does nothing until
         // kDownPosition is set.
         driverController.a().onTrue(groundIntakePivot.toggleCommand());
@@ -228,19 +235,36 @@ public class RobotContainer {
 
         // LOCKED Right Bumper (press): toggle Limelight auto-aim. First press starts
         // turret tracking, next press stops it. With no tag in view, the turret sweeps
-        // to look for one. Using the turret jog also stops the auto-aim.
-        operatorController.rightBumper().toggleOnTrue(new GooberAlign(limelight, goober));
+        // to look for one. Using the turret jog also stops the auto-aim. Does nothing
+        // until the turret's far end is set ("Set Turret Far End" dashboard button).
+        // The hood (AutoGooba) follows the tag too. Using the turret jog, the hood jog or Y
+        // stops the whole auto-aim (turret and hood).
+        operatorController.rightBumper().toggleOnTrue(
+            new GooberAlign(limelight, goober).alongWith(new AutoGooba(gooba, limelight)));
 
-        // LOCKED Y: reserved (was the "Gooba" hood). Bind nothing.
+        // LOCKED Y (press): toggle the hood between stowed and deployed (the drive team's
+        // map: "Toggle Gooba Hood"). Back now that the hood motor (18) is.
+        operatorController.y().onTrue(gooba.toggleCommand());
 
-        // OPEN D-pad Up/Down (hold): jog the ground intake slowly. Used to measure the
-        // DOWN position, then kept as a manual backup.
-        operatorController.povUp().whileTrue(groundIntakePivot.jogUpCommand());
-        operatorController.povDown().whileTrue(groundIntakePivot.jogDownCommand());
+        // D-pad Up/Down (hold): jog the hood slowly (programming lead, Oct 25; same as last
+        // season). Write down "Hood Position (rot)" for good shots.
+        operatorController.povUp().whileTrue(new ManualGoobaCommand(gooba, true));
+        operatorController.povDown().whileTrue(new ManualGoobaCommand(gooba, false));
 
-        // OPEN D-pad Left/Right (hold): manual turret jog
-        operatorController.povLeft().whileTrue(new ManualTurretCommand(goober, -Constants.Turret.kManualJogSpeed));
-        operatorController.povRight().whileTrue(new ManualTurretCommand(goober, Constants.Turret.kManualJogSpeed));
+        // Left Stick up/down (hold): jog the ground intake slowly. Manual backup for when the
+        // Driver A toggle can't do it (ignores the intake's soft limits while held). Was the D-pad.
+        new Trigger(() -> operatorController.getLeftY() < -0.5).whileTrue(groundIntakePivot.jogUpCommand());
+        new Trigger(() -> operatorController.getLeftY() > 0.5).whileTrue(groundIntakePivot.jogDownCommand());
+
+        // OPEN D-pad Left/Right (hold): manual turret jog. Right = turn right (away from HOME).
+        // The diagonals count too: a D-pad often reads Right as Up-Right or Down-Right for a moment,
+        // and with plain Left/Right that stopped and restarted the turret (it stuttered).
+        Trigger turretJogLeft = operatorController.povLeft()
+            .or(operatorController.povUpLeft()).or(operatorController.povDownLeft());
+        Trigger turretJogRight = operatorController.povRight()
+            .or(operatorController.povUpRight()).or(operatorController.povDownRight());
+        turretJogLeft.whileTrue(new ManualTurretCommand(goober, -Constants.Turret.kManualJogSpeed));
+        turretJogRight.whileTrue(new ManualTurretCommand(goober, Constants.Turret.kManualJogSpeed));
 
         // Not on the map, kept on purpose: B (hold) runs the Spindex backwards to clear a jam
         operatorController.b().whileTrue(new StartEndCommand(
@@ -277,6 +301,8 @@ public class RobotContainer {
         // When the robot disables, drop the intake's Motion Magic target. Otherwise the
         // motor would remember it and could move on its own when re-enabled.
         RobotModeTriggers.disabled().onTrue(groundIntakePivot.stopCommand());
+        // Same for the hood: when re-enabled it stays put until a button moves it.
+        RobotModeTriggers.disabled().onTrue(gooba.stopCommand());
 
         // Dashboard button for when the code restarts with the intake somewhere other than UP.
         SmartDashboard.putData("Zero Intake (intake is UP)", groundIntakePivot.zeroCommand());
@@ -285,6 +311,17 @@ public class RobotContainer {
         // the soft limits off in case it was powered on with the elevator up.
         SmartDashboard.putData("Zero Elevator (elevator is DOWN)", elevator.zeroCommand());
         SmartDashboard.putData("Elevator Limits OFF (recovery)", elevator.limitsOffCommand());
+
+        // Turret: zero button, only for when the turret is sitting exactly on its HOME mark.
+        SmartDashboard.putData("Zero Turret (turret at HOME)", goober.zeroCommand());
+        // Turret 270° limit: jog to the far end and press Set. Clear forgets it (to re-measure).
+        SmartDashboard.putData("Set Turret Far End (turret at far end)", goober.setEndCommand());
+        SmartDashboard.putData("Clear Turret Far End", goober.clearEndCommand());
+
+        // Hood: zero button, for when the hood is sitting all the way DOWN.
+        SmartDashboard.putData("Zero Hood (hood is DOWN)", gooba.zeroCommand());
+        // Hood measuring switch: click = limits off, click again = back on.
+        SmartDashboard.putData("Hood Limits OFF (measure)", gooba.limitsOffCommand());
 
         shooter.setDefaultCommand(new RunCommand(() -> {
             if (m_isShooterIdle) {

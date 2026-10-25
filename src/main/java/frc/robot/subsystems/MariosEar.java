@@ -4,7 +4,11 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import org.photonvision.PhotonCamera;
 import org.photonvision.targeting.PhotonPipelineResult;
 
-
+/**
+ * RETIRED (Oct 2026): the "Left" and "Right" PhotonVision USB cameras aren't on the robot
+ * (the Limelight is the only camera), so RobotContainer doesn't create this. Kept in case
+ * USB cameras come back.
+ */
 public class MariosEar extends SubsystemBase {
     // Nicknames must match the PhotonVision Dashboard
     private final PhotonCamera camLeft = new PhotonCamera("Left");

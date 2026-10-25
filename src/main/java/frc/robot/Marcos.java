@@ -22,7 +22,7 @@ public class Marcos {
         ShooterIntakeSubsystem shooterIntake,
         Goober goober,
         LimelightSubsystem limelight,
-        MariosEar mariosEar
+        GoobaSubsystem gooba
     ) {
         NamedCommands.registerCommand("spinUpShooter",
             new RunShooterCommand(shooter, Constants.Shooter.kFastTargetRPM)
@@ -36,7 +36,7 @@ public class Marcos {
 
         NamedCommands.registerCommand("score",
             new SequentialCommandGroup(
-                new GooberAlign(limelight, goober).withTimeout(2.0),
+                new GooberAlign(limelight, goober).alongWith(new AutoGooba(gooba, limelight)).withTimeout(2.0),
                 new RunShooterCommand(shooter, Constants.Shooter.kFastTargetRPM).withTimeout(5),
                 new FuelHandlingCommand(index, shooterIntake, shooter, true).withTimeout(2.0),
                 new InstantCommand(shooter::stop, shooter)
@@ -65,13 +65,12 @@ public class Marcos {
             new FuelHandlingCommand(index, shooterIntake, shooter, false).withTimeout(2.0)
         );
 
-        // Limelight-tracked score: align the turret, then shoot.
-        // (Used to aim the hood at the same time; the hood is gone.)
+        // Limelight-tracked score: align the turret and aim the hood, then shoot.
         // Robot must be stopped before calling this — no shooting while moving.
         NamedCommands.registerCommand("visionScore",
             new SequentialCommandGroup(
-                // Phase 1: Align turret
-                new GooberAlign(limelight, goober).withTimeout(2.5),
+                // Phase 1: Align turret + hood together
+                new GooberAlign(limelight, goober).alongWith(new AutoGooba(gooba, limelight)).withTimeout(2.5),
                 // Phase 2: Spin up shooter and fire
                 new RunShooterCommand(shooter, Constants.Shooter.kFastTargetRPM).withTimeout(5.5),
                 new FuelHandlingCommand(index, shooterIntake, shooter, true).withTimeout(2.5),
@@ -79,8 +78,10 @@ public class Marcos {
             )
         );
 
+        // Used to run MariosEarCommand (Limelight + 2 USB cameras). The robot only has the
+        // Limelight, so this is now the same Limelight aim as "alignTurret".
         NamedCommands.registerCommand("aimTurret",
-            new MariosEarCommand(mariosEar, goober).withTimeout(2.0)
+            new GooberAlign(limelight, goober).withTimeout(2.0)
         );
 
         NamedCommands.registerCommand("alignTurret",
@@ -106,11 +107,10 @@ public class Marcos {
         NamedCommands.registerCommand("runGroundIntake", Commands.none());
 
         // ==========================================
-        // HOOD REMOVED (Oct 2026): no hood motor on the robot. Kept as no-ops so any
-        // auto that references them still loads.
+        // HOOD (back on Talon FX 18, Oct 2026)
         // ==========================================
-        NamedCommands.registerCommand("deployGooba", Commands.none());
-        NamedCommands.registerCommand("stowGooba", Commands.none());
-        NamedCommands.registerCommand("autoAimGooba", Commands.none());
+        NamedCommands.registerCommand("deployGooba", new GoobaToggleCommand(gooba, true));
+        NamedCommands.registerCommand("stowGooba", new GoobaToggleCommand(gooba, false));
+        NamedCommands.registerCommand("autoAimGooba", new AutoGooba(gooba, limelight).withTimeout(2.0));
     }
 }

@@ -104,11 +104,50 @@ public final class Constants {
         public static final double kReverseSpeed = -0.6;
     }
 
+    /**
+     * Turret ("Goober"), Talon FX 14. Turns the shooter, and the Limelight on it, about 270°.
+     *
+     * <p>HOME = one END of the travel, lined up with the spot mark. From HOME it can only turn
+     * RIGHT (clockwise seen from above) about 270°, then back. It can't go all the way around
+     * because the motor and Limelight wires run up to it. Nothing else stops it, so the soft
+     * limits below are what protect the wires.
+     *
+     * <p>ALWAYS power on with the turret on the HOME mark: the motor calls wherever it is at
+     * power-on "0". Deploying code does NOT re-zero it.
+     */
     public static final class Turret {
         public static final int kMotorId = 14; // Tuner X name: "AngleShooter"
+
+        // In the code, POSITIVE = turning RIGHT = away from HOME. Test: at HOME, TAP Operator
+        // D-pad Right. It must turn RIGHT (away from home, like the photos). If it turns LEFT
+        // (past home, into the wires), stop and flip this.
+        public static final boolean kMotorInverted = false;
+
+        // ---- Range, in motor rotations from HOME (dashboard "Turret Position (rot)") ----
+        // HOME is 0. The far end (270° from HOME) is set from the DASHBOARD: power on at HOME,
+        // hold Operator D-pad Right until the turret is just SHORT of where the wires get
+        // tight, press "Set Turret Far End (turret at far end)". It's saved on the roboRIO
+        // and shows as "Turret Far End (rot)".
+        // kEndPosition is only a backup, used when nothing is saved: type the
+        // "Turret Far End (rot)" number here too. 0.0 = none: until the far end is set,
+        // auto-aim does nothing and NOTHING stops the turret past 270°, so watch the wires.
+        // Oct 24: the far end first read 32.49; the team then decided on 36.
+        public static final double kEndPosition = 36;
+        // "Set Turret Far End" refuses to save anything closer to HOME than this (rotations),
+        // so pressing it by mistake at HOME can't lock the turret in place.
+        public static final double kMinEndPosition = 1.0;
+        // How far kEndPosition is from HOME, in degrees. Turns rotations into degrees.
+        public static final double kEndDegrees = 270.0;
+        // Auto-aim and the search sweep stay this far inside each end, so they never push on
+        // the limits. The D-pad jog can go all the way to the ends.
+        public static final double kAimMarginDegrees = 10.0;
+
+        // Strength cap. Low on purpose: limits how hard it can pull on the wires if it gets stuck.
+        public static final double kStatorCurrentLimit = 30.0;  // amps
+
         public static final double kSpeedMultiplier = 1.0;
-        public static final double kManualJogSpeed = 0.2;
-        public static final double kSweepSpeed = 1.0;
+        // Operator D-pad Left/Right speed (percent power). Was 0.2; slower is easier to aim by hand.
+        public static final double kManualJogSpeed = 0.12;
         // Slow scan speed used while hunting for a target with no Limelight lock
         public static final double kSearchSpeed = 0.15;
 
@@ -128,19 +167,47 @@ public final class Constants {
         public static final double kLoopPeriod = 0.002;
     }
 
-    // RETIRED (Oct 2026): the robot no longer has a hood motor. The hood code is kept
-    // but never created in RobotContainer. ID 51 is empty on the CAN bus; if a hood
-    // comes back, give it a free ID in Tuner X and update kMotorId.
+    /**
+     * Hood ("Gooba"), Kraken X44 on Talon FX 18 (Tuner X name: "Shooter Top"). Tilts up and down
+     * to change the shot. Same hood code as last season (it was on ID 51 then).
+     *
+     * <p>0 = power-on position, so ALWAYS power on with the hood all the way DOWN. Deploying
+     * code does NOT re-zero it. Positive = hood UP.
+     */
     public static final class Gooba {
-        public static final int kMotorId = 51;
+        // false = the motor is never created and every hood button does nothing.
+        public static final boolean kHoodEnabled = true;
+        public static final int kMotorId = 18;
+        // Test: tap Operator D-pad UP. The hood must go UP. If it goes down, flip this.
+        public static final boolean kInverted = false;
+        // ---- Soft limits, in motor rotations (dashboard "Hood Position (rot)") ----
+        // NOT measured on this robot yet: 0.0 / 10.7 are last season's numbers. To measure:
+        // power on with the hood all the way DOWN, click "Hood Limits OFF (measure)", jog
+        // with Operator D-pad Up until the hood JUST touches the top, read "Hood Position (rot)",
+        // then D-pad Down until it just touches the bottom and read it again. Put a hair inside
+        // each number here, then click the switch again to turn the limits back on.
+        // BOTTOM, measured Oct 25 (Elastic): pushed down by hand at power-on = 0 (the hard stop).
+        // Let go, it springs back up to about 0.42-0.51; the motor jogging down got it to 0.24.
+        // 0.2 = just above the hard stop, so the motor never grinds into it.
+        public static final double kBottomPosition = 0.2;
+        // TOP, measured Oct 25 (Elastic): pushed all the way up = 3.89 (last season's hood
+        // went to 10.7, so the gearing is different now). 3.8 = a hair below the top stop.
+        public static final double kTopPosition = 3.8;
+
         public static final double kP = 2.4;
         public static final double kI = 0.0;
         public static final double kD = 0.1;
         public static final double kCruiseVelocity = 80.0;
         public static final double kAcceleration = 160.0;
         public static final double kSupplyCurrentLimit = 40.0;
-        public static final double kPositionStowed = 0.0;
-        public static final double kPositionDeployed = 3.5;
+        public static final double kStatorCurrentLimit = 30.0;  // amps, limits the push if it jams
+
+        // Operator Y presets (rotations)
+        public static final double kPositionStowed = 0.2;  // = kBottomPosition
+        // Last season's 3.5 out of 10.7, scaled to this hood's 3.89 travel (same share of the way up)
+        public static final double kPositionDeployed = 1.3;
+        // Operator D-pad Up/Down jog: rotations per 20 ms loop (0.04 = 2 rotations per second)
+        public static final double kManualStep = 0.04;
     }
 
     /**
@@ -258,12 +325,18 @@ public final class Constants {
         public static final boolean kIntakeRollerEnabled = true;  // on CAN now (Oct 2026)
         public static final int kMotorId = 22;  // Tuner X name: "Intake motor(22)"
         public static final boolean kInverted = false;  // flip if it spins balls OUT instead of in
-        public static final double kRollerVolts = 6.0;  // spin speed while RT is held (volts)
+        public static final double kRollerVolts = 9.0;  // spin speed while Driver RT is held (volts). Was 6.0
+        public static final double kReverseVolts = -9.0; // Driver LT (hold): spit balls back out
         public static final double kStatorCurrentLimit = 40.0;  // amps
     }
 
     public static final class Limelight {
-        public static final int[] kValidTargetIds = {10, 18, 21, 26, 5, 2};
+        // HUB AprilTags the turret may aim at: the tag in the MIDDLE of each of the 3 hub faces
+        // we shoot at (the face toward the center of the field is left out). Checked against
+        // the official WPILib 2026 field layout. Once the Driver Station says our alliance, the
+        // Limelight only looks for OUR 3 (both hubs until then), so it never aims at theirs.
+        public static final int[] kRedHubTagIds = {2, 5, 10};
+        public static final int[] kBlueHubTagIds = {18, 21, 26};
 
         // Offseason remount: camera is horizontal and centered on the shooter,
         // so tx aims the turret directly and ty feeds the distance trig in

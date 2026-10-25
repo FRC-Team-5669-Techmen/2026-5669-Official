@@ -5,7 +5,11 @@ import frc.robot.subsystems.Goober;
 import frc.robot.subsystems.MariosEar;
 
 /**
- * Multi-camera turret aiming. Priority order:
+ * RETIRED (Oct 2026): the robot has no USB cameras, only the Limelight, so nothing creates
+ * this. Don't bring it back as is: it swings the turret at 100% power the moment a USB camera
+ * sees ANY AprilTag, and ignores the turret's limits. Use GooberAlign.
+ *
+ * <p>Multi-camera turret aiming. Priority order:
  * <ol>
  *   <li>Limelight sees the tag → PID track it</li>
  *   <li>Left USB camera sees it → coarse swing left</li>
