@@ -393,7 +393,7 @@ public final class Constants {
         public static final double kCameraHeightHoodUp = 22.35 * 0.0254;
         // MEASURE: camera tilt, degrees UP from level.
         // MEASURED Oct 25: lens points UP, tilted back 25 degrees (phone level on top: -25 to -26).
-        // Tilt with the hood all the way UP: NOT MEASURED yet, same number until it is.
+        // Hood all the way UP: also 25 (measured Oct 25; a belt keeps the camera angle as the hood rises).
         public static final double kCameraPitchHoodDown = 25.0;
         public static final double kCameraPitchHoodUp = 25.0;   // measured Oct 25: a belt compensation mechanism keeps the camera at 25 deg as the hood rises
         // Skip vision while the hood (and camera) is moving faster than this (rotations/second).
