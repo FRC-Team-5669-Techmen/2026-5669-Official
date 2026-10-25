@@ -76,18 +76,22 @@ public class GoobaSubsystem extends SubsystemBase {
         // "Zero Hood (hood is DOWN)" dashboard button).
 
         // ==========================================
-        // SHOT MAP CALIBRATION DATA (last season's competition numbers)
+        // SHOT MAP CALIBRATION DATA
         // Format: shotMap.put(limelight_ty_degrees, hood_position_rotations);
-        // Last season the camera was mounted sideways, so these were recorded from raw tx,
-        // which was the up/down angle. Same camera spot, so they carry over as ty.
+        //
+        // !!! STARTING GUESS, NOT TUNED ON THIS ROBOT !!!
+        // Last season's competition points (1.0 / 2.36 / 3.8 / 5.1 rotations), scaled to this
+        // hood: last season's travel was 10.7 rotations, this one is 3.89, so each number is
+        // multiplied by 3.89 / 10.7 (same share of the way up). The ty keys are unchanged:
+        // last season's camera was sideways, so its raw tx was the up/down angle = ty now.
         // Close to the hub = big positive ty, far = negative ty.
         // To re-tune: park, jog the hood (Operator D-pad Up/Down) until shots land, then
         // record "Limelight ty" and "Hood Position (rot)" here.
         // ==========================================
-        shotMap.put(27.3, 1.0);
-        shotMap.put(-16.8, 2.36);
-        shotMap.put(-18.3, 3.8);
-        shotMap.put(-23.9, 5.1);
+        shotMap.put(27.3, 0.36);
+        shotMap.put(-16.8, 0.86);
+        shotMap.put(-18.3, 1.38);
+        shotMap.put(-23.9, 1.85);
     }
 
     /** Soft limits: reverse = bottom, forward = top. */

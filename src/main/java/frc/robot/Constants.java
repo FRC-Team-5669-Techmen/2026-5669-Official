@@ -190,8 +190,9 @@ public final class Constants {
         // Let go, it springs back up to about 0.42-0.51; the motor jogging down got it to 0.24.
         // 0.2 = just above the hard stop, so the motor never grinds into it.
         public static final double kBottomPosition = 0.2;
-        // TOP: still last season's number, not measured on this robot yet.
-        public static final double kTopPosition = 10.7;
+        // TOP, measured Oct 25 (Elastic): pushed all the way up = 3.89 (last season's hood
+        // went to 10.7, so the gearing is different now). 3.8 = a hair below the top stop.
+        public static final double kTopPosition = 3.8;
 
         public static final double kP = 2.4;
         public static final double kI = 0.0;
@@ -203,7 +204,8 @@ public final class Constants {
 
         // Operator Y presets (rotations)
         public static final double kPositionStowed = 0.2;  // = kBottomPosition
-        public static final double kPositionDeployed = 3.5;
+        // Last season's 3.5 out of 10.7, scaled to this hood's 3.89 travel (same share of the way up)
+        public static final double kPositionDeployed = 1.3;
         // Operator D-pad Up/Down jog: rotations per 20 ms loop (0.04 = 2 rotations per second)
         public static final double kManualStep = 0.04;
     }
