@@ -7,6 +7,8 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.math.MathUtil;
+import frc.robot.Constants;
 import frc.robot.Constants.Aim;
 import frc.robot.LimelightHelpers;
 import frc.robot.aiming.ShotSolver;
@@ -30,6 +32,9 @@ public class VisionLocalizer extends SubsystemBase {
 
     private final CommandSwerveDrivetrain drivetrain;
     private final Goober turret;
+    private final GoobaSubsystem hood;
+    private double lastHoodPos = 0.0;
+    private double hoodSpeed = 0.0; // rotations per second
 
     private boolean headingKnown = false;   // gyro heading matches the field (seeded)
     private boolean positionKnown = false;  // a vision fix arrived, or an auto set the pose
@@ -37,9 +42,10 @@ public class VisionLocalizer extends SubsystemBase {
     private String status = "starting";
     private int accepted = 0;
 
-    public VisionLocalizer(CommandSwerveDrivetrain drivetrain, Goober turret) {
+    public VisionLocalizer(CommandSwerveDrivetrain drivetrain, Goober turret, GoobaSubsystem hood) {
         this.drivetrain = drivetrain;
         this.turret = turret;
+        this.hood = hood;
         SmartDashboard.putBoolean("Vision Pose ON", true);
     }
 
@@ -83,8 +89,19 @@ public class VisionLocalizer extends SubsystemBase {
             Aim.kCameraForwardOfPivot, Aim.kCameraLeftOfPivot);
         double side = Aim.kLimelightSideIsRight ? -cam[1] : cam[1];
         double yaw = Aim.kLimelightYawCCW ? cam[2] : -cam[2];
-        LimelightHelpers.setCameraPose_RobotSpace(kName, cam[0], side, Aim.kCameraHeight,
-            0.0, Aim.kCameraPitchDegrees, yaw);
+        // The camera rides on the hood: height and tilt follow the hood position.
+        double hoodPos = hood.getPosition();
+        hoodSpeed = (hoodPos - lastHoodPos) / 0.02;
+        lastHoodPos = hoodPos;
+        double f = Constants.Gooba.kHoodEnabled
+            ? MathUtil.clamp((hoodPos - Constants.Gooba.kBottomPosition)
+                / (Constants.Gooba.kTopPosition - Constants.Gooba.kBottomPosition), 0.0, 1.0)
+            : 0.0;
+        double height = MathUtil.interpolate(Aim.kCameraHeightHoodDown, Aim.kCameraHeightHoodUp, f);
+        double pitch = MathUtil.interpolate(Aim.kCameraPitchHoodDown, Aim.kCameraPitchHoodUp, f);
+        LimelightHelpers.setCameraPose_RobotSpace(kName, cam[0], side, height, 0.0, pitch, yaw);
+        SmartDashboard.putNumber("Camera Height (in)", height / 0.0254);
+        SmartDashboard.putNumber("Camera Pitch (deg)", pitch);
 
         // 2. MegaTag2 needs our heading in field (blue-origin) degrees.
         var state = drivetrain.getState();
@@ -107,6 +124,7 @@ public class VisionLocalizer extends SubsystemBase {
         if (!turretKnown) return "OFF: turret far end not set";
         if (Math.abs(turret.getVelocityDegPerSec()) > Aim.kMaxTurretSpeedForVision) return "skip: turret turning fast";
         if (Math.abs(spin) > Aim.kMaxRobotSpinForVision) return "skip: robot spinning fast";
+        if (Math.abs(hoodSpeed) > Aim.kMaxHoodSpeedForVision) return "skip: hood moving";
 
         LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(kName);
         LimelightHelpers.PoseEstimate mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(kName);

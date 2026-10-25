@@ -97,7 +97,7 @@ public class RobotContainer {
 
     // Shoot from anywhere: field position from the Limelight (camera on the turret), and the
     // shot brain that turns position into turret angle, hood and shooter speed.
-    public final VisionLocalizer localizer = new VisionLocalizer(drivetrain, goober);
+    public final VisionLocalizer localizer = new VisionLocalizer(drivetrain, goober, gooba);
     public final AimSubsystem aim = new AimSubsystem(drivetrain, localizer);
 
     // Not created on purpose: MariosEar (the 2 PhotonVision USB cameras), since the

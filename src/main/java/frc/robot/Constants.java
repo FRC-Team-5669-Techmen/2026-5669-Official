@@ -386,12 +386,18 @@ public final class Constants {
         // HOME), facing the same way as the shooter. Negative = behind.
         public static final double kCameraForwardOfPivot = -5.0 * 0.0254;
         public static final double kCameraLeftOfPivot = 0.0;
-        // ESTIMATE (not measured yet): ~20 in. A few inches off barely changes the field position
-        // (the tags are solved in 3D); measure lens-to-floor when convenient.
-        public static final double kCameraHeight = 20.0 * 0.0254;
+        // MEASURED Oct 25: the Limelight rides on the HOOD, so its height (and tilt) change with
+        // the hood. Lens height: 20.75 in with the hood all the way down, 22.35 in all the way up.
+        // The code interpolates by hood position (Gooba.kBottomPosition .. kTopPosition).
+        public static final double kCameraHeightHoodDown = 20.75 * 0.0254;
+        public static final double kCameraHeightHoodUp = 22.35 * 0.0254;
         // MEASURE: camera tilt, degrees UP from level.
         // MEASURED Oct 25: lens points UP, tilted back 25 degrees (phone level on top: -25 to -26).
-        public static final double kCameraPitchDegrees = 25.0;
+        // Tilt with the hood all the way UP: NOT MEASURED yet, same number until it is.
+        public static final double kCameraPitchHoodDown = 25.0;
+        public static final double kCameraPitchHoodUp = 25.0;
+        // Skip vision while the hood (and camera) is moving faster than this (rotations/second).
+        public static final double kMaxHoodSpeedForVision = 1.0;
         // Limelight's robot-space axes. Its web UI labels them "forward / right / up" and turns
         // counter-clockwise for positive yaw. If the vision position jumps when ONLY the turret
         // turns (robot still, tags in view), flip kLimelightYawCCW; if it mirrors left/right,
