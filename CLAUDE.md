@@ -59,7 +59,7 @@ src/main/java/frc/robot/
 │   ├── AutoGooba               # Hood follows the Limelight ty through the shot map (runs with auto-aim)
 │   ├── GooberAlign             # PID turret align w/ search sweep (Limelight)
 │   ├── MariosEarCommand        # Multi-phase turret aim (Limelight → USB cams) (RETIRED: no USB cams)
-│   ├── ManualGoobaCommand      # Operator Left Stick jog of the hood up/down
+│   ├── ManualGoobaCommand      # Operator D-pad Up/Down jog of the hood
 │   └── ManualTurretCommand     # D-pad jog turret left/right
 ├── subsystems/
 │   ├── CommandSwerveDrivetrain # CTRE swerve + PathPlanner AutoBuilder + MapleSim
@@ -111,11 +111,11 @@ This is a 2026 FRC robot with the following mechanical systems:
 - **Kraken X44 on Talon FX 18** (Tuner X name "Shooter Top", no Pro license, so FOC off). Tilts the hood up/down to change the shot. Same code as last season, which ran it on ID 51. `Constants.Gooba.kHoodEnabled = false` turns it off entirely (motor never created).
 - **Motion Magic** position control: kP=2.4, kD=0.1, cruise 80 rot/s, accel 160 rot/s². Brake, 40 A supply + 30 A stator limits.
 - **0 = power-on position, so always power on with the hood all the way DOWN.** No re-zero at startup (last season's code did). Dashboard button **"Zero Hood (hood is DOWN)"**. **Positive = UP** (flip `kInverted` if the jog Up lowers it).
-- Soft limits **0 to `kTopPosition` = 10.7 rotations** (last season's top). Lower it if the hood hits the top first.
+- **Soft limits** `kBottomPosition` / `kTopPosition`: **0.0 / 10.7, last season's numbers, NOT measured on this robot yet.** To measure: power on with the hood DOWN, click **"Hood Limits OFF (measure)"** ("Hood Status" says LIMITS OFF), jog with Operator D-pad Up until the hood just touches the top and read "Hood Position (rot)", then D-pad Down to the bottom and read it again. Put a hair inside each number in `Constants.Gooba`, then click the switch again. The jog target never runs more than 0.5 rot ahead of the hood and is reset to the real position on release, so holding against an end doesn't keep pushing.
 - **Shot map** keyed on the Limelight's **ty** (up/down angle to the tag): last season's competition points 27.3→1.0, -16.8→2.36, -18.3→3.8, -23.9→5.1. They were recorded from raw tx on the old sideways mount (tx was the up/down angle then); the camera is in the same spot, so they carry over as ty. Close to the hub = big positive ty.
-- **Controls**: Operator **RB** auto-aim now moves the hood too (`AutoGooba`, holds its spot when no tag). Operator **Y** toggles stowed (0.0) / deployed (3.5). Operator **Left Stick up/down** (hold) jogs it (2 rot/s). Any of these manual controls cancels auto-aim.
+- **Controls**: Operator **RB** auto-aim now moves the hood too (`AutoGooba`, holds its spot when no tag). Operator **Y** toggles stowed (0.0) / deployed (3.5). Operator **D-pad Up/Down** (hold) jogs it (2 rot/s). Any of these manual controls cancels auto-aim.
 - **When the robot disables**, the hood target is dropped, so it never jumps on enable.
-- Dashboard: "Hood Enabled", "Hood Position (rot)", "Hood Target (rot)", "Hood Amps", "AutoGooba ty", "AutoGooba Target Rot".
+- Dashboard: "Hood Enabled", "Hood Status" (OK / At BOTTOM / At TOP / LIMITS OFF), "Hood Position (rot)", "Hood Target (rot)", "Hood Amps", "AutoGooba ty", "AutoGooba Target Rot".
 
 ### Goober (Turret)
 - TalonFX (CAN 14, Tuner X: "AngleShooter"), duty cycle output (FOC off), brake mode, 30 A stator limit (low on purpose, to go easy on the wires).
@@ -136,7 +136,7 @@ This is a 2026 FRC robot with the following mechanical systems:
   - "Stall" = more than `kStallAmps` while slower than `kStallSpeed` for `kStallSeconds` (dashboard "Intake Stalled").
   - **ZERO WRONG**: if DOWN stops more than `kZeroWrongTolerance` short of the floor, "Intake Status" says `ZERO WRONG by X: push intake up, press Zero Intake`. Cleared by Zero Intake or the next clean DOWN.
 - **Positive = UP.** No sensor knows the real angle (no shaft for a CANcoder; the mentor's rule is to always start with the intake up). UP = 0 comes from the Talon FX starting at 0 when the robot is **powered on**, so **push the intake all the way up against the top before every power-on**. It sags with the power off, and even a sag of a fraction of a rotation shifts every position: Oct 25 it powered on 0.9 low, DOWN slammed the floor and UP stopped too low to stay up (that was with the old let-go-at-UP code). The code does **not** re-zero at startup, so deploying new code keeps the true position. If the zero is ever wrong: push the intake up by hand and press Zero Intake. DOWN (`kDownPosition`) is a measured **negative** number. While it's 0.0, A does nothing and the dashboard says "Intake DOWN position not set". A stops `kDownBackoff` short of DOWN so the motors don't stall into the ground.
-- **Operator D-pad Up/Down** jogs it slowly (`kJogVolts`, VoltageOut, FOC off). The jog is a manual override: it **ignores the soft limits** while held (they come back on release), so it can always recover the intake if the zero is off.
+- **Operator Left Stick up/down** (hold) jogs it slowly (`kJogVolts`, VoltageOut, FOC off). It was on the D-pad until Oct 25; the D-pad is the hood now. The jog is a manual override: it **ignores the soft limits** while held (they come back on release), so it can always recover the intake if the zero is off.
 - **Soft limit on the leader: DOWN only** (`kSoftLimitMargin` past DOWN, once DOWN is set). No UP soft limit: an UP limit measured from a wrong zero is what used to block raising.
 - Brake mode, 40 A stator limit on both motors. Speed is set by `kCruiseVelocity` / `kAcceleration` / `kJerk`; holding by `kP` / `kD` / `kV`.
 - **Enabling never moves it**: when the robot disables, the Motion Magic target is cleared, so it sits (brake) until the next A press or jog.
@@ -217,8 +217,8 @@ This matches the drive team's official map. **LOCKED** = practiced, must stay ex
 | Left Trigger (hold) | Shooter windup | LOCKED |
 | Right Bumper (press) | Toggle Limelight auto-aim (turret tracking + hood on/off) | LOCKED |
 | Y (press) | Toggle hood stowed / deployed ("Toggle Gooba Hood", as on the team map) | LOCKED |
-| Left Stick up/down (hold) | Jog the hood up/down slowly | OPEN |
-| D-Pad Up/Down (hold) | Jog ground intake up/down slowly | OPEN |
+| D-Pad Up/Down (hold) | Jog the hood up/down slowly (as on the team map) | OPEN |
+| Left Stick up/down (hold) | Jog ground intake up/down slowly (manual backup; was the D-pad) | OPEN |
 | D-Pad Left/Right (hold) | Manual turret jog (Right = turn right, away from HOME; diagonals count, so it doesn't stutter) | OPEN |
 | B (hold) | Spindex backwards to clear a jam | not on map, kept on purpose |
 
@@ -340,5 +340,5 @@ in Phoenix Tuner X before writing code.
 - Oct 25: fast raised to 5400 RPM (cap 5800 = motor free speed); 3100 could not reach the target. Kept below free speed so the loop regulates shot speed
 - X56 HOTAS is switched off; if re-enabled, its axis/button indices need on-hardware verification (docs/X56-HOTAS-SETUP.md)
 - Servo mechanism(s) replacing the pneumatics: not built yet, not coded yet (use WPILib `Servo` on a roboRIO PWM port when ready)
-- **Hood bring-up (Oct 25)**: confirm Left Stick Up raises it (else flip `Gooba.kInverted`), that 10.7 rotations is the real top, and that last season's ty shot map still scores; re-record points if not
+- **Hood bring-up (Oct 25)**: confirm Operator D-pad Up raises it (else flip `Gooba.kInverted`), measure the real top/bottom with "Hood Limits OFF (measure)", and that last season's ty shot map still scores; re-record points if not
 - **Limelight localization** (field position from AprilTags, so the turret aims at the hub center and the hood uses true distance): needs the turret-camera fix in `CommandSwerveDrivetrain`, plus measurements (turret center offset, camera offset/height/tilt, HOME direction, exact degrees per turret rotation)

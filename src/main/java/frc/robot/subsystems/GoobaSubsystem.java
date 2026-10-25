@@ -2,12 +2,14 @@ package frc.robot.subsystems;
 
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
+import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.Gooba;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
@@ -18,7 +20,9 @@ import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
  * to hood rotations. Same code as last season, which ran on ID 51.
  *
  * <p>0 = power-on position, so the hood must be all the way DOWN at power-on. Positive = UP.
- * Soft limits keep it between 0 and {@link Gooba#kTopPosition}.
+ * Soft limits keep it between {@link Gooba#kBottomPosition} and {@link Gooba#kTopPosition}.
+ * The "Hood Limits OFF (measure)" dashboard switch turns them off so the real top and bottom
+ * can be measured with the Operator D-pad.
  */
 public class GoobaSubsystem extends SubsystemBase {
     // Stays null while kHoodEnabled is false. Every method checks for that.
@@ -32,6 +36,7 @@ public class GoobaSubsystem extends SubsystemBase {
 
     private double m_target = 0.0;       // last position sent, for the dashboard
     private boolean m_deployed = false;  // Operator Y toggles this
+    private boolean m_limitsOff = false; // true while the "Hood Limits OFF (measure)" switch is on
 
     public GoobaSubsystem() {
         if (!Gooba.kHoodEnabled) {
@@ -61,11 +66,8 @@ public class GoobaSubsystem extends SubsystemBase {
             ? InvertedValue.Clockwise_Positive
             : InvertedValue.CounterClockwise_Positive;
 
-        // Firmware soft limits: hood travel is 0.0 (down) to kTopPosition
-        configs.SoftwareLimitSwitch.ReverseSoftLimitThreshold = 0.0;
-        configs.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
-        configs.SoftwareLimitSwitch.ForwardSoftLimitThreshold = Gooba.kTopPosition;
-        configs.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
+        // Firmware soft limits: hood travel is kBottomPosition (down) to kTopPosition
+        configs.SoftwareLimitSwitch = limitConfigs(true);
 
         m_motor.getConfigurator().apply(configs);
 
@@ -79,7 +81,7 @@ public class GoobaSubsystem extends SubsystemBase {
         // Last season the camera was mounted sideways, so these were recorded from raw tx,
         // which was the up/down angle. Same camera spot, so they carry over as ty.
         // Close to the hub = big positive ty, far = negative ty.
-        // To re-tune: park, jog the hood (Operator Left Stick) until shots land, then
+        // To re-tune: park, jog the hood (Operator D-pad Up/Down) until shots land, then
         // record "Limelight ty" and "Hood Position (rot)" here.
         // ==========================================
         shotMap.put(27.3, 1.0);
@@ -88,12 +90,27 @@ public class GoobaSubsystem extends SubsystemBase {
         shotMap.put(-23.9, 5.1);
     }
 
-    /** Motion Magic move, kept inside the 0.0 to kTopPosition soft limits. */
+    /** Soft limits: reverse = bottom, forward = top. */
+    private static SoftwareLimitSwitchConfigs limitConfigs(boolean on) {
+        SoftwareLimitSwitchConfigs limits = new SoftwareLimitSwitchConfigs();
+        limits.ReverseSoftLimitThreshold = Gooba.kBottomPosition;
+        limits.ReverseSoftLimitEnable = on;
+        limits.ForwardSoftLimitThreshold = Gooba.kTopPosition;
+        limits.ForwardSoftLimitEnable = on;
+        return limits;
+    }
+
+    /** True while the "Hood Limits OFF (measure)" switch is on. */
+    public boolean limitsOff() {
+        return m_limitsOff;
+    }
+
+    /** Motion Magic move, kept inside the soft limits (unless they're switched off to measure). */
     public void setPosition(double rotations) {
         if (m_motor == null) {
             return;
         }
-        m_target = MathUtil.clamp(rotations, 0.0, Gooba.kTopPosition);
+        m_target = m_limitsOff ? rotations : MathUtil.clamp(rotations, Gooba.kBottomPosition, Gooba.kTopPosition);
         m_motor.setControl(m_positionControl.withPosition(m_target));
     }
 
@@ -129,6 +146,38 @@ public class GoobaSubsystem extends SubsystemBase {
         return runOnce(this::stop).ignoringDisable(true);
     }
 
+    /**
+     * The "Hood Limits OFF (measure)" dashboard switch: click to turn the soft limits off, click
+     * again to turn them back on. While off, nothing stops the hood at the ends, so jog slowly
+     * and let go as soon as it touches the top or bottom.
+     */
+    public Command limitsOffCommand() {
+        // No subsystem requirement on purpose, so jogging doesn't turn the limits back on.
+        return Commands.startEnd(() -> setLimits(false), () -> setLimits(true))
+            .ignoringDisable(true).withName("Hood Limits OFF");
+    }
+
+    private void setLimits(boolean on) {
+        m_limitsOff = !on;
+        if (m_motor != null) {
+            m_motor.getConfigurator().apply(limitConfigs(on));
+        }
+    }
+
+    private String status() {
+        if (m_limitsOff) {
+            return "LIMITS OFF (measuring): jog slowly";
+        }
+        double position = getPosition();
+        if (position <= Gooba.kBottomPosition + 0.05) {
+            return "At BOTTOM";
+        }
+        if (position >= Gooba.kTopPosition - 0.05) {
+            return "At TOP";
+        }
+        return "OK";
+    }
+
     /** The "Zero Hood (hood is DOWN)" dashboard button: call this spot 0. Works while disabled. */
     public Command zeroCommand() {
         return runOnce(() -> {
@@ -142,6 +191,7 @@ public class GoobaSubsystem extends SubsystemBase {
     public void periodic() {
         SmartDashboard.putBoolean("Hood Enabled", m_motor != null);
         if (m_motor != null) {
+            SmartDashboard.putString("Hood Status", status());
             SmartDashboard.putNumber("Hood Position (rot)", getPosition());
             SmartDashboard.putNumber("Hood Target (rot)", m_target);
             SmartDashboard.putNumber("Hood Amps", m_motor.getStatorCurrent().getValueAsDouble());

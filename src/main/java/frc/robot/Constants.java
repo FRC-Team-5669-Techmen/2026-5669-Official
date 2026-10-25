@@ -178,10 +178,15 @@ public final class Constants {
         // false = the motor is never created and every hood button does nothing.
         public static final boolean kHoodEnabled = true;
         public static final int kMotorId = 18;
-        // Test: tap Operator Left Stick UP. The hood must go UP. If it goes down, flip this.
+        // Test: tap Operator D-pad UP. The hood must go UP. If it goes down, flip this.
         public static final boolean kInverted = false;
-        // Top of the travel, in motor rotations from DOWN. 10.7 = last season's measured top.
-        // If the hood hits the top before 10.7, lower this (read "Hood Position (rot)").
+        // ---- Soft limits, in motor rotations (dashboard "Hood Position (rot)") ----
+        // NOT measured on this robot yet: 0.0 / 10.7 are last season's numbers. To measure:
+        // power on with the hood all the way DOWN, click "Hood Limits OFF (measure)", jog
+        // with Operator D-pad Up until the hood JUST touches the top, read "Hood Position (rot)",
+        // then D-pad Down until it just touches the bottom and read it again. Put a hair inside
+        // each number here, then click the switch again to turn the limits back on.
+        public static final double kBottomPosition = 0.0;
         public static final double kTopPosition = 10.7;
 
         public static final double kP = 2.4;
@@ -195,7 +200,7 @@ public final class Constants {
         // Operator Y presets (rotations)
         public static final double kPositionStowed = 0.0;
         public static final double kPositionDeployed = 3.5;
-        // Operator Left Stick jog: rotations per 20 ms loop (0.04 = 2 rotations per second)
+        // Operator D-pad Up/Down jog: rotations per 20 ms loop (0.04 = 2 rotations per second)
         public static final double kManualStep = 0.04;
     }
 

@@ -371,11 +371,11 @@ const BIND = {
     RT:{t:"Shoot",m:"HOLD",fx:"feed",n:"RT"},
     RB:{t:"Auto-aim + hood",m:"TOGGLE",fx:"aim",n:"RB"},
     Y:{t:"Hood up / down",m:"TOGGLE",fx:"hood",n:"Y"},
-    LS:{t:"Hood jog",m:"STICK",fx:"hoodJog",n:"LEFT STICK"},
+    LS:{t:"Intake jog",m:"STICK",fx:"jogU",n:"LEFT STICK"},
     DL:{t:"Turret left",m:"HOLD",fx:"turL",n:"D-PAD LEFT"},
     DR:{t:"Turret right",m:"HOLD",fx:"turR",n:"D-PAD RIGHT"},
-    DU:{t:"Intake jog up",m:"HOLD",fx:"jogU",n:"D-PAD UP"},
-    DD:{t:"Intake jog down",m:"HOLD",fx:"jogD",n:"D-PAD DOWN"},
+    DU:{t:"Hood jog up",m:"HOLD",fx:"hoodJog",n:"D-PAD UP"},
+    DD:{t:"Hood jog down",m:"HOLD",fx:"hoodJog",n:"D-PAD DOWN"},
     B:{t:"Unjam",m:"HOLD",fx:"unjam",n:"B"},
   }
 };
@@ -393,8 +393,8 @@ const CALL = {
   ],
   operator: [
     {keys:["LT"],k:"LT",t:"Spin up shooter",m:"HOLD",side:"L",y:63,ax:192,ay:63},
-    {keys:["LS"],k:"L STICK",t:"Hood jog",m:"STICK",side:"L",y:142,ax:206,ay:142},
-    {keys:["DU","DD"],k:"D-PAD ▲ ▼",t:"Intake jog",m:"HOLD",side:"L",y:200,ax:250,ay:182},
+    {keys:["LS"],k:"L STICK",t:"Intake jog",m:"STICK",side:"L",y:142,ax:206,ay:142},
+    {keys:["DU","DD"],k:"D-PAD ▲ ▼",t:"Hood jog",m:"HOLD",side:"L",y:200,ax:250,ay:182},
     {keys:["DL","DR"],k:"D-PAD ◀ ▶",t:"Turret jog",m:"HOLD",side:"L",y:258,ax:238,ay:203},
     {keys:["RT"],k:"RT",t:"Shoot",m:"HOLD",side:"R",y:63,ax:408,ay:63},
     {keys:["RB"],k:"RB",t:"Auto-aim + hood",m:"TOGGLE",side:"R",y:112,ax:412,ay:84},
@@ -616,11 +616,13 @@ function step(now){
   if(held(D,"DU"))S.elev=Math.min(1,S.elev+dt*0.45);
   if(held(D,"DD"))S.elev=Math.max(0,S.elev-dt*0.45);
   if(held(D,"DU")||held(D,"DD"))S.focus["p-elev"]=S.focus["t-climb"]=1;
-  if(held(O,"DU")){S.pivot=Math.max(0,S.pivot-dt*0.35);S.pivotT=S.pivot;S.focus["p-intake"]=S.focus["t-intake"]=1;}
-  if(held(O,"DD")){S.pivot=Math.min(1,S.pivot+dt*0.35);S.pivotT=S.pivot;S.focus["p-intake"]=S.focus["t-intake"]=1;}
+  const ojog=axisOf(O,"LS").y; // operator left stick: intake jog (up = raise)
+  if(ojog>0.5){S.pivot=Math.max(0,S.pivot-dt*0.35);S.pivotT=S.pivot;S.focus["p-intake"]=S.focus["t-intake"]=1;}
+  if(ojog<-0.5){S.pivot=Math.min(1,S.pivot+dt*0.35);S.pivotT=S.pivot;S.focus["p-intake"]=S.focus["t-intake"]=1;}
+  if(held(O,"DU")||held(O,"DD")){S.aim=false;S.focus["p-shooter"]=S.focus["t-shooter"]=1;}
   S.pivot+=Math.sign(S.pivotT-S.pivot)*Math.min(Math.abs(S.pivotT-S.pivot),dt*2.2);
   S.roller=held(D,"RT")||held(D,"LT"); if(S.roller){S.rollerA+=(held(D,"RT")?1:-1)*dt*900;S.focus["p-intake"]=S.focus["t-intake"]=1;}
-  const spin=held(O,"LT"), target=spin?3100:(S.idle?2000:0);
+  const spin=held(O,"LT"), target=spin?5400:(S.idle?2000:0);
   S.rpm+=Math.sign(target-S.rpm)*Math.min(Math.abs(target-S.rpm),dt*(target>S.rpm?2600:1400));
   S.wheelA+=S.rpm*dt*0.25; if(spin)S.focus["p-shooter"]=S.focus["t-shooter"]=1;
   const feed=held(O,"RT"), unjam=held(O,"B");

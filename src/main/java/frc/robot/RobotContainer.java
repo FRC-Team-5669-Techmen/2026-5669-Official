@@ -246,15 +246,15 @@ public class RobotContainer {
         // map: "Toggle Gooba Hood"). Back now that the hood motor (18) is.
         operatorController.y().onTrue(gooba.toggleCommand());
 
-        // Left Stick up/down (hold): jog the hood slowly. Was the D-pad last season; the D-pad
-        // Up/Down now jogs the intake. Write down "Hood Position (rot)" for good shots.
-        new Trigger(() -> operatorController.getLeftY() < -0.5).whileTrue(new ManualGoobaCommand(gooba, true));
-        new Trigger(() -> operatorController.getLeftY() > 0.5).whileTrue(new ManualGoobaCommand(gooba, false));
+        // D-pad Up/Down (hold): jog the hood slowly (programming lead, Oct 25; same as last
+        // season). Write down "Hood Position (rot)" for good shots.
+        operatorController.povUp().whileTrue(new ManualGoobaCommand(gooba, true));
+        operatorController.povDown().whileTrue(new ManualGoobaCommand(gooba, false));
 
-        // OPEN D-pad Up/Down (hold): jog the ground intake slowly. Used to measure the
-        // DOWN position, then kept as a manual backup.
-        operatorController.povUp().whileTrue(groundIntakePivot.jogUpCommand());
-        operatorController.povDown().whileTrue(groundIntakePivot.jogDownCommand());
+        // Left Stick up/down (hold): jog the ground intake slowly. Manual backup for when the
+        // Driver A toggle can't do it (ignores the intake's soft limits while held). Was the D-pad.
+        new Trigger(() -> operatorController.getLeftY() < -0.5).whileTrue(groundIntakePivot.jogUpCommand());
+        new Trigger(() -> operatorController.getLeftY() > 0.5).whileTrue(groundIntakePivot.jogDownCommand());
 
         // OPEN D-pad Left/Right (hold): manual turret jog. Right = turn right (away from HOME).
         // The diagonals count too: a D-pad often reads Right as Up-Right or Down-Right for a moment,
@@ -320,6 +320,8 @@ public class RobotContainer {
 
         // Hood: zero button, for when the hood is sitting all the way DOWN.
         SmartDashboard.putData("Zero Hood (hood is DOWN)", gooba.zeroCommand());
+        // Hood measuring switch: click = limits off, click again = back on.
+        SmartDashboard.putData("Hood Limits OFF (measure)", gooba.limitsOffCommand());
 
         shooter.setDefaultCommand(new RunCommand(() -> {
             if (m_isShooterIdle) {
