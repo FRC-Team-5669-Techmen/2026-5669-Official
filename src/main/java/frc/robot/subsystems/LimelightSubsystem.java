@@ -42,6 +42,7 @@ public class LimelightSubsystem extends SubsystemBase {
         Arrays.stream(Constants.Limelight.kRedHubTagIds),
         Arrays.stream(Constants.Limelight.kBlueHubTagIds)).toArray();
     private int[] allowedTagIds = kBothHubTagIds;
+    private static final int[] kAllFieldTags = IntStream.rangeClosed(1, 32).toArray();
     private Optional<Alliance> filterAlliance = Optional.empty(); // alliance the filter was last set for
 
     public LimelightSubsystem() {
@@ -55,19 +56,38 @@ public class LimelightSubsystem extends SubsystemBase {
         botposeTargetSpace = table.getEntry("botpose_targetspace");
         tid = table.getEntry("tid");
 
-        // Tell the Limelight to ONLY track hub tags. periodic() narrows this to OUR hub
-        // as soon as the Driver Station reports the alliance.
-        LimelightHelpers.SetFiducialIDFiltersOverride("limelight", allowedTagIds);
+        // The Limelight looks at EVERY field tag (1-32): the more tags it sees, the better it knows
+        // where the robot is (shoot from anywhere). Which tag the turret may aim at (OUR hub) is
+        // picked here in code from the raw tag list instead of by the Limelight's ID filter.
+        LimelightHelpers.SetFiducialIDFiltersOverride("limelight", kAllFieldTags);
     }
 
-    /** Horizontal angle to the target in degrees (positive = target to the right). */
+    /**
+     * The closest tag in view that belongs to OUR hub (the ones the turret may aim at), or null.
+     * The Limelight sees every field tag, so its main tx/ty may be some other tag: aiming uses this.
+     */
+    public LimelightHelpers.RawFiducial getHubTag() {
+        LimelightHelpers.RawFiducial best = null;
+        for (LimelightHelpers.RawFiducial f : LimelightHelpers.getRawFiducials("limelight")) {
+            for (int id : allowedTagIds) {
+                if (f.id == id && (best == null || f.distToCamera < best.distToCamera)) {
+                    best = f;
+                }
+            }
+        }
+        return best;
+    }
+
+    /** Horizontal angle to OUR hub tag in degrees (positive = to the right). 0 when none in view. */
     public double getTX() {
-        return tx.getNumber(0).doubleValue();
+        LimelightHelpers.RawFiducial hub = getHubTag();
+        return hub == null ? 0.0 : hub.txnc;
     }
 
-    /** Vertical angle to the target in degrees (positive = target above crosshair). */
+    /** Vertical angle to OUR hub tag in degrees (positive = above center). 0 when none in view. */
     public double getTY() {
-        return ty.getNumber(0).doubleValue();
+        LimelightHelpers.RawFiducial hub = getHubTag();
+        return hub == null ? 0.0 : hub.tync;
     }
 
     /** Returns the target area (ta) as a percentage of the image. */
@@ -105,20 +125,9 @@ public class LimelightSubsystem extends SubsystemBase {
         return (int) tid.getInteger(-1);
     }
 
-    /** Returns true ONLY if the limelight sees a target AND it's one of OUR hub's tags. */
+    /** True only if one of OUR hub's tags is in view (any of them, not just the main target). */
     public boolean isValidTarget() {
-        if (!isTargetAvailable()) {
-            return false;
-        }
-
-        int currentID = getID();
-        for (int validID : allowedTagIds) {
-            if (currentID == validID) {
-                return true;
-            }
-        }
-
-        return false;
+        return isTargetAvailable() && getHubTag() != null;
     }
 
     /**
@@ -156,13 +165,14 @@ public class LimelightSubsystem extends SubsystemBase {
             } else {
                 allowedTagIds = Constants.Limelight.kBlueHubTagIds;
             }
-            LimelightHelpers.SetFiducialIDFiltersOverride("limelight", allowedTagIds);
         }
 
         // Publish vision data to SmartDashboard for tuning and debugging.
         SmartDashboard.putNumber("Limelight tx", getTX());
         SmartDashboard.putNumber("Limelight ty", getTY());
         SmartDashboard.putNumber("Limelight Tag ID", getID());
+        LimelightHelpers.RawFiducial hubTag = getHubTag();
+        SmartDashboard.putNumber("Limelight Hub Tag", hubTag == null ? -1 : hubTag.id);
         SmartDashboard.putString("Limelight Aiming At", alliance.isEmpty() ? "both hubs (no alliance yet)"
             : alliance.get() == Alliance.Red ? "RED hub (tags 2, 5, 10)" : "BLUE hub (tags 18, 21, 26)");
         SmartDashboard.putNumber("Limelight distance (m)", distanceToTarget());

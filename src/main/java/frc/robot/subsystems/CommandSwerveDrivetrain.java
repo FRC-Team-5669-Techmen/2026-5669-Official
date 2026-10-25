@@ -283,36 +283,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             });
         }
 
-        // ==========================================================
-        // 1. CRITICAL MEGATAG 2 FIX: Update Limelight with Gyro Yaw
-        // ==========================================================
-        // MegaTag2 MUST have the gyro yaw before calculating the pose. 
-        // Without this, the vision pose will rotate wildly and ruin your field-centric drive.
-        frc.robot.LimelightHelpers.SetRobotOrientation("limelight", 
-            getPigeon2().getYaw().getValueAsDouble(), 0, 0, 0, 0, 0);
-
-        // Now we can safely fetch the MegaTag2 pose
-        frc.robot.LimelightHelpers.PoseEstimate limelightMeasurement = frc.robot.LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2("limelight");
-        
-        // Ensure the Limelight actually sees a tag before updating odometry
-        if (limelightMeasurement != null && limelightMeasurement.tagCount > 0) {
-            
-            // 2. COMPETITION SAFETY: Reject vision if spinning too fast.
-            // Rapid spinning causes motion blur, yielding terrible vision data.
-            double angularVelocity = Math.abs(getState().Speeds.omegaRadiansPerSecond);
-            
-            if (angularVelocity < 2.0) { // Only accept vision if not spinning wildly
-                
-                // 3. TRUST GYRO FOR HEADING: 
-                // We pass standard deviations [X, Y, Theta]. 
-                // By passing 9999999 for Theta, we tell the code: "Trust vision for X/Y position, but NEVER let vision change our rotation."
-                addVisionMeasurement(
-                    limelightMeasurement.pose, 
-                    limelightMeasurement.timestampSeconds,
-                    edu.wpi.first.math.VecBuilder.fill(0.7, 0.7, 9999999) 
-                );
-            }
-        }
+        // Limelight position fixes now come from VisionLocalizer, which knows the camera turns
+        // with the turret and uses the field heading (not the raw Pigeon yaw).
 
         DogLog.log("BatteryVoltage", RobotController.getBatteryVoltage());
         DogLog.log("Drive/OdometryPose", getState().Pose);

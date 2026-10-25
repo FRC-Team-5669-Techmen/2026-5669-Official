@@ -11,8 +11,10 @@ import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.FollowPathCommand;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -27,6 +29,7 @@ import frc.robot.controls.HotasX56;
 import frc.robot.generated.TunerConstants;
 
 // Subsystems
+import frc.robot.subsystems.AimSubsystem;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.Goober;
@@ -37,14 +40,15 @@ import frc.robot.subsystems.IntakeRollerSubsystem;
 import frc.robot.subsystems.LimelightSubsystem;
 import frc.robot.subsystems.ShooterIntakeSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
+import frc.robot.subsystems.VisionLocalizer;
 
 // Commands
-import frc.robot.commands.AutoGooba;
+import frc.robot.commands.AimCommand;
 import frc.robot.commands.FeedShooterCommand;
-import frc.robot.commands.GooberAlign;
 import frc.robot.commands.ManualGoobaCommand;
 import frc.robot.commands.ManualTurretCommand;
 import frc.robot.commands.RunShooterCommand;
+import frc.robot.commands.ShootCommand;
 
 public class RobotContainer {
 
@@ -91,6 +95,11 @@ public class RobotContainer {
     public final IntakeRollerSubsystem intakeRoller = new IntakeRollerSubsystem(); // ground intake roller, CAN 22
     public final GoobaSubsystem gooba = new GoobaSubsystem(); // hood, CAN 18 ("Shooter Top")
 
+    // Shoot from anywhere: field position from the Limelight (camera on the turret), and the
+    // shot brain that turns position into turret angle, hood and shooter speed.
+    public final VisionLocalizer localizer = new VisionLocalizer(drivetrain, goober);
+    public final AimSubsystem aim = new AimSubsystem(drivetrain, localizer);
+
     // Not created on purpose: MariosEar (the 2 PhotonVision USB cameras), since the
     // Limelight is the only camera.
 
@@ -107,7 +116,7 @@ public class RobotContainer {
         DriverStation.silenceJoystickConnectionWarning(true);
 
         Marcos.registerNamedCommands(
-            shooter, index, shooterIntake, goober, limelight, gooba
+            shooter, index, shooterIntake, goober, limelight, gooba, aim, drivetrain
         );
 
         autoChooser = AutoBuilder.buildAutoChooser("Tests");
@@ -174,19 +183,30 @@ public class RobotContainer {
 
                 double currentMaxSpeed = maxSpeed * speedMultiplier;
                 double currentMaxAngularRate = maxAngularRate * speedMultiplier;
+                double rotationRate = scaledRot * currentMaxAngularRate;
+
+                // SHOOT FROM ANYWHERE heading assist: with auto-aim on and the hub behind the
+                // turret (its ~90 degree dead zone), turn the robot just enough to bring the hub in
+                // reach. The driver's rotate stick always wins.
+                if (aim.isActive() && aim.poseUsable() && !aim.solution().reachable()
+                        && Math.abs(rInput) < Constants.Aim.kDriverRotateOverride) {
+                    rotationRate = MathUtil.clamp(
+                        Constants.Aim.kHeadingAssistP * aim.solution().headingErrorRad(),
+                        -Constants.Aim.kHeadingAssistMax, Constants.Aim.kHeadingAssistMax);
+                }
 
                 // --- SWERVE DRIVE LOGIC ---
                 if ("robot".equals(driveModeChooser.getSelected())) {
                     return robotCentricDrive
                         .withVelocityX(scaledX * currentMaxSpeed)
                         .withVelocityY(scaledY * currentMaxSpeed)
-                        .withRotationalRate(scaledRot * currentMaxAngularRate);
+                        .withRotationalRate(rotationRate);
                 }
 
                 return fieldCentricDrive
                     .withVelocityX(scaledX * currentMaxSpeed)
                     .withVelocityY(scaledY * currentMaxSpeed)
-                    .withRotationalRate(scaledRot * currentMaxAngularRate);
+                    .withRotationalRate(rotationRate);
             })
         );
     }
@@ -199,7 +219,12 @@ public class RobotContainer {
     // drive command above.)
     private void configureDriverBindings() {
         // LOCKED Left Bumper: reset gyro / seed field centric
-        driverController.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
+        // Shoot from anywhere: this also tells the robot its heading matches the field, so press it
+        // with the robot pointing straight AWAY from your driver station.
+        driverController.leftBumper().onTrue(drivetrain.runOnce(() -> {
+            drivetrain.seedFieldCentric();
+            localizer.markHeadingKnown();
+        }));
 
         // LOCKED Right Trigger (hold): ground intake roller. Does nothing until the
         // roller is on CAN and kIntakeRollerEnabled = true.
@@ -227,11 +252,20 @@ public class RobotContainer {
     // --- OPERATOR CONTROLLER (PORT 1 - XBOX) ---
     // ==========================================
     private void configureOperatorBindings() {
-        // LOCKED Right Trigger (hold): shoot (Spindex + uptake)
-        operatorController.rightTrigger().whileTrue(new FeedShooterCommand(index, shooterIntake));
+        // LOCKED Right Trigger (hold): shoot.
+        //   Auto-aim ON (RB): feeds ONLY when ready (turret on the hub, shooter at the table's speed,
+        //     hood in place), and pauses by itself when not. Hold it and keep driving.
+        //   Auto-aim OFF: feeds right away, as before (spin up with LT first).
+        Trigger aimOn = new Trigger(aim::isActive);
+        operatorController.rightTrigger().and(aimOn).whileTrue(
+            new ShootCommand(aim, shooter, index, shooterIntake, goober, gooba, false));
+        operatorController.rightTrigger().and(aimOn.negate()).whileTrue(new FeedShooterCommand(index, shooterIntake));
 
-        // LOCKED Left Trigger (hold): shooter windup
-        operatorController.leftTrigger().whileTrue(new RunShooterCommand(shooter, Constants.Shooter.kFastTargetRPM));
+        // LOCKED Left Trigger (hold): shooter windup. Auto-aim ON: to the shot table's speed for
+        // the distance (the shooter's default command does it, see configureSystemDefaults).
+        // Auto-aim OFF: the fast preset, as before.
+        operatorController.leftTrigger().and(aimOn.negate())
+            .whileTrue(new RunShooterCommand(shooter, Constants.Shooter.kFastTargetRPM));
 
         // LOCKED Right Bumper (press): toggle Limelight auto-aim. First press starts
         // turret tracking, next press stops it. With no tag in view, the turret sweeps
@@ -239,8 +273,9 @@ public class RobotContainer {
         // until the turret's far end is set ("Set Turret Far End" dashboard button).
         // The hood (AutoGooba) follows the tag too. Using the turret jog, the hood jog or Y
         // stops the whole auto-aim (turret and hood).
-        operatorController.rightBumper().toggleOnTrue(
-            new GooberAlign(limelight, goober).alongWith(new AutoGooba(gooba, limelight)));
+        // SHOOT FROM ANYWHERE (Oct 26): aims from the robot's field position (falls back to the
+        // hub tag when the position isn't known). See AimCommand.
+        operatorController.rightBumper().toggleOnTrue(new AimCommand(aim, goober, gooba, limelight, drivetrain));
 
         // LOCKED Y (press): toggle the hood between stowed and deployed (the drive team's
         // map: "Toggle Gooba Hood"). Back now that the hood motor (18) is.
@@ -324,12 +359,20 @@ public class RobotContainer {
         SmartDashboard.putData("Hood Limits OFF (measure)", gooba.limitsOffCommand());
 
         shooter.setDefaultCommand(new RunCommand(() -> {
-            if (m_isShooterIdle) {
+            boolean wantsShot = operatorController.getHID().getRightTriggerAxis() > 0.5
+                || operatorController.getHID().getLeftTriggerAxis() > 0.5;
+            if (aim.isActive() && wantsShot) {
+                shooter.runAtRPM(aim.targetRpm()); // auto-aim: table speed while LT or RT is held
+            } else if (m_isShooterIdle) {
                 shooter.runAtRPM(Constants.Shooter.kIdleRPM);
             } else {
                 shooter.stop();
             }
         }, shooter));
+
+        // Shot table tuning (see AimSubsystem): record the "Tune" values at the current distance.
+        SmartDashboard.putData("Record Shot Point", aim.recordPointCommand());
+        SmartDashboard.putData("Clear Recorded Shot Points", aim.clearRecordedCommand());
 
         drivetrain.registerTelemetry(logger::telemeterize);
     }
@@ -338,6 +381,11 @@ public class RobotContainer {
         m_isShooterIdle = !m_isShooterIdle;
         SmartDashboard.putBoolean("Shooter Idle Active", m_isShooterIdle);
         System.out.println("Shooter Idle State Toggled: " + m_isShooterIdle);
+    }
+
+    /** An auto is starting: its path sets the field position, so the heading is known. */
+    public void onAutoStart() {
+        localizer.markPoseSetByAuto();
     }
 
     public Command getAutonomousCommand() {
@@ -363,6 +411,11 @@ public class RobotContainer {
             shooter.getCurrentRpm());
 
         SmartDashboard.putBoolean("HUB OPEN", isHubOpen);
+
+        // Operator feel: a firm buzz while auto-aim is on and everything is ready to fire.
+        boolean ready = DriverStation.isTeleopEnabled() && aim.readyToFire(goober, shooter, gooba);
+        operatorController.getHID().setRumble(RumbleType.kBothRumble, ready ? 0.4 : 0.0);
+        SmartDashboard.putBoolean("Ready To Fire", ready);
         // Which Xbox controller is which: slot 0 = DRIVER, slot 1 = OPERATOR in the
         // Driver Station USB tab. Driver A / Right Trigger / D-pad only work from slot 0.
         SmartDashboard.putBoolean("Driver Controller (slot 0)", DriverStation.isJoystickConnected(0));

@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants.Aim;
 import frc.robot.Constants.Turret;
 
 /**
@@ -135,6 +136,51 @@ public class Goober extends SubsystemBase {
         aimStatus = "TRACKING";
     }
 
+    // ---- Aiming at an ANGLE (shoot from anywhere) ----
+    private final PIDController anglePID = new PIDController(Aim.kTurretP, 0.0, Aim.kTurretD);
+    private double angleTarget = Double.NaN; // degrees from HOME, NaN = not aiming at an angle
+
+    /**
+     * One step of turning the turret to an angle (degrees clockwise from HOME), for shooting
+     * from anywhere. robotSpinRadPerSec is the robot's own rotation (CCW positive): the turret
+     * turns the other way to cancel it, so it stays on the hub while the robot spins.
+     * Clamped inside the aim range. Does nothing until the far end is set.
+     */
+    public void aimAtAngle(double targetDegrees, double robotSpinRadPerSec) {
+        if (!endMeasured()) {
+            stop();
+            aimStatus = "OFF: far end not set";
+            return;
+        }
+        double lo = Turret.kAimMarginDegrees;
+        double hi = Turret.kEndDegrees - Turret.kAimMarginDegrees;
+        angleTarget = MathUtil.clamp(targetDegrees, lo, hi);
+        double angle = getAngleDegrees();
+        // Robot turning CCW at w makes the needed turret angle (clockwise from HOME) grow at w.
+        double feedforward = Aim.kTurretFF * Math.toDegrees(robotSpinRadPerSec);
+        double output = anglePID.calculate(angle, angleTarget) + feedforward;
+        setMotorSpeed(MathUtil.clamp(output, -Aim.kTurretMaxOutput, Aim.kTurretMaxOutput));
+        aimStatus = aimLocked() ? "LOCKED" : "TURNING";
+    }
+
+    /** On the angle target and nearly still. */
+    public boolean aimLocked() {
+        return !Double.isNaN(angleTarget)
+            && Math.abs(getAngleDegrees() - angleTarget) <= Aim.kTurretToleranceDegrees
+            && Math.abs(getVelocityDegPerSec()) <= Aim.kLockedMaxSpeedDegPerSec;
+    }
+
+    /** Forget the angle target (aiming stopped). */
+    public void clearAngleTarget() {
+        angleTarget = Double.NaN;
+        anglePID.reset();
+    }
+
+    /** Turret speed, degrees per second, positive = turning RIGHT. 0 until the far end is set. */
+    public double getVelocityDegPerSec() {
+        return endMeasured() ? motor.getVelocity().getValueAsDouble() / rotationsPerDegree() : 0.0;
+    }
+
     /** Clears the tx smoothing filter so a new alignment doesn't chase stale samples. */
     public void resetAimFilter() {
         txFilter.reset();
@@ -222,5 +268,6 @@ public class Goober extends SubsystemBase {
         SmartDashboard.putNumber("Turret Angle (deg)", getAngleDegrees());
         SmartDashboard.putNumber("Turret Far End (rot)", endPosition);
         SmartDashboard.putNumber("Turret Amps", motor.getStatorCurrent().getValueAsDouble());
+        SmartDashboard.putNumber("Turret Target (deg)", Double.isNaN(angleTarget) ? -1 : angleTarget);
     }
 }

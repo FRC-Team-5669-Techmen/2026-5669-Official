@@ -273,7 +273,7 @@ svg.bot{position:absolute;left:14px;right:14px;top:94px;width:calc(100% - 28px);
     <span class="rail" aria-hidden="true"><svg><defs><pattern id="chev" width="14" height="12" patternUnits="userSpaceOnUse"><path d="M3 1 L9 6 L3 11" fill="none" stroke="currentColor" stroke-width="2.4"/></pattern></defs><rect width="100%" height="100%" fill="url(#chev)"/></svg></span>
     <span class="chip" id="src-chip" title="Where controller input comes from"><span class="lamp" id="src-lamp"></span><span id="src-name">Click mode</span></span>
     <span class="chip mono" id="diag" title="Live input check: updates per second and raw controller buttons">--</span>
-    <span class="chip" title="Robot code this map was read from">main 2e4168b</span>
+    <span class="chip" title="Robot code this map was read from">main</span>
     <button class="key" id="swap" title="Swap which physical controller is driver and operator">Swap pads</button>
     <button class="key" id="reset" title="Reset the robot model">Reset</button>
   </div>
@@ -352,10 +352,10 @@ svg.bot{position:absolute;left:14px;right:14px;top:94px;width:calc(100% - 28px);
 </div></div>
 
 <script>
-// ---------- bindings (RobotContainer.java, main 2e4168b) ----------
+// ---------- bindings (RobotContainer.java, main) ----------
 const BIND = {
   driver: {
-    LB:{t:"Reset gyro",m:"PRESS",fx:"gyro",n:"LB"},
+    LB:{t:"Reset gyro (face away from DS)",m:"PRESS",fx:"gyro",n:"LB"},
     LS:{t:"Drive",m:"STICK",fx:"drive",n:"LEFT STICK"},
     RS:{t:"Rotate",m:"STICK",fx:"rotate",n:"RIGHT STICK"},
     START:{t:"Slow mode",m:"HOLD",fx:"slow",n:"START"},
@@ -368,8 +368,8 @@ const BIND = {
   },
   operator: {
     LT:{t:"Spin up shooter",m:"HOLD",fx:"spin",n:"LT"},
-    RT:{t:"Shoot",m:"HOLD",fx:"feed",n:"RT"},
-    RB:{t:"Auto-aim + hood",m:"TOGGLE",fx:"aim",n:"RB"},
+    RT:{t:"Shoot (aim on: fires when ready)",m:"HOLD",fx:"feed",n:"RT"},
+    RB:{t:"Auto-aim from anywhere",m:"TOGGLE",fx:"aim",n:"RB"},
     Y:{t:"Hood up / down",m:"TOGGLE",fx:"hood",n:"Y"},
     LS:{t:"Intake jog",m:"STICK",fx:"jogU",n:"LEFT STICK"},
     DL:{t:"Turret left",m:"HOLD",fx:"turL",n:"D-PAD LEFT"},
@@ -396,8 +396,8 @@ const CALL = {
     {keys:["LS"],k:"L STICK",t:"Intake jog",m:"STICK",side:"L",y:142,ax:206,ay:142},
     {keys:["DU","DD"],k:"D-PAD ▲ ▼",t:"Hood jog",m:"HOLD",side:"L",y:200,ax:250,ay:182},
     {keys:["DL","DR"],k:"D-PAD ◀ ▶",t:"Turret jog",m:"HOLD",side:"L",y:258,ax:238,ay:203},
-    {keys:["RT"],k:"RT",t:"Shoot",m:"HOLD",side:"R",y:63,ax:408,ay:63},
-    {keys:["RB"],k:"RB",t:"Auto-aim + hood",m:"TOGGLE",side:"R",y:112,ax:412,ay:84},
+    {keys:["RT"],k:"RT",t:"Shoot when ready",m:"HOLD",side:"R",y:63,ax:408,ay:63},
+    {keys:["RB"],k:"RB",t:"Auto-aim anywhere",m:"TOGGLE",side:"R",y:112,ax:412,ay:84},
     {keys:["Y"],k:"Y",t:"Hood up / down",m:"TOGGLE",side:"R",y:170,ax:381,ay:120},
     {keys:["B"],k:"B",t:"Unjam",m:"HOLD",side:"R",y:228,ax:403,ay:142},
   ]

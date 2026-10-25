@@ -346,4 +346,95 @@ public final class Constants {
         public static final double kLensHeightMeters = 0.0;
         public static final double kAprilTagHeightMeters = 1.12395;
     }
+
+    /**
+     * SHOOT FROM ANYWHERE (Oct 2026). The robot knows where it is on the field (wheel odometry
+     * + gyro, corrected by the Limelight seeing ANY AprilTag), so it can point the turret, set
+     * the hood and pick the shooter speed for our hub from any spot, with or without the hub
+     * tags in view. See frc.robot.aiming and CLAUDE.md "Shoot from anywhere".
+     *
+     * <p>!!! The geometry below is NOT MEASURED YET. Until it is, aiming and vision position
+     * are off by however wrong these are. Measure on the robot, then set kGeometryMeasured.
+     * Directions: x = toward the robot's FRONT (the side the field-centric "forward" faces when
+     * the gyro is reset), y = toward the robot's LEFT, angles counter-clockwise seen from above.
+     */
+    public static final class Aim {
+        // Flip to true once every number marked MEASURE has been measured on the robot.
+        // While false the dashboard shows "AIM GEOMETRY NOT MEASURED".
+        public static final boolean kGeometryMeasured = false;
+
+        // ---- Turret ----
+        // MEASURE: where the turret's pivot (the center it turns around) is, from the robot's
+        // center, in meters. Forward = +x, left = +y.
+        public static final double kTurretPivotX = 0.0;
+        public static final double kTurretPivotY = 0.0;
+        // MEASURE: which way the shooter points when the turret is at HOME, in degrees from the
+        // robot's front, counter-clockwise (90 = shooting out the LEFT side, -90 = the RIGHT side,
+        // 180 = out the back). The turret turns RIGHT (clockwise) from HOME.
+        public static final double kHomeYawDegrees = 0.0;
+
+        // ---- Limelight (rides on the turret, faces the same way as the shooter) ----
+        // MEASURE: camera lens position relative to the turret pivot, measured with the turret at
+        // HOME: forward along the shooter's direction, left of it, and height above the floor.
+        public static final double kCameraForwardOfPivot = 0.10;
+        public static final double kCameraLeftOfPivot = 0.0;
+        public static final double kCameraHeight = 0.50;
+        // MEASURE: camera tilt, degrees UP from level.
+        public static final double kCameraPitchDegrees = 20.0;
+        // Limelight's robot-space axes. Its web UI labels them "forward / right / up" and turns
+        // counter-clockwise for positive yaw. If the vision position jumps when ONLY the turret
+        // turns (robot still, tags in view), flip kLimelightYawCCW; if it mirrors left/right,
+        // flip kLimelightSideIsRight. (Test in CLAUDE.md.)
+        public static final boolean kLimelightSideIsRight = true;
+        public static final boolean kLimelightYawCCW = true;
+
+        // ---- Turret position control (aiming at an angle, not chasing tx) ----
+        // Percent power per degree of error. 20 degrees off = 0.4 power.
+        public static final double kTurretP = 0.02;
+        public static final double kTurretD = 0.0008;
+        // Feedforward: percent power per (degree per second) the turret must turn, so it keeps up
+        // when the robot spins under it. Estimate: 36 motor rot per 270 deg, ~100 rot/s at full power.
+        public static final double kTurretFF = 0.0013;
+        public static final double kTurretMaxOutput = 0.8;
+        // "On target" when within this many degrees and turning slower than kLockedMaxSpeed.
+        public static final double kTurretToleranceDegrees = 1.5;
+        public static final double kLockedMaxSpeedDegPerSec = 30.0;
+
+        // ---- Ready to fire (Operator RT only feeds the shooter when all are true) ----
+        public static final double kRpmTolerance = 150.0;
+        public static final double kHoodTolerance = 0.12; // rotations
+
+        // ---- Hub out of the turret's reach (the ~90 degree dead zone behind the wires) ----
+        // The drivetrain turns the robot just enough to bring the hub into reach, but only while
+        // the driver isn't using the rotate stick. rad/s per radian of error, and a cap.
+        public static final double kHeadingAssistP = 3.0;
+        public static final double kHeadingAssistMax = 2.5; // rad/s
+        public static final double kDriverRotateOverride = 0.15; // right-stick deflection that takes over
+
+        // ---- Shooting while moving ----
+        // Aim at where the hub will be relative to the robot when the ball gets there
+        // (robot velocity x time of flight). Time of flight comes from the shot table.
+        public static final boolean kShootWhileMoving = true;
+
+        // ---- Vision position (Limelight MegaTag) ----
+        // Ignore vision while the turret (and camera) is swinging faster than this, or the robot
+        // spins faster than this: the image and the turret angle don't line up then.
+        public static final double kMaxTurretSpeedForVision = 120.0; // deg/s
+        public static final double kMaxRobotSpinForVision = 2.5;     // rad/s
+        // Ignore single-tag fixes from further away than this (meters): too noisy.
+        public static final double kMaxSingleTagDistance = 4.5;
+        // How much to trust a fix: standard deviation (m) for one tag at 1 m. Grows with
+        // distance squared, shrinks with more tags.
+        public static final double kVisionXYStdDevAt1m = 0.25;
+        // Heading from vision (MegaTag1, 2+ tags) is only used to correct the gyro slowly.
+        public static final double kVisionThetaStdDev = 0.6; // rad
+        public static final double kDisabledThetaStdDev = 0.15; // rad, while disabled (sitting still)
+
+        // ---- Hub centers on the field (meters, WPILib blue-origin coordinates) ----
+        // From the official 2026 REBUILT welded field layout (apriltag 2026.2.1): the middle of
+        // each hub's 8 tags. The AndyMark field differs by about 1.4 cm.
+        public static final double kRedHubX = 11.9155;
+        public static final double kBlueHubX = 4.6255;
+        public static final double kHubY = 4.0346;
+    }
 }

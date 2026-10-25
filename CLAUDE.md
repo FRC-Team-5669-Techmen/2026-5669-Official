@@ -25,6 +25,25 @@
 
 `tools/controller-map/`: double-click **Start Controller Map.bat** on any Windows driver station laptop for a live map of both Xbox controllers under the docked Driver Station (reads the controllers in the background, so it follows presses while Driver Station has focus). See its README. **When a controller binding changes, update the `BIND` / `CALL` tables in `tools/controller-map/index.html` too.**
 
+## Shoot From Anywhere (Oct 26)
+
+The robot knows where it is on the field and aims at our hub from any spot, with or without a hub tag in view. Code: `frc.robot.aiming` (`ShotSolver` pure math, `ShotTable`), `subsystems/VisionLocalizer`, `subsystems/AimSubsystem`, `commands/AimCommand`, `commands/ShootCommand`. Tests: `src/test/java/frc/robot/aiming`.
+
+- **Position**: swerve odometry + gyro, corrected by the Limelight seeing **any of the 32 field tags** (it no longer filters to hub tags; our hub tag is picked in code for the tag-only fallback). The camera rides on the turret, so `VisionLocalizer` tells the Limelight every loop where the camera is on the robot (`setCameraPose_RobotSpace`, from the turret angle). MegaTag1 (2+ tags) sets/corrects the heading; MegaTag2 (works with 1 tag) does the rest once the heading is known. Fixes are skipped while the turret turns faster than 120 deg/s or the robot spins faster than 2.5 rad/s, and single tags further than 4.5 m. The old MegaTag2 code in `CommandSwerveDrivetrain.periodic()` (wrong with a turret camera, raw Pigeon yaw) is removed.
+- **Heading known** when: Driver LB with the robot pointing straight away from your driver station, an auto starts, or 2+ tags are seen. **Position known** after the first vision fix or an auto start. Until both: "Pose Trusted" is false and auto-aim falls back to following our hub tag (last season's way).
+- **Aim** (`AimCommand`, Operator RB toggle and autos): turret angle from robot pose + hub center (`Constants.Aim` hub coordinates, from the official 2026 welded field), measured from the turret pivot; position control with feedforward that cancels robot spin. Hood and shooter speed from the **shot table** by distance. **Shooting while moving**: aims at hub minus robot velocity x time of flight (`kShootWhileMoving`).
+- **Dead zone** (the ~90 deg behind the turret's wires): the turret waits at the nearest end and the drive code turns the robot just enough (heading assist), only while the driver's rotate stick is centered.
+- **Firing** (`ShootCommand`, Operator RT while auto-aim is on): feeds only while READY (turret locked, shooter within 150 RPM of the table, hood within 0.12 rot); pauses by itself otherwise. Operator controller buzzes while ready. With auto-aim off, RT/LT work exactly as before.
+- **Safety gate**: `Constants.Aim.kGeometryMeasured = false` turns vision position OFF and keeps auto-aim on the old tag-following behavior. Flip it only after the measurements below.
+
+### Bring-up (in order)
+1. **Measure** (robot on, turret at HOME) and type into `Constants.Aim`: turret pivot from robot center (`kTurretPivotX/Y`, m, forward/left +), shooter direction at HOME (`kHomeYawDegrees`, CCW from robot front: 90 = left side), camera lens from the pivot along the shooter direction / to its left / height (`kCameraForwardOfPivot`, `kCameraLeftOfPivot`, `kCameraHeight`), camera tilt up (`kCameraPitchDegrees`). Check the turret really covers `Turret.kEndDegrees` (270) at `kEndPosition` (36 rot). Then `kGeometryMeasured = true`.
+2. **Limelight UI** (`http://limelight.local:5801`): AprilTag pipeline with Full 3D on, 2026 REBUILT field map selected. The robot-space camera pose in the UI is overwritten by the code every loop.
+3. **Camera direction test**: robot still, 2+ tags in view, watch the "Field" widget / "Vision Status". Jog ONLY the turret: the robot on the Field widget must stay put. If it rotates or swings: flip `kLimelightYawCCW`. If it mirrors left/right: flip `kLimelightSideIsRight`.
+4. **Aim test**: from 4-5 spots, RB on: "Aim Turret Angle (deg)" vs where the shooter actually points; the shooter should point at the hub center. Then drive the hub into the dead zone and check the robot turns itself.
+5. **Shot table** (no redeploys): turn on "Shot Tuning Mode", at each of 6-8 distances set "Tune RPM" / "Tune Hood (rot)" until shots go in, press **"Record Shot Point"** (saved on the roboRIO, Preferences key "Shot Table Recorded", used immediately; replaces points within 0.25 m). "Tune TOF (s)" = ball flight time, only for shooting while moving. Then copy "Shot Table" into `ShotTable.defaults()` so it survives a roboRIO reimage. "Clear Recorded Shot Points" goes back to the code's table.
+6. Dashboard: "Field", "Vision Status", "Vision Tags", "Pose Trusted", "Heading Known", "Seconds Since Vision Fix", "Aim Distance (m)", "Aim Turret Angle (deg)", "Aim Hub In Reach", "Aim Robot Turn Needed (deg)", "Aim Shooter RPM", "Aim Hood (rot)", "Aim Mode" (POSITION / TAG ONLY), "Shot Ready" (why not), "Ready To Fire", "Aim Geometry", "Shot Table", "Turret Target (deg)".
+
 ## Vendor Dependencies
 
 | Library | Purpose |
@@ -57,12 +76,16 @@ src/main/java/frc/robot/
 │   ├── RunShooterCommand       # Spin shooter at target RPM
 │   ├── GoobaToggleCommand      # Deploy/stow the hood (named commands deployGooba/stowGooba)
 │   ├── AutoGooba               # Hood follows the Limelight ty through the shot map (runs with auto-aim)
+│   ├── AimCommand              # Shoot from anywhere: turret + hood from field position (tag fallback)
+│   ├── ShootCommand            # Shoot from anywhere: table RPM, feeds only when ready
 │   ├── GooberAlign             # PID turret align w/ search sweep (Limelight)
 │   ├── MariosEarCommand        # Multi-phase turret aim (Limelight → USB cams) (RETIRED: no USB cams)
 │   ├── ManualGoobaCommand      # Operator D-pad Up/Down jog of the hood
 │   └── ManualTurretCommand     # D-pad jog turret left/right
 ├── subsystems/
 │   ├── CommandSwerveDrivetrain # CTRE swerve + PathPlanner AutoBuilder + MapleSim
+│   ├── VisionLocalizer         # Limelight field position (camera on the turret), MegaTag1/2 into odometry
+│   ├── AimSubsystem            # Shot brain: turret angle, distance, shot table, ready-to-fire
 │   ├── ShooterSubsystem        # Dual TalonFX (leader/follower), velocity control
 │   ├── IndexSubsystem          # Single TalonFX ("Spindex"), feeds the shooter
 │   ├── ShooterIntakeSubsystem  # Single TalonFX, feeds fuel to shooter
@@ -73,6 +96,9 @@ src/main/java/frc/robot/
 │   ├── GroundIntakePivotSubsystem # 2 TalonFX (20 leader, 21 follower): Motion Magic UP/DOWN toggle + jog
 │   ├── ElevatorSubsystem       # Climber, TalonFX 19: hold-to-move up/down
 │   └── IntakeRollerSubsystem   # Ground intake roller, TalonFX 22: hold Driver RT to spin
+├── aiming/
+│   ├── ShotSolver              # Pure aiming math (turret angle, dead zone, lead for motion, camera pose)
+│   └── ShotTable               # Distance -> RPM / hood / time of flight, recorded points
 ├── generated/
 │   └── TunerConstants.java     # Tuner X generated swerve config (module IDs, offsets, gains)
 └── sim/
@@ -157,7 +183,7 @@ This is a 2026 FRC robot with the following mechanical systems:
 ### Vision
 - **Limelight**: the robot's **only** camera. AprilTag detection, provides tx/ty/ta/tv/tid/botpose via NetworkTables (table name `limelight`). Model not confirmed (newer black finned body, no green LED ring; likely a 3G or 4): the web UI at `http://limelight.local:5801` shows it.
   - Mounted HORIZONTALLY and CENTERED on the shooter, **on the turret**, so it turns with it: tx aims the turret (tx > 0 = tag to the right), ty drives the distance trig
-  - **Hub tags only, and only OURS**: the turret aims at the center tag of each of the 3 hub faces we shoot at. Red hub = 2, 5, 10; blue hub = 18, 21, 26 (checked against the WPILib 2026 field layout). Until the Driver Station reports the alliance it accepts both; after that only ours (dashboard "Limelight Aiming At"). For practice, set the team station (Red/Blue) in the Driver Station.
+  - **The Limelight sees all 32 tags** (for field position, see "Shoot From Anywhere"); the tag-only fallback aim uses **only OUR hub tags**, picked in code from the raw tag list: the center tag of each of the 3 hub faces we shoot at. Red hub = 2, 5, 10; blue hub = 18, 21, 26 (checked against the WPILib 2026 field layout). Until the Driver Station reports the alliance it accepts both; after that only ours (dashboard "Limelight Aiming At"). For practice, set the team station (Red/Blue) in the Driver Station.
   - Dashboard: "Limelight tx", "Limelight Tag ID", "Limelight Aiming At", "Limelight distance (m)"
   - Distance-to-target calculation using trigonometry (`distanceToTarget()`)
 - **PhotonVision USB cameras / MariosEar (RETIRED, Oct 2026)**: there are no USB cameras on the robot. `MariosEar` and `MariosEarCommand` are kept but never created.
@@ -200,7 +226,7 @@ This matches the drive team's official map. **LOCKED** = practiced, must stay ex
 |-------|--------|-----|
 | Left Stick | Swerve translate (cubic scaling) | LOCKED |
 | Right Stick | Swerve rotate | LOCKED |
-| Left Bumper | Reset gyro / seed field centric | LOCKED |
+| Left Bumper | Reset gyro / seed field centric. **Robot pointing straight away from your driver station** (it also tells shoot-from-anywhere the heading) | LOCKED |
 | Right Trigger (hold) | Ground intake roller (Talon FX 22) | LOCKED |
 | Left Trigger (hold) | Ground intake roller **backwards** (spit balls out) | added Oct 25 |
 | A (press) | Toggle ground intake DOWN / UP (does nothing until `kDownPosition` is set) | LOCKED |
@@ -213,9 +239,9 @@ This matches the drive team's official map. **LOCKED** = practiced, must stay ex
 ### Operator Controller (Port 1 - Xbox)
 | Input | Action | Map |
 |-------|--------|-----|
-| Right Trigger (hold) | Shoot (Spindex + uptake) | LOCKED |
-| Left Trigger (hold) | Shooter windup | LOCKED |
-| Right Bumper (press) | Toggle Limelight auto-aim (turret tracking + hood on/off) | LOCKED |
+| Right Trigger (hold) | Shoot (Spindex + uptake). **Auto-aim on: spins to the table speed and fires only when ready** | LOCKED |
+| Left Trigger (hold) | Shooter windup (auto-aim on: to the shot table speed for the distance) | LOCKED |
+| Right Bumper (press) | Toggle auto-aim: **shoot from anywhere** (turret + hood from field position; falls back to following our hub tag until the position is known) | LOCKED |
 | Y (press) | Toggle hood stowed / deployed ("Toggle Gooba Hood", as on the team map) | LOCKED |
 | D-Pad Up/Down (hold) | Jog the hood up/down slowly (as on the team map) | OPEN |
 | Left Stick up/down (hold) | Jog ground intake up/down slowly (manual backup; was the D-pad) | OPEN |
@@ -261,14 +287,14 @@ rename them without updating the autos in `src/main/deploy/pathplanner/`.
 |------|---------|---------|
 | `spinUpShooter` | RunShooterCommand (fast RPM) | 1.5s |
 | `spinUpShooterSlow` | RunShooterCommand (slow RPM) | 1.5s |
-| `score` | GooberAlign + AutoGooba → spin up → FuelHandling forward → stop | staged |
+| `score` | AimCommand + ShootCommand: aim from position, fire every ball the moment it's ready | 3.5s |
 | `scorePreload` | Spin up → FuelHandling forward → stop (no vision) | staged |
-| `visionScore` | GooberAlign + AutoGooba (2.5 s) → spin up → shoot → stop | staged |
+| `visionScore` | Same as `score` | 3.5s |
 | `shoot` | FuelHandlingCommand (forward) | 2.0s |
 | `stopShooter` | InstantCommand → shooter.stop() | - |
 | `intake` | FuelHandlingCommand (reverse) | 2.0s |
-| `aimTurret` | GooberAlign (Limelight-only; was MariosEarCommand, no USB cameras now) | 2.0s |
-| `alignTurret` | GooberAlign (Limelight-only) | 2.0s |
+| `aimTurret` | AimCommand (turret + hood from position) | 2.0s |
+| `alignTurret` | AimCommand | 2.0s |
 | `deployGooba` / `stowGooba` | Hood to deployed / stowed preset | instant |
 | `autoAimGooba` | AutoGooba (hood follows ty) | 2.0s |
 | `lowerIntake`, `togglePiston1`, `togglePiston2`, `runGroundIntake` | No-ops (pneumatics removed; kept so old autos load cleanly) | - |
@@ -335,10 +361,9 @@ in Phoenix Tuner X before writing code.
 - **Intake roller**: confirm spin direction (`kInverted`) and speed (`kRollerVolts`) on the robot
 - **Intake pivot sync**: Oct 23 Elastic data showed the two sides within ~0.03 rot while driven and ~0.1 rot at rest, so they're well coupled; the drift came from an unpowered free-fall after stopping early (fixed). Dual position control isn't needed unless that changes
 - **Turret setup**: far end set to 36 rotations (`kEndPosition`). If 36 rotations is more than 270°, raise `kEndDegrees` to match so "Turret Angle (deg)" and the 10° margin stay right. Still to confirm D-pad Right turns it right (else flip `kMotorInverted`). Then check the aim: a tag held to the right of the camera must read a positive "Limelight tx" (if negative, the image is flipped in the Limelight settings), and auto-aim must turn toward the tag
-- **Limelight pose into odometry is wrong with the camera on the turret**: `CommandSwerveDrivetrain.periodic()` feeds MegaTag2 poses into odometry, but MegaTag2 assumes the camera is fixed to the frame. Any turret angle other than the one set in the Limelight UI gives a wrong position (autos can drive to the wrong place). It also passes the raw Pigeon yaw instead of the drivetrain heading. Swerve code, so not changed yet: waiting on the programming lead's OK
+- **Shoot from anywhere**: built Oct 26, NOT yet run on the robot. Do the Bring-up steps in "Shoot From Anywhere" (geometry measurements first; `kGeometryMeasured` stays false until then). Shot table points are starting guesses
 - Re-measure `Constants.Limelight.kMountAngleDegrees` and `kLensHeightMeters` on the new camera mount — `distanceToTarget()` is wrong until then
 - Oct 25: fast raised to 5400 RPM (cap 5800 = motor free speed); 3100 could not reach the target. Kept below free speed so the loop regulates shot speed
 - X56 HOTAS is switched off; if re-enabled, its axis/button indices need on-hardware verification (docs/X56-HOTAS-SETUP.md)
 - Servo mechanism(s) replacing the pneumatics: not built yet, not coded yet (use WPILib `Servo` on a roboRIO PWM port when ready)
 - **Hood bring-up (Oct 25)**: confirm Operator D-pad Up raises it (else flip `Gooba.kInverted`), limits measured (0.2 / 3.8); **re-record the shot map** with real shots (the current points are last season's, scaled)
-- **Limelight localization** (field position from AprilTags, so the turret aims at the hub center and the hood uses true distance): needs the turret-camera fix in `CommandSwerveDrivetrain`, plus measurements (turret center offset, camera offset/height/tilt, HOME direction, exact degrees per turret rotation)

@@ -22,7 +22,9 @@ public class Marcos {
         ShooterIntakeSubsystem shooterIntake,
         Goober goober,
         LimelightSubsystem limelight,
-        GoobaSubsystem gooba
+        GoobaSubsystem gooba,
+        AimSubsystem aim,
+        CommandSwerveDrivetrain drivetrain
     ) {
         NamedCommands.registerCommand("spinUpShooter",
             new RunShooterCommand(shooter, Constants.Shooter.kFastTargetRPM)
@@ -34,13 +36,11 @@ public class Marcos {
                 .withTimeout(1.5)
         );
 
+        // SHOOT FROM ANYWHERE (Oct 26): aim from the field position (the path sets it) and fire
+        // every ball the moment the shot is ready, for up to 3.5 s. Works stopped or moving.
         NamedCommands.registerCommand("score",
-            new SequentialCommandGroup(
-                new GooberAlign(limelight, goober).alongWith(new AutoGooba(gooba, limelight)).withTimeout(2.0),
-                new RunShooterCommand(shooter, Constants.Shooter.kFastTargetRPM).withTimeout(5),
-                new FuelHandlingCommand(index, shooterIntake, shooter, true).withTimeout(2.0),
-                new InstantCommand(shooter::stop, shooter)
-            )
+            new ShootCommand(aim, shooter, index, shooterIntake, goober, gooba, true).withTimeout(3.5)
+                .deadlineFor(new AimCommand(aim, goober, gooba, limelight, drivetrain))
         );
 
         // Score preloaded balls without any vision/limelight tracking
@@ -65,27 +65,18 @@ public class Marcos {
             new FuelHandlingCommand(index, shooterIntake, shooter, false).withTimeout(2.0)
         );
 
-        // Limelight-tracked score: align the turret and aim the hood, then shoot.
-        // Robot must be stopped before calling this — no shooting while moving.
+        // Same as "score" (kept so existing autos load): aim from position, fire when ready.
         NamedCommands.registerCommand("visionScore",
-            new SequentialCommandGroup(
-                // Phase 1: Align turret + hood together
-                new GooberAlign(limelight, goober).alongWith(new AutoGooba(gooba, limelight)).withTimeout(2.5),
-                // Phase 2: Spin up shooter and fire
-                new RunShooterCommand(shooter, Constants.Shooter.kFastTargetRPM).withTimeout(5.5),
-                new FuelHandlingCommand(index, shooterIntake, shooter, true).withTimeout(2.5),
-                new InstantCommand(shooter::stop, shooter)
-            )
+            new ShootCommand(aim, shooter, index, shooterIntake, goober, gooba, true).withTimeout(3.5)
+                .deadlineFor(new AimCommand(aim, goober, gooba, limelight, drivetrain))
         );
 
-        // Used to run MariosEarCommand (Limelight + 2 USB cameras). The robot only has the
-        // Limelight, so this is now the same Limelight aim as "alignTurret".
+        // Point the turret (and hood) at the hub from the field position, for 2 s.
         NamedCommands.registerCommand("aimTurret",
-            new GooberAlign(limelight, goober).withTimeout(2.0)
+            new AimCommand(aim, goober, gooba, limelight, drivetrain).withTimeout(2.0)
         );
-
         NamedCommands.registerCommand("alignTurret",
-            new GooberAlign(limelight, goober).withTimeout(2.0)
+            new AimCommand(aim, goober, gooba, limelight, drivetrain).withTimeout(2.0)
         );
 
         // ==========================================
