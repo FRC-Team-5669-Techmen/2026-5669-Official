@@ -100,7 +100,7 @@ This is a 2026 FRC robot with the following mechanical systems:
 - Feeds fuel from intake to shooter, brake mode
 
 ### Shooter Intake
-- Single TalonFX (CAN 15, Tuner X: "UpTakeChannelForShooter"), DutyCycleOut (FOC off, unlicensed): forward constant 2.0 (saturates at 100%), reverse -0.6
+- Single TalonFX (CAN 15, Tuner X: "UpTakeChannelForShooter"), DutyCycleOut (FOC off, unlicensed): forward 1.0 (100%), reverse -0.6
 - Pulls fuel into the shooter path, brake mode
 
 ### Gooba (Hood/Arc) (RETIRED, Oct 2026)
