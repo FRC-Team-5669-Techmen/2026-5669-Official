@@ -137,7 +137,8 @@ public final class Constants {
         // so pressing it by mistake at HOME can't lock the turret in place.
         public static final double kMinEndPosition = 1.0;
         // How far kEndPosition is from HOME, in degrees. Turns rotations into degrees.
-        public static final double kEndDegrees = 270.0;
+        // Oct 25 (programming lead): the far end is a little past 270, about 280 degrees from HOME.
+        public static final double kEndDegrees = 280.0;
         // Auto-aim and the search sweep stay this far inside each end, so they never push on
         // the limits. The D-pad jog can go all the way to the ends.
         public static final double kAimMarginDegrees = 10.0;
@@ -371,12 +372,14 @@ public final class Constants {
         // MEASURE: which way the shooter points when the turret is at HOME, in degrees from the
         // robot's front, counter-clockwise (90 = shooting out the LEFT side, -90 = the RIGHT side,
         // 180 = out the back). The turret turns RIGHT (clockwise) from HOME.
+        // MEASURED Oct 25 (programming lead): at HOME the turret faces the robot's front (intake side).
         public static final double kHomeYawDegrees = 0.0;
 
         // ---- Limelight (rides on the turret, faces the same way as the shooter) ----
         // MEASURE: camera lens position relative to the turret pivot, measured with the turret at
         // HOME: forward along the shooter's direction, left of it, and height above the floor.
-        public static final double kCameraForwardOfPivot = 0.10;
+        // MEASURED Oct 25: about 5 in from the turret center, in the shooting direction.
+        public static final double kCameraForwardOfPivot = 5.0 * 0.0254;
         public static final double kCameraLeftOfPivot = 0.0;
         public static final double kCameraHeight = 0.50;
         // MEASURE: camera tilt, degrees UP from level.
