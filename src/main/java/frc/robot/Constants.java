@@ -186,7 +186,11 @@ public final class Constants {
         // with Operator D-pad Up until the hood JUST touches the top, read "Hood Position (rot)",
         // then D-pad Down until it just touches the bottom and read it again. Put a hair inside
         // each number here, then click the switch again to turn the limits back on.
-        public static final double kBottomPosition = 0.0;
+        // BOTTOM, measured Oct 25 (Elastic): pushed down by hand at power-on = 0 (the hard stop).
+        // Let go, it springs back up to about 0.42-0.51; the motor jogging down got it to 0.24.
+        // 0.2 = just above the hard stop, so the motor never grinds into it.
+        public static final double kBottomPosition = 0.2;
+        // TOP: still last season's number, not measured on this robot yet.
         public static final double kTopPosition = 10.7;
 
         public static final double kP = 2.4;
@@ -198,7 +202,7 @@ public final class Constants {
         public static final double kStatorCurrentLimit = 30.0;  // amps, limits the push if it jams
 
         // Operator Y presets (rotations)
-        public static final double kPositionStowed = 0.0;
+        public static final double kPositionStowed = 0.2;  // = kBottomPosition
         public static final double kPositionDeployed = 3.5;
         // Operator D-pad Up/Down jog: rotations per 20 ms loop (0.04 = 2 rotations per second)
         public static final double kManualStep = 0.04;
