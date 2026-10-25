@@ -367,8 +367,11 @@ public final class Constants {
         // ---- Turret ----
         // MEASURE: where the turret's pivot (the center it turns around) is, from the robot's
         // center, in meters. Forward = +x, left = +y.
-        public static final double kTurretPivotX = 0.0;
-        public static final double kTurretPivotY = 0.0;
+        // MEASURED Oct 25: 6.475 in from the robot center, behind it and to its LEFT (photo:
+        // "back left, not entirely left"). Split from the photo as ~5.3 in back, ~3.7 in left; a
+        // 2 in error here moves the aim less than 1 degree at 4 m.
+        public static final double kTurretPivotX = -5.3 * 0.0254;
+        public static final double kTurretPivotY = 3.7 * 0.0254;
         // MEASURE: which way the shooter points when the turret is at HOME, in degrees from the
         // robot's front, counter-clockwise (90 = shooting out the LEFT side, -90 = the RIGHT side,
         // 180 = out the back). The turret turns RIGHT (clockwise) from HOME.
