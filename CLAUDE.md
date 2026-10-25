@@ -27,6 +27,8 @@
 
 ## Shoot From Anywhere (Oct 26)
 
+**Testing it: follow `docs/LOCALIZATION-TESTING.md`** (written for absolute beginners). Dashboard "Localization Step" always says what to do next; "Aim Check" is the live PASS/FAIL; the "Test: Turret Sweep" button finds a backwards camera setting by itself (`LocalizationCheck`). Firing (ShootCommand) starts only when everything is ready, then keeps feeding through the RPM dip each ball causes (it used to pause after every ball).
+
 The robot knows where it is on the field and aims at our hub from any spot, with or without a hub tag in view. Code: `frc.robot.aiming` (`ShotSolver` pure math, `ShotTable`), `subsystems/VisionLocalizer`, `subsystems/AimSubsystem`, `commands/AimCommand`, `commands/ShootCommand`. Tests: `src/test/java/frc/robot/aiming`.
 
 - **Position**: swerve odometry + gyro, corrected by the Limelight seeing **any of the 32 field tags** (it no longer filters to hub tags; our hub tag is picked in code for the tag-only fallback). The camera rides on the turret, so `VisionLocalizer` tells the Limelight every loop where the camera is on the robot (`setCameraPose_RobotSpace`, from the turret angle). MegaTag1 (2+ tags) sets/corrects the heading; MegaTag2 (works with 1 tag) does the rest once the heading is known. Fixes are skipped while the turret turns faster than 120 deg/s or the robot spins faster than 2.5 rad/s, and single tags further than 4.5 m. The old MegaTag2 code in `CommandSwerveDrivetrain.periodic()` (wrong with a turret camera, raw Pigeon yaw) is removed.
@@ -126,7 +128,7 @@ This is a 2026 FRC robot with the following mechanical systems:
 - PID: kP=0.11, kV=0.12
 
 ### Index / Feeder
-- Single TalonFX (CAN 13, Tuner X: "Spindex"), VoltageOut (FOC off, unlicensed): +12 V forward, -6 V reverse
+- Single TalonFX (CAN 13, Tuner X: "Spindex"), VoltageOut (FOC off, unlicensed): +12 V forward (already full power: a slow spindex is the 64:1 gearing, not the code), -6 V reverse. Dashboard "Spindex Speed (rot/s)", "Spindex Amps", "Spindex Volts"
 - Feeds fuel from intake to shooter, brake mode
 
 ### Shooter Intake
@@ -177,7 +179,7 @@ This is a 2026 FRC robot with the following mechanical systems:
 - The old climb code (motor 21) was deleted; the elevator replaced it.
 
 ### Ground Intake Roller (Talon FX 22)
-- On CAN as ID 22 ("Intake motor(22)"), Pro-licensed. **Hold Driver Right Trigger** to spin it in at `kRollerVolts` (**9 V**, was 6), **hold Driver Left Trigger** to spin it backwards at `kReverseVolts` (-9 V) and spit balls out. VoltageOut (FOC off), coast mode, 40 A stator limit.
+- On CAN as ID 22 ("Intake motor(22)"), Pro-licensed. **Hold Driver Right Trigger** to spin it in at `kRollerVolts` (**12 V, full power** since Oct 25; was 9, then 6), **hold Driver Left Trigger** to spin it backwards at `kReverseVolts` (-9 V) and spit balls out. VoltageOut (FOC off), coast mode, 60 A stator limit (was 40).
 - Spins balls out instead of in? Flip `Constants.IntakeRoller.kInverted`. `kIntakeRollerEnabled = false` turns it off entirely (motor never created).
 
 ### Vision
