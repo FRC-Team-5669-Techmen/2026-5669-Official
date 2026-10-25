@@ -51,13 +51,16 @@ Point the Limelight at tags 1 to 4 meters away.
 
 - Good: **Vision Tags** is 1 or more; **Vision Status** says "OK ...".
 - Bad: "no tags". Check the Limelight is powered (green light), the field tags are there, and in
-  the Limelight web page (http://limelight.local:5801) the pipeline is the AprilTag one with the
-  **2026 field map** and **Full 3D** on.
+  the Limelight web page (http://limelight.local:5801, laptop on the robot Wi-Fi) the pipeline is
+  the AprilTag one, **Marker Size 165.1** (Configuration tab), **Full 3D** on and **Field Map File
+  FRC2026_WELDED.fmap** (Advanced tab, the upload arrow next to "Field Map File").
 
 ## Step 2: Does it know where it is? (still DISABLED)
 
-Find a spot where it sees **2 or more tags at once**, or press **Driver LB** with the robot's
-intake facing **away from your driver station wall**.
+Easiest: put the robot 2-3 m in front of a hub face so it sees **both tags on that face**, and
+hold it still. "Vision Status" counts "heading: steady 1/10 ... 10/10", then says "OK SET from
+camera". No button needed. (Or press **Driver LB** with the robot pointing straight away from
+your driver station wall; on the red side that means pointing at the hub face with tags 9 and 10.)
 
 - Good: **Heading Known** and **Pose Trusted** turn green. On the **Field** picture, the robot
   is roughly where it really is on the field and facing the right way.

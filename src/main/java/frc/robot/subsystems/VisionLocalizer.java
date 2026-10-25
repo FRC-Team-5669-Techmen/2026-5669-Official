@@ -108,7 +108,7 @@ public class VisionLocalizer extends SubsystemBase {
         double spin = state.Speeds.omegaRadiansPerSecond;
         LimelightHelpers.SetRobotOrientation(kName, headingDeg, Math.toDegrees(spin), 0, 0, 0, 0);
 
-        status = evaluate(on, turretKnown, spin);
+        status = evaluate(on, turretKnown, spin, state.Speeds);
         SmartDashboard.putString("Vision Status", status);
         SmartDashboard.putBoolean("Pose Trusted", poseTrusted());
         SmartDashboard.putBoolean("Heading Known", headingKnown);
@@ -117,7 +117,36 @@ public class VisionLocalizer extends SubsystemBase {
         SmartDashboard.putNumberArray("Camera In Robot (fwd,left,yaw)", cam);
     }
 
-    private String evaluate(boolean on, boolean turretKnown, double spin) {
+    private static final int kSeedFrames = 10;     // camera frames in a row that must agree
+    private int seedCount = 0;
+    private double lastSeedTime = -1;
+    private edu.wpi.first.math.geometry.Pose2d lastSeedPose = null;
+
+    /** Heading unknown, 2+ tags: set the whole pose from the camera once it's steady. */
+    private String seedFromCamera(LimelightHelpers.PoseEstimate mt1, edu.wpi.first.math.kinematics.ChassisSpeeds speeds) {
+        boolean still = Math.hypot(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond) < 0.2
+            && Math.abs(speeds.omegaRadiansPerSecond) < 0.2;
+        if (!still) { seedCount = 0; return "heading: hold the robot still (2 tags in view)"; }
+        if (mt1.timestampSeconds == lastSeedTime) return "heading: steady " + seedCount + "/" + kSeedFrames;
+        lastSeedTime = mt1.timestampSeconds;
+        if (lastSeedPose != null
+                && mt1.pose.getTranslation().getDistance(lastSeedPose.getTranslation()) < 0.15
+                && Math.abs(mt1.pose.getRotation().minus(lastSeedPose.getRotation()).getDegrees()) < 3.0) {
+            seedCount++;
+        } else {
+            seedCount = 1;
+        }
+        lastSeedPose = mt1.pose;
+        if (seedCount < kSeedFrames) return "heading: steady " + seedCount + "/" + kSeedFrames;
+        drivetrain.resetPose(mt1.pose);
+        headingKnown = true;
+        seedCount = 0;
+        System.out.println(String.format("LOCALIZATION | pose SET by the camera: x %.2f y %.2f heading %.1f deg (%d tags). Driver LB overrides the heading.",
+            mt1.pose.getX(), mt1.pose.getY(), mt1.pose.getRotation().getDegrees(), mt1.tagCount));
+        return accept("SET from camera, " + mt1.tagCount + " tags");
+    }
+
+    private String evaluate(boolean on, boolean turretKnown, double spin, edu.wpi.first.math.kinematics.ChassisSpeeds speeds) {
         if (!on) return "OFF (dashboard switch)";
         if (!Aim.kGeometryMeasured) return "OFF: turret/camera geometry not measured (Constants.Aim)";
         if (!turretKnown) return "OFF: turret far end not set";
@@ -131,19 +160,22 @@ public class VisionLocalizer extends SubsystemBase {
         SmartDashboard.putNumber("Vision Tags", tags);
         if (tags == 0) return "no tags";
 
-        // MegaTag1 with 2+ tags: position AND heading. The camera may set the heading ONLY while it
-        // is still unknown. Once known (Driver LB, an auto, or this first fix) the heading belongs
-        // to the gyro: the drive's field-centric "forward" uses it, so vision must never turn it
-        // after the driver has reset it (Oct 25: it did, and LB seemed broken).
+        // MegaTag1 with 2+ tags: position AND heading.
+        // Heading UNKNOWN: wait for kSeedFrames camera frames in a row that agree (robot still),
+        // then SET the pose to exactly that (resetPose). Blending a single fix only moved the
+        // heading part of the way and then locked it (Oct 25: Aim Check read -53 and -96 deg).
+        // Heading KNOWN: position only. The heading belongs to the gyro and Driver LB, because the
+        // drive's field-centric "forward" uses it.
         if (mt1.tagCount >= 2 && mt1.avgTagDist < 6.0) {
-            double xy = xyStdDev(mt1.avgTagDist, mt1.tagCount);
-            double theta = headingKnown ? 1e6 : 0.05;
-            drivetrain.addVisionMeasurement(mt1.pose, mt1.timestampSeconds, VecBuilder.fill(xy, xy, theta));
             DogLog.log("Vision/MT1Pose", mt1.pose);
-            if (!headingKnown) System.out.println("LOCALIZATION | heading set by the camera (2+ tags). Driver LB overrides it.");
-            headingKnown = true;
+            if (!headingKnown) {
+                return seedFromCamera(mt1, speeds);
+            }
+            double xy = xyStdDev(mt1.avgTagDist, mt1.tagCount);
+            drivetrain.addVisionMeasurement(mt1.pose, mt1.timestampSeconds, VecBuilder.fill(xy, xy, 1e6));
             return accept("MT1 " + mt1.tagCount + " tags");
         }
+        seedCount = 0;
 
         // MegaTag2 (single tag OK): needs the heading to be right first.
         if (!headingKnown) return "1 tag: waiting for heading (Driver LB facing away, or 2 tags)";
