@@ -21,6 +21,10 @@
 - **Team number**: loaded from `.wpilib/wpilib_preferences.json`
 - Main class: `frc.robot.Main`
 
+## Drive Team Controller Map
+
+`tools/controller-map/`: double-click **Start Controller Map.bat** on any Windows driver station laptop for a live map of both Xbox controllers under the docked Driver Station (reads the controllers in the background, so it follows presses while Driver Station has focus). See its README. **When a controller binding changes, update the `BIND` / `CALL` tables in `tools/controller-map/index.html` too.**
+
 ## Vendor Dependencies
 
 | Library | Purpose |
