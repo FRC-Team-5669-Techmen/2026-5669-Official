@@ -3,7 +3,6 @@ package frc.robot.subsystems;
 import dev.doglog.DogLog;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -132,12 +131,16 @@ public class VisionLocalizer extends SubsystemBase {
         SmartDashboard.putNumber("Vision Tags", tags);
         if (tags == 0) return "no tags";
 
-        // MegaTag1 with 2+ tags: trustworthy position AND heading. Sets the heading if unknown.
+        // MegaTag1 with 2+ tags: position AND heading. The camera may set the heading ONLY while it
+        // is still unknown. Once known (Driver LB, an auto, or this first fix) the heading belongs
+        // to the gyro: the drive's field-centric "forward" uses it, so vision must never turn it
+        // after the driver has reset it (Oct 25: it did, and LB seemed broken).
         if (mt1.tagCount >= 2 && mt1.avgTagDist < 6.0) {
             double xy = xyStdDev(mt1.avgTagDist, mt1.tagCount);
-            double theta = !headingKnown ? 0.05 : DriverStation.isDisabled() ? Aim.kDisabledThetaStdDev : Aim.kVisionThetaStdDev;
+            double theta = headingKnown ? 1e6 : 0.05;
             drivetrain.addVisionMeasurement(mt1.pose, mt1.timestampSeconds, VecBuilder.fill(xy, xy, theta));
             DogLog.log("Vision/MT1Pose", mt1.pose);
+            if (!headingKnown) System.out.println("LOCALIZATION | heading set by the camera (2+ tags). Driver LB overrides it.");
             headingKnown = true;
             return accept("MT1 " + mt1.tagCount + " tags");
         }

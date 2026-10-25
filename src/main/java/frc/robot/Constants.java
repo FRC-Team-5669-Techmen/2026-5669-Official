@@ -445,8 +445,8 @@ public final class Constants {
         // distance squared, shrinks with more tags.
         public static final double kVisionXYStdDevAt1m = 0.25;
         // Heading from vision (MegaTag1, 2+ tags) is only used to correct the gyro slowly.
-        public static final double kVisionThetaStdDev = 0.6; // rad
-        public static final double kDisabledThetaStdDev = 0.15; // rad, while disabled (sitting still)
+        public static final double kVisionThetaStdDev = 0.6; // rad (UNUSED since Oct 25: vision no longer turns a known heading)
+        public static final double kDisabledThetaStdDev = 0.15; // rad (UNUSED since Oct 25, see VisionLocalizer)
 
         // ---- Hub centers on the field (meters, WPILib blue-origin coordinates) ----
         // From the official 2026 REBUILT welded field layout (apriltag 2026.2.1): the middle of
