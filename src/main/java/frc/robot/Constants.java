@@ -362,7 +362,8 @@ public final class Constants {
     public static final class Aim {
         // Flip to true once every number marked MEASURE has been measured on the robot.
         // While false the dashboard shows "AIM GEOMETRY NOT MEASURED".
-        public static final boolean kGeometryMeasured = false;
+        // Oct 25: measured by the programming lead (camera height still an estimate).
+        public static final boolean kGeometryMeasured = true;
 
         // ---- Turret ----
         // MEASURE: where the turret's pivot (the center it turns around) is, from the robot's
@@ -381,12 +382,16 @@ public final class Constants {
         // ---- Limelight (rides on the turret, faces the same way as the shooter) ----
         // MEASURE: camera lens position relative to the turret pivot, measured with the turret at
         // HOME: forward along the shooter's direction, left of it, and height above the floor.
-        // MEASURED Oct 25: about 5 in from the turret center, in the shooting direction.
-        public static final double kCameraForwardOfPivot = 5.0 * 0.0254;
+        // MEASURED Oct 25: about 5 in BEHIND the turret center (toward the back of the robot at
+        // HOME), facing the same way as the shooter. Negative = behind.
+        public static final double kCameraForwardOfPivot = -5.0 * 0.0254;
         public static final double kCameraLeftOfPivot = 0.0;
-        public static final double kCameraHeight = 0.50;
+        // ESTIMATE (not measured yet): ~20 in. A few inches off barely changes the field position
+        // (the tags are solved in 3D); measure lens-to-floor when convenient.
+        public static final double kCameraHeight = 20.0 * 0.0254;
         // MEASURE: camera tilt, degrees UP from level.
-        public static final double kCameraPitchDegrees = 20.0;
+        // MEASURED Oct 25: lens points UP, tilted back 25 degrees (phone level on top: -25 to -26).
+        public static final double kCameraPitchDegrees = 25.0;
         // Limelight's robot-space axes. Its web UI labels them "forward / right / up" and turns
         // counter-clockwise for positive yaw. If the vision position jumps when ONLY the turret
         // turns (robot still, tags in view), flip kLimelightYawCCW; if it mirrors left/right,
