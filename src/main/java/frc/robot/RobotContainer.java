@@ -38,6 +38,7 @@ import frc.robot.subsystems.GroundIntakePivotSubsystem;
 import frc.robot.subsystems.IndexSubsystem;
 import frc.robot.subsystems.IntakeRollerSubsystem;
 import frc.robot.subsystems.LimelightSubsystem;
+import frc.robot.subsystems.LocalizationCheck;
 import frc.robot.subsystems.ShooterIntakeSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.VisionLocalizer;
@@ -99,6 +100,8 @@ public class RobotContainer {
     // shot brain that turns position into turret angle, hood and shooter speed.
     public final VisionLocalizer localizer = new VisionLocalizer(drivetrain, goober, gooba);
     public final AimSubsystem aim = new AimSubsystem(drivetrain, localizer);
+    // Beginner test helpers (docs/LOCALIZATION-TESTING.md): "Localization Step", "Aim Check", "Test: Turret Sweep".
+    public final LocalizationCheck localizationCheck = new LocalizationCheck(drivetrain, goober, limelight, localizer);
 
     // Not created on purpose: MariosEar (the 2 PhotonVision USB cameras), since the
     // Limelight is the only camera.
@@ -372,6 +375,7 @@ public class RobotContainer {
 
         // Shot table tuning (see AimSubsystem): record the "Tune" values at the current distance.
         SmartDashboard.putData("Record Shot Point", aim.recordPointCommand());
+        SmartDashboard.putData("Test: Turret Sweep", localizationCheck.turretSweepTest());
         SmartDashboard.putData("Clear Recorded Shot Points", aim.clearRecordedCommand());
 
         drivetrain.registerTelemetry(logger::telemeterize);

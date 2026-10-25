@@ -116,6 +116,17 @@ public class AimSubsystem extends SubsystemBase {
         return !Constants.Gooba.kHoodEnabled || Math.abs(hood.getPosition() - targetHood()) <= Aim.kHoodTolerance;
     }
 
+    /**
+     * Once firing has started, keep feeding through the normal RPM dip each ball causes (that dip
+     * used to pause the feed after every ball, so balls crawled in). Feeding only stops if aim is
+     * switched off, the hub goes behind the turret, or the turret falls well off target.
+     */
+    public boolean keepFiring(Goober turret) {
+        if (!active) return false;
+        if (!poseUsable()) return true;
+        return solution.reachable() && Math.abs(turret.aimErrorDegrees()) <= Aim.kKeepFiringDegrees;
+    }
+
     /** Why it isn't ready (dashboard "Shot Ready" text). */
     public String readyText(Goober turret, ShooterSubsystem shooter, GoobaSubsystem hood) {
         if (!active) return "aim off (Operator RB)";

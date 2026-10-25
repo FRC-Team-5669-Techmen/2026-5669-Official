@@ -326,9 +326,9 @@ public final class Constants {
         public static final boolean kIntakeRollerEnabled = true;  // on CAN now (Oct 2026)
         public static final int kMotorId = 22;  // Tuner X name: "Intake motor(22)"
         public static final boolean kInverted = false;  // flip if it spins balls OUT instead of in
-        public static final double kRollerVolts = 9.0;  // spin speed while Driver RT is held (volts). Was 6.0
+        public static final double kRollerVolts = 12.0; // spin speed while Driver RT is held (volts). Full power (Oct 25; was 9.0, before that 6.0)
         public static final double kReverseVolts = -9.0; // Driver LT (hold): spit balls back out
-        public static final double kStatorCurrentLimit = 40.0;  // amps
+        public static final double kStatorCurrentLimit = 60.0;  // amps (was 40, raised with full power)
     }
 
     public static final class Limelight {
@@ -418,7 +418,8 @@ public final class Constants {
         public static final double kLockedMaxSpeedDegPerSec = 30.0;
 
         // ---- Ready to fire (Operator RT only feeds the shooter when all are true) ----
-        public static final double kRpmTolerance = 150.0;
+        public static final double kRpmTolerance = 150.0;   // to START firing
+        public static final double kKeepFiringDegrees = 4.0; // once firing, keep feeding unless the turret is this far off
         public static final double kHoodTolerance = 0.12; // rotations
 
         // ---- Hub out of the turret's reach (the ~90 degree dead zone behind the wires) ----

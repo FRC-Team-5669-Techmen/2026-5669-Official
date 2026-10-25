@@ -24,6 +24,7 @@ public class ShootCommand extends Command {
     private final Goober turret;
     private final GoobaSubsystem hood;
     private final boolean spinShooter;
+    private boolean firing = false;
 
     /**
      * @param spinShooter true in autos: this command spins the shooter. false in teleop: the
@@ -48,11 +49,19 @@ public class ShootCommand extends Command {
     }
 
     @Override
+    public void initialize() {
+        firing = false;
+    }
+
+    @Override
     public void execute() {
         if (spinShooter) {
             shooter.runAtRPM(aim.targetRpm());
         }
-        if (aim.readyToFire(turret, shooter, hood)) {
+        // Start when everything is ready; after that keep feeding (each ball dips the RPM, and
+        // pausing for every dip is what made balls crawl in).
+        firing = firing ? aim.keepFiring(turret) : aim.readyToFire(turret, shooter, hood);
+        if (firing) {
             index.run(Constants.Index.kForwardSpeed);
             uptake.run(Constants.ShooterIntake.kForwardSpeed);
             SmartDashboard.putString("Shot Ready", "FIRING");

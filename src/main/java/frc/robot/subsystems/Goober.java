@@ -170,6 +170,11 @@ public class Goober extends SubsystemBase {
             && Math.abs(getVelocityDegPerSec()) <= Aim.kLockedMaxSpeedDegPerSec;
     }
 
+    /** Degrees between the turret and its angle target (0 when not aiming at an angle). */
+    public double aimErrorDegrees() {
+        return Double.isNaN(angleTarget) ? 0.0 : getAngleDegrees() - angleTarget;
+    }
+
     /** Forget the angle target (aiming stopped). */
     public void clearAngleTarget() {
         angleTarget = Double.NaN;
