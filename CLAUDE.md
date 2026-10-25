@@ -21,6 +21,10 @@
 - **Team number**: loaded from `.wpilib/wpilib_preferences.json`
 - Main class: `frc.robot.Main`
 
+## Drive Team Controller Map
+
+`tools/controller-map/`: double-click **Start Controller Map.bat** on any Windows driver station laptop for a live map of both Xbox controllers under the docked Driver Station (reads the controllers in the background, so it follows presses while Driver Station has focus). See its README. **When a controller binding changes, update the `BIND` / `CALL` tables in `tools/controller-map/index.html` too.**
+
 ## Vendor Dependencies
 
 | Library | Purpose |
@@ -92,7 +96,7 @@ This is a 2026 FRC robot with the following mechanical systems:
 - **Bottom roller**: TalonFX CAN 16 + CAN 17 (both named "Shooter Bottom" in Tuner X), mounted mirrored.
   The code drives both at the same speed with opposite inversion, which is correct for a mirrored pair.
 - **Top roller**: belted to the bottom roller, so it spins whenever the bottom roller does. **Nothing to code.** The Kraken X44 on CAN 18 (Tuner X name "Shooter Top") drives the **hood**, not this roller (programming lead, Oct 25).
-- Velocity control (VelocityVoltage): fast 7000 RPM requested but clamped to `kMaxRPM` = 3100, slow 2500, idle 2000 (Driver D-pad Left), reverse -1000
+- Velocity control (VelocityVoltage): fast 5400 RPM (`kMaxRPM` = 5800, the motor's free speed; was capped at 3100 until Oct 25), 0.25 s spin-up ramp, 60 A supply / 120 A stator per motor, slow 2500, idle 2000 (Driver D-pad Left), reverse -1000
 - PID: kP=0.11, kV=0.12
 
 ### Index / Feeder
@@ -100,7 +104,7 @@ This is a 2026 FRC robot with the following mechanical systems:
 - Feeds fuel from intake to shooter, brake mode
 
 ### Shooter Intake
-- Single TalonFX (CAN 15, Tuner X: "UpTakeChannelForShooter"), DutyCycleOut (FOC off, unlicensed): forward constant 2.0 (saturates at 100%), reverse -0.6
+- Single TalonFX (CAN 15, Tuner X: "UpTakeChannelForShooter"), DutyCycleOut (FOC off, unlicensed): forward 1.0 (100%), reverse -0.6
 - Pulls fuel into the shooter path, brake mode
 
 ### Gooba (Hood)
@@ -333,7 +337,7 @@ in Phoenix Tuner X before writing code.
 - **Turret setup**: far end set to 36 rotations (`kEndPosition`). If 36 rotations is more than 270°, raise `kEndDegrees` to match so "Turret Angle (deg)" and the 10° margin stay right. Still to confirm D-pad Right turns it right (else flip `kMotorInverted`). Then check the aim: a tag held to the right of the camera must read a positive "Limelight tx" (if negative, the image is flipped in the Limelight settings), and auto-aim must turn toward the tag
 - **Limelight pose into odometry is wrong with the camera on the turret**: `CommandSwerveDrivetrain.periodic()` feeds MegaTag2 poses into odometry, but MegaTag2 assumes the camera is fixed to the frame. Any turret angle other than the one set in the Limelight UI gives a wrong position (autos can drive to the wrong place). It also passes the raw Pigeon yaw instead of the drivetrain heading. Swerve code, so not changed yet: waiting on the programming lead's OK
 - Re-measure `Constants.Limelight.kMountAngleDegrees` and `kLensHeightMeters` on the new camera mount — `distanceToTarget()` is wrong until then
-- `Constants.Shooter.kFastTargetRPM = 7000` is clamped to `kMaxRPM = 3100` at runtime — raise `kMaxRPM` when the flywheel is trusted at higher speeds
+- Oct 25: fast raised to 5400 RPM (cap 5800 = motor free speed); 3100 could not reach the target. Kept below free speed so the loop regulates shot speed
 - X56 HOTAS is switched off; if re-enabled, its axis/button indices need on-hardware verification (docs/X56-HOTAS-SETUP.md)
 - Servo mechanism(s) replacing the pneumatics: not built yet, not coded yet (use WPILib `Servo` on a roboRIO PWM port when ready)
 - **Hood bring-up (Oct 25)**: confirm Left Stick Up raises it (else flip `Gooba.kInverted`), that 10.7 rotations is the real top, and that last season's ty shot map still scores; re-record points if not

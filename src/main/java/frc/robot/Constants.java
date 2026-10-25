@@ -63,11 +63,15 @@ public final class Constants {
         public static final boolean kLeaderInverted = true;
         public static final boolean kFollowerInverted = false;
         // NOTE: requests above kMaxRPM are clamped in ShooterSubsystem.runAtRPM()
-        public static final double kFastTargetRPM = 7000.0;
+        // Operator LT spin-up. 5400 is about 93% of the Kraken's free speed (~5800 RPM with FOC),
+        // so the speed loop still has headroom to hold it steady as the battery drains.
+        public static final double kFastTargetRPM = 5400.0;
         public static final double kSlowTargetRPM = 2500.0;
         public static final double kReverseRPM = -1000.0;
         public static final double kTestingRPM = 1500.0;
-        public static final double kMaxRPM = 3100.0; //7000
+        // Hard ceiling = the motor's own top speed (Kraken X60 with FOC). Was 3100 until Oct 25,
+        // which could not shoot high enough to reach the target.
+        public static final double kMaxRPM = 5800.0;
         // Driver D-pad Left idle speed. 2000 RPM = about 33.3 rotations per second
         // (the shooter code divides by 60 for you).
         public static final double kIdleRPM = 2000.0;
@@ -77,9 +81,11 @@ public final class Constants {
         public static final double kI = 0.0;
         public static final double kD = 0.0;
         public static final double kV = 0.12;
-        public static final double kSupplyCurrentLimit = 80.0;
-        public static final double kStatorCurrentLimit = 160.0;
-        public static final double kVoltageRampPeriod = 0.0;
+        // Per motor (2 motors). 60 A supply each keeps a cold spin-up from browning out the battery.
+        public static final double kSupplyCurrentLimit = 60.0;
+        public static final double kStatorCurrentLimit = 120.0;
+        // Spin-up ramp: 0 to full voltage in 0.25 s, easy on the belt, still at speed in about a second.
+        public static final double kVoltageRampPeriod = 0.25;
         public static final double kDutyCycleRampPeriod = 0.0;
     }
 
@@ -93,7 +99,8 @@ public final class Constants {
     public static final class ShooterIntake {
         public static final int kMotorId = 15; // Tuner X name: "UpTakeChannelForShooter"
         public static final boolean kInverted = true;
-        public static final double kForwardSpeed = 2.0;
+        // Duty cycle, -1 to 1. Was 2.0, which is out of range; 1.0 = full power, stated plainly.
+        public static final double kForwardSpeed = 1.0;
         public static final double kReverseSpeed = -0.6;
     }
 
