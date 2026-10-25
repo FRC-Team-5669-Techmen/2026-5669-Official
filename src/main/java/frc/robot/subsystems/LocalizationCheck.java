@@ -129,7 +129,7 @@ public class LocalizationCheck extends SubsystemBase {
             turret.aimAtAngle(target[0], 0.0);
             turret.setAimStatus("SWEEP TEST");
             LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue("limelight");
-            if (mt1 != null && mt1.tagCount >= 1 && mt1.avgTagDist < 4.5
+            if (mt1 != null && mt1.tagCount >= 2 && mt1.avgTagDist < 4.5
                     && Math.abs(turret.getVelocityDegPerSec()) < 40) {
                 double gyro = drivetrain.getState().Pose.getRotation().getDegrees();
                 samples.add(new Sample(turret.getAngleDegrees(), mt1.pose.getX(), mt1.pose.getY(),
@@ -165,13 +165,21 @@ public class LocalizationCheck extends SubsystemBase {
     /** Plain-English verdict from the sweep samples. */
     static String judge(List<Sample> s) {
         if (s.size() < 25) {
-            return "NOT ENOUGH TAG VIEWS (" + s.size() + "): face 2+ tags 1-4 m away and run it again";
+            return "NOT ENOUGH 2-TAG VIEWS (" + s.size() + "): put the robot 2-3 m from a hub face, turned so the"
+                + " hub is off to its side (turret around the middle of its range), and run it again";
         }
-        double mx = 0, my = 0;
-        for (Sample p : s) { mx += p.x(); my += p.y(); }
-        mx /= s.size(); my /= s.size();
-        double spread = 0;
-        for (Sample p : s) spread = Math.max(spread, Math.hypot(p.x() - mx, p.y() - my));
+        // Turret range covered while 2 tags were in view.
+        double tMin = Double.MAX_VALUE, tMax = -Double.MAX_VALUE;
+        for (Sample p : s) { tMin = Math.min(tMin, p.turretDeg()); tMax = Math.max(tMax, p.turretDeg()); }
+        double range = tMax - tMin;
+
+        // Robust spread: distance of each sample from the MEDIAN position; judge by the 80th
+        // percentile so a few bad camera frames can't fail the test on their own.
+        double[] xs = s.stream().mapToDouble(Sample::x).sorted().toArray();
+        double[] ys = s.stream().mapToDouble(Sample::y).sorted().toArray();
+        double mx = xs[xs.length / 2], my = ys[ys.length / 2];
+        double[] d = s.stream().mapToDouble(p -> Math.hypot(p.x() - mx, p.y() - my)).sorted().toArray();
+        double spread = d[(int) Math.floor(0.8 * (d.length - 1))];
 
         // Heading from vision minus gyro heading should NOT change as the turret turns. If it
         // changes about 2 degrees per degree of turret, the camera's turn direction is backwards.
@@ -182,16 +190,20 @@ public class LocalizationCheck extends SubsystemBase {
         for (Sample p : s) { num += (p.turretDeg() - mt) * (p.headingDiffDeg() - mh); den += Math.pow(p.turretDeg() - mt, 2); }
         double slope = den > 1e-6 ? num / den : 0;
 
-        String nums = String.format(" [spread %.0f cm, heading drift %.2f deg/deg, %d samples]", spread * 100, slope, s.size());
+        String nums = String.format(" [spread %.0f cm (80%%), heading drift %.2f deg/deg, turret %.0f-%.0f deg, %d samples]",
+            spread * 100, slope, tMin, tMax, s.size());
+        if (range < 20) {
+            return "NOT ENOUGH TURRET RANGE: turn the robot so the hub is off to its side, run again." + nums;
+        }
         if (Math.abs(slope) > 0.8) {
             return "FAIL: camera turns the wrong way. Flip Constants.Aim.kLimelightYawCCW, deploy, run again." + nums;
         }
         if (spread > 0.20) {
-            return "FAIL: position moves as the turret turns. Flip Constants.Aim.kLimelightSideIsRight, deploy,"
-                + " run again. If still failing, re-check kCameraForwardOfPivot (behind = negative)." + nums;
+            return "FAIL: position moves as the turret turns. Send this line to the programmer (camera"
+                + " offset or kLimelightSideIsRight)." + nums;
         }
         if (spread > 0.10) {
-            return "OK-ISH: small wobble. Fine to continue; re-check the camera offset when there's time." + nums;
+            return "OK-ISH: small wobble. Fine to continue." + nums;
         }
         return "PASS: position stays put while the turret turns." + nums;
     }

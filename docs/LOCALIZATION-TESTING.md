@@ -80,7 +80,9 @@ turn the turret by hand to different angles.
 
 ## Step 4: Test: Turret Sweep (robot ENABLED, one person on the disable button)
 
-The robot must sit **still** (don't drive), seeing tags 1 to 4 meters away (2+ tags is best).
+The robot must sit **still** (don't drive), 2 to 3 meters from a hub face, **turned so the hub is off
+to its side** (so the turret points at the tags around the middle of its range). Only frames with
+both tags of that face in view count.
 Clear people away from the turret.
 
 1. Enable in Teleop.
@@ -94,8 +96,8 @@ Clear people away from the turret.
 | PASS | Done. Go to Step 5. |
 | OK-ISH | Fine for now. Tell the coder "small wobble". |
 | FAIL: camera turns the wrong way | Coder flips `Constants.Aim.kLimelightYawCCW` (true to false or false to true), deploys, run it again |
-| FAIL: position moves as the turret turns | Coder flips `Constants.Aim.kLimelightSideIsRight`, deploys, run again. Still failing: re-measure the camera offset |
-| NOT ENOUGH TAG VIEWS | Move the robot so the camera sees 2 tags 1 to 4 m away and run again |
+| FAIL: position moves as the turret turns | Send the whole line (with the numbers) to the programmer. Don't flip settings by guessing |
+| NOT ENOUGH 2-TAG VIEWS / NOT ENOUGH TURRET RANGE | Turn the robot so the hub is off to its side, 2 to 3 m away, and run again |
 
 Disable the robot when it finishes.
 
