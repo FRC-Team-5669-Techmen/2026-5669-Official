@@ -160,19 +160,36 @@ public final class Constants {
         public static final double kLoopPeriod = 0.002;
     }
 
-    // RETIRED (Oct 2026): the robot no longer has a hood motor. The hood code is kept
-    // but never created in RobotContainer. ID 51 is empty on the CAN bus; if a hood
-    // comes back, give it a free ID in Tuner X and update kMotorId.
+    /**
+     * Hood ("Gooba"), Kraken X44 on Talon FX 18 (Tuner X name: "Shooter Top"). Tilts up and down
+     * to change the shot. Same hood code as last season (it was on ID 51 then).
+     *
+     * <p>0 = power-on position, so ALWAYS power on with the hood all the way DOWN. Deploying
+     * code does NOT re-zero it. Positive = hood UP.
+     */
     public static final class Gooba {
-        public static final int kMotorId = 51;
+        // false = the motor is never created and every hood button does nothing.
+        public static final boolean kHoodEnabled = true;
+        public static final int kMotorId = 18;
+        // Test: tap Operator Left Stick UP. The hood must go UP. If it goes down, flip this.
+        public static final boolean kInverted = false;
+        // Top of the travel, in motor rotations from DOWN. 10.7 = last season's measured top.
+        // If the hood hits the top before 10.7, lower this (read "Hood Position (rot)").
+        public static final double kTopPosition = 10.7;
+
         public static final double kP = 2.4;
         public static final double kI = 0.0;
         public static final double kD = 0.1;
         public static final double kCruiseVelocity = 80.0;
         public static final double kAcceleration = 160.0;
         public static final double kSupplyCurrentLimit = 40.0;
+        public static final double kStatorCurrentLimit = 30.0;  // amps, limits the push if it jams
+
+        // Operator Y presets (rotations)
         public static final double kPositionStowed = 0.0;
         public static final double kPositionDeployed = 3.5;
+        // Operator Left Stick jog: rotations per 20 ms loop (0.04 = 2 rotations per second)
+        public static final double kManualStep = 0.04;
     }
 
     /**
@@ -290,7 +307,8 @@ public final class Constants {
         public static final boolean kIntakeRollerEnabled = true;  // on CAN now (Oct 2026)
         public static final int kMotorId = 22;  // Tuner X name: "Intake motor(22)"
         public static final boolean kInverted = false;  // flip if it spins balls OUT instead of in
-        public static final double kRollerVolts = 6.0;  // spin speed while RT is held (volts)
+        public static final double kRollerVolts = 9.0;  // spin speed while Driver RT is held (volts). Was 6.0
+        public static final double kReverseVolts = -9.0; // Driver LT (hold): spit balls back out
         public static final double kStatorCurrentLimit = 40.0;  // amps
     }
 

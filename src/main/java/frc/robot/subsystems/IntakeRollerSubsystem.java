@@ -12,11 +12,11 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.IntakeRoller;
 
 /**
- * Ground intake ROLLER: the spinning wheels that pick up balls. Hold Driver Right
- * Trigger to spin it.
+ * Ground intake ROLLER (Talon FX 22): the spinning wheels that pick up balls. Hold Driver
+ * Right Trigger to spin it in, hold Driver Left Trigger to spit balls back out.
  *
- * <p>PLACEHOLDER: the motor isn't on CAN yet. While kIntakeRollerEnabled is false,
- * the motor is never created (so there are no CAN errors) and the trigger does nothing.
+ * <p>While kIntakeRollerEnabled is false, the motor is never created (so there are no
+ * CAN errors) and the triggers do nothing.
  */
 public class IntakeRollerSubsystem extends SubsystemBase {
     // Stays null while the roller is disabled. Every method checks for that.
@@ -42,8 +42,13 @@ public class IntakeRollerSubsystem extends SubsystemBase {
     }
 
     public void run() {
+        setVolts(IntakeRoller.kRollerVolts);
+    }
+
+    /** Positive = balls in, negative = balls out. */
+    public void setVolts(double volts) {
         if (motor != null) {
-            motor.setControl(request.withOutput(IntakeRoller.kRollerVolts));
+            motor.setControl(request.withOutput(volts));
         }
     }
 
@@ -56,6 +61,11 @@ public class IntakeRollerSubsystem extends SubsystemBase {
     /** Driver Right Trigger: hold to spin, release to stop. Does nothing while disabled. */
     public Command runCommand() {
         return startEnd(this::run, this::stop);
+    }
+
+    /** Driver Left Trigger: hold to spin backwards (balls out), release to stop. */
+    public Command reverseCommand() {
+        return startEnd(() -> setVolts(IntakeRoller.kReverseVolts), this::stop);
     }
 
     @Override

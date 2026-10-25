@@ -51,18 +51,18 @@ src/main/java/frc/robot/
 │   ├── FuelHandlingCommand     # Coordinated shooter + index + intake (fwd/rev)
 │   ├── FeedShooterCommand      # Index + shooter intake only (shooter runs separately)
 │   ├── RunShooterCommand       # Spin shooter at target RPM
-│   ├── GoobaToggleCommand      # Deploy/stow gooba (RETIRED: no hood motor)
-│   ├── AutoGooba               # Auto-aim gooba using Limelight shot map (RETIRED)
+│   ├── GoobaToggleCommand      # Deploy/stow the hood (named commands deployGooba/stowGooba)
+│   ├── AutoGooba               # Hood follows the Limelight ty through the shot map (runs with auto-aim)
 │   ├── GooberAlign             # PID turret align w/ search sweep (Limelight)
 │   ├── MariosEarCommand        # Multi-phase turret aim (Limelight → USB cams) (RETIRED: no USB cams)
-│   ├── ManualGoobaCommand      # D-pad jog gooba position up/down (RETIRED)
+│   ├── ManualGoobaCommand      # Operator Left Stick jog of the hood up/down
 │   └── ManualTurretCommand     # D-pad jog turret left/right
 ├── subsystems/
 │   ├── CommandSwerveDrivetrain # CTRE swerve + PathPlanner AutoBuilder + MapleSim
 │   ├── ShooterSubsystem        # Dual TalonFX (leader/follower), velocity control
 │   ├── IndexSubsystem          # Single TalonFX ("Spindex"), feeds the shooter
 │   ├── ShooterIntakeSubsystem  # Single TalonFX, feeds fuel to shooter
-│   ├── GoobaSubsystem          # Hood, Motion Magic position (RETIRED: no hood motor, not created)
+│   ├── GoobaSubsystem          # Hood, TalonFX 18, Motion Magic position + shot map
 │   ├── Goober                  # Turret motor, duty cycle rotation, ~270° from HOME with soft limits
 │   ├── LimelightSubsystem      # Limelight NetworkTables (tx/ty/ta/tv/botpose)
 │   ├── MariosEar               # Multi-camera vision: Limelight + 2 PhotonVision USB cams (RETIRED, not created)
@@ -91,7 +91,7 @@ This is a 2026 FRC robot with the following mechanical systems:
 ### Shooter System
 - **Bottom roller**: TalonFX CAN 16 + CAN 17 (both named "Shooter Bottom" in Tuner X), mounted mirrored.
   The code drives both at the same speed with opposite inversion, which is correct for a mirrored pair.
-- **Top roller**: belted to the bottom roller, so it spins whenever the bottom roller does. **Nothing to code.** A Kraken X44 still shows on CAN as 18 ("Shooter Top"); the code never commands it. If it is attached to that belt, keep it in coast (the Talon FX default) or take it off: brake mode would drag the belt, and giving it its own speed would fight the bottom roller.
+- **Top roller**: belted to the bottom roller, so it spins whenever the bottom roller does. **Nothing to code.** The Kraken X44 on CAN 18 (Tuner X name "Shooter Top") drives the **hood**, not this roller (programming lead, Oct 25).
 - Velocity control (VelocityVoltage): fast 7000 RPM requested but clamped to `kMaxRPM` = 3100, slow 2500, idle 2000 (Driver D-pad Left), reverse -1000
 - PID: kP=0.11, kV=0.12
 
@@ -103,15 +103,15 @@ This is a 2026 FRC robot with the following mechanical systems:
 - Single TalonFX (CAN 15, Tuner X: "UpTakeChannelForShooter"), DutyCycleOut (FOC off, unlicensed): forward constant 2.0 (saturates at 100%), reverse -0.6
 - Pulls fuel into the shooter path, brake mode
 
-### Gooba (Hood/Arc) (RETIRED, Oct 2026)
-- **No hood motor on the robot right now.** Code kept but `GoobaSubsystem` is not created; hood bindings and named commands are no-ops.
-- Notes below describe the old hood, for if it comes back:
-- **Kraken X44** TalonFX (CAN 51)
-- **Motion Magic** position control for smooth hood angle adjustment
-- PID: kP=2.4, kD=0.1; cruise velocity 80 RPS, acceleration 160 RPS/s
-- Positions: stowed=0.0, deployed=3.5 rotations (needs tuning)
-- Has interpolating distance→rotation map (shot map) for auto-aim
-- 40A supply current limit
+### Gooba (Hood)
+- **Kraken X44 on Talon FX 18** (Tuner X name "Shooter Top", no Pro license, so FOC off). Tilts the hood up/down to change the shot. Same code as last season, which ran it on ID 51. `Constants.Gooba.kHoodEnabled = false` turns it off entirely (motor never created).
+- **Motion Magic** position control: kP=2.4, kD=0.1, cruise 80 rot/s, accel 160 rot/s². Brake, 40 A supply + 30 A stator limits.
+- **0 = power-on position, so always power on with the hood all the way DOWN.** No re-zero at startup (last season's code did). Dashboard button **"Zero Hood (hood is DOWN)"**. **Positive = UP** (flip `kInverted` if the jog Up lowers it).
+- Soft limits **0 to `kTopPosition` = 10.7 rotations** (last season's top). Lower it if the hood hits the top first.
+- **Shot map** keyed on the Limelight's **ty** (up/down angle to the tag): last season's competition points 27.3→1.0, -16.8→2.36, -18.3→3.8, -23.9→5.1. They were recorded from raw tx on the old sideways mount (tx was the up/down angle then); the camera is in the same spot, so they carry over as ty. Close to the hub = big positive ty.
+- **Controls**: Operator **RB** auto-aim now moves the hood too (`AutoGooba`, holds its spot when no tag). Operator **Y** toggles stowed (0.0) / deployed (3.5). Operator **Left Stick up/down** (hold) jogs it (2 rot/s). Any of these manual controls cancels auto-aim.
+- **When the robot disables**, the hood target is dropped, so it never jumps on enable.
+- Dashboard: "Hood Enabled", "Hood Position (rot)", "Hood Target (rot)", "Hood Amps", "AutoGooba ty", "AutoGooba Target Rot".
 
 ### Goober (Turret)
 - TalonFX (CAN 14, Tuner X: "AngleShooter"), duty cycle output (FOC off), brake mode, 30 A stator limit (low on purpose, to go easy on the wires).
@@ -147,7 +147,7 @@ This is a 2026 FRC robot with the following mechanical systems:
 - The old climb code (motor 21) was deleted; the elevator replaced it.
 
 ### Ground Intake Roller (Talon FX 22)
-- On CAN as ID 22 ("Intake motor(22)"), Pro-licensed. **Hold Driver Right Trigger** to spin it at `kRollerVolts` (VoltageOut, FOC off), coast mode, 40 A stator limit.
+- On CAN as ID 22 ("Intake motor(22)"), Pro-licensed. **Hold Driver Right Trigger** to spin it in at `kRollerVolts` (**9 V**, was 6), **hold Driver Left Trigger** to spin it backwards at `kReverseVolts` (-9 V) and spit balls out. VoltageOut (FOC off), coast mode, 40 A stator limit.
 - Spins balls out instead of in? Flip `Constants.IntakeRoller.kInverted`. `kIntakeRollerEnabled = false` turns it off entirely (motor never created).
 
 ### Vision
@@ -166,13 +166,13 @@ This is a 2026 FRC robot with the following mechanical systems:
 | `ShooterSubsystem` | 2 TalonFX (leader/follower) | VelocityVoltage | `runAtRPM(rpm)`, `stop()` |
 | `IndexSubsystem` | 1 TalonFX | VoltageOut (FOC off) | `run(volts)`, `stop()` |
 | `ShooterIntakeSubsystem` | 1 TalonFX | DutyCycleOut (FOC off) | `run(speed)`, `stop()` |
-| `GoobaSubsystem` (RETIRED, not created) | none | MotionMagicVoltage | `setPosition(rot)`, `getPosition()`, `getRotationForDistance(d)` |
+| `GoobaSubsystem` (hood) | 1 TalonFX (18) | MotionMagicVoltage (FOC off) + soft limits | `setPosition(rot)`, `getPosition()`, `getRotationForTy(ty)`, `toggleCommand()`, `zeroCommand()` |
 | `Goober` | 1 TalonFX (14) | DutyCycleOut (FOC off) + soft limits | `setMotorSpeed(pct)`, `aimAtTarget(tx)`, `zeroCommand()`, `stop()` |
 | `LimelightSubsystem` | Limelight camera | NetworkTables | `getTX()`, `getTY()`, `isValidTarget()`, `distanceToTarget()` |
 | `MariosEar` (RETIRED, not created) | none (no USB cameras) | PhotonCamera | `limelightHasTarget()`, `getLimelightTX()`, `getLeftResult()`, `getRightResult()` |
 | `GroundIntakePivotSubsystem` | 2 TalonFX (20 leader, 21 follower) | MotionMagicVoltage + VoltageOut jog + Follower (FOC off) | `toggleCommand()`, `jogUpCommand()`, `jogDownCommand()`, `zeroCommand()`, `stopCommand()` |
 | `ElevatorSubsystem` | 1 TalonFX (19) | VoltageOut (FOC off) + soft limits | `upCommand()`, `downCommand()`, `zeroCommand()`, `limitsOffCommand()`, `setVolts(v)`, `stop()` |
-| `IntakeRollerSubsystem` | 1 TalonFX (22) | VoltageOut (FOC off) | `runCommand()` |
+| `IntakeRollerSubsystem` | 1 TalonFX (22) | VoltageOut (FOC off) | `runCommand()`, `reverseCommand()` |
 
 ## Command Architecture
 
@@ -182,10 +182,10 @@ Commands follow the standard WPILib command-based pattern. Key patterns:
 - **`FeedShooterCommand`**: Runs index + shooter intake only, so the shooter can be spun up independently (operator layout).
 - **`MariosEarCommand`** (RETIRED, no USB cameras): Multi-phase turret aiming with priority: (1) Limelight PID tracking → (2) Left USB cam coarse search → (3) Right USB cam coarse search → (4) stop. Don't revive it as is: it swings at 100% power and ignores the turret's range.
 - **`GooberAlign`**: Limelight PID turret alignment on raw tx (camera is centered on the shooter): tx > 0 (tag on the right) turns the turret right. When no valid target is in view it sweeps the turret between just inside HOME and just inside the far end hunting for one. Does nothing until the far end is set. Never finishes on its own — bind with whileTrue or a timeout.
-- **`AutoGooba`** (RETIRED with the hood): Continuous auto-aim that maps Limelight distance (m) to hood position via the interpolating shot map, with a moving-average filter on distance.
-- **Instant commands**: `GoobaToggleCommand` (retired) finishes immediately after setting state.
+- **`AutoGooba`**: Continuous hood auto-aim that maps Limelight ty to hood position via the interpolating shot map, with a moving-average filter on ty. Runs alongside `GooberAlign` (RB toggle, `visionScore`, `score`). Requires only the hood.
+- **Instant commands**: `GoobaToggleCommand` finishes immediately after setting the hood target.
 - **While-held commands**: `ManualTurretCommand`, the intake jog, elevator up/down and the roller (built with `startEnd`) run while held and stop on release.
-- **Toggles**: Driver A flips the intake between UP and DOWN (`runOnce`). Operator RB turns `GooberAlign` on/off with `Trigger.toggleOnTrue`.
+- **Toggles**: Driver A flips the intake between UP and DOWN (`runOnce`). Operator RB turns `GooberAlign` + `AutoGooba` on/off with `Trigger.toggleOnTrue`. Operator Y flips the hood stowed/deployed.
 
 ## Controller Bindings
 
@@ -198,6 +198,7 @@ This matches the drive team's official map. **LOCKED** = practiced, must stay ex
 | Right Stick | Swerve rotate | LOCKED |
 | Left Bumper | Reset gyro / seed field centric | LOCKED |
 | Right Trigger (hold) | Ground intake roller (Talon FX 22) | LOCKED |
+| Left Trigger (hold) | Ground intake roller **backwards** (spit balls out) | added Oct 25 |
 | A (press) | Toggle ground intake DOWN / UP (does nothing until `kDownPosition` is set) | LOCKED |
 | X | Reserved, bound to nothing (was the climb piston) | LOCKED |
 | D-Pad Up (hold) | Climb up (elevator 19) | LOCKED |
@@ -210,8 +211,9 @@ This matches the drive team's official map. **LOCKED** = practiced, must stay ex
 |-------|--------|-----|
 | Right Trigger (hold) | Shoot (Spindex + uptake) | LOCKED |
 | Left Trigger (hold) | Shooter windup | LOCKED |
-| Right Bumper (press) | Toggle Limelight auto-aim (turret tracking on/off) | LOCKED |
-| Y | Reserved, bound to nothing (was the "Gooba" hood) | LOCKED |
+| Right Bumper (press) | Toggle Limelight auto-aim (turret tracking + hood on/off) | LOCKED |
+| Y (press) | Toggle hood stowed / deployed ("Toggle Gooba Hood", as on the team map) | LOCKED |
+| Left Stick up/down (hold) | Jog the hood up/down slowly | OPEN |
 | D-Pad Up/Down (hold) | Jog ground intake up/down slowly | OPEN |
 | D-Pad Left/Right (hold) | Manual turret jog (Right = turn right, away from HOME; diagonals count, so it doesn't stutter) | OPEN |
 | B (hold) | Spindex backwards to clear a jam | not on map, kept on purpose |
@@ -255,15 +257,17 @@ rename them without updating the autos in `src/main/deploy/pathplanner/`.
 |------|---------|---------|
 | `spinUpShooter` | RunShooterCommand (fast RPM) | 1.5s |
 | `spinUpShooterSlow` | RunShooterCommand (slow RPM) | 1.5s |
-| `score` | GooberAlign → spin up → FuelHandling forward → stop | staged |
+| `score` | GooberAlign + AutoGooba → spin up → FuelHandling forward → stop | staged |
 | `scorePreload` | Spin up → FuelHandling forward → stop (no vision) | staged |
-| `visionScore` | GooberAlign → spin up → shoot → stop (hood step removed) | staged |
+| `visionScore` | GooberAlign + AutoGooba (2.5 s) → spin up → shoot → stop | staged |
 | `shoot` | FuelHandlingCommand (forward) | 2.0s |
 | `stopShooter` | InstantCommand → shooter.stop() | - |
 | `intake` | FuelHandlingCommand (reverse) | 2.0s |
 | `aimTurret` | GooberAlign (Limelight-only; was MariosEarCommand, no USB cameras now) | 2.0s |
 | `alignTurret` | GooberAlign (Limelight-only) | 2.0s |
-| `lowerIntake`, `togglePiston1`, `togglePiston2`, `runGroundIntake`, `deployGooba`, `stowGooba`, `autoAimGooba` | No-ops (pneumatics, intake roller and hood removed; kept so old autos load cleanly) | - |
+| `deployGooba` / `stowGooba` | Hood to deployed / stowed preset | instant |
+| `autoAimGooba` | AutoGooba (hood follows ty) | 2.0s |
+| `lowerIntake`, `togglePiston1`, `togglePiston2`, `runGroundIntake` | No-ops (pneumatics removed; kept so old autos load cleanly) | - |
 
 ### Paths & Autos
 - **Autos**: `Center Preload - Dumb`, `Center Preload - Vision`, `Left 3-Piece Auto`, `Right 3-Piece Auto`
@@ -294,7 +298,7 @@ For swerve it is the module position.
 | 15 | TalonFX | UpTakeChannelForShooter | `Constants.ShooterIntake` |
 | 16 | TalonFX | Shooter Bottom | `Constants.Shooter.kLeaderId` |
 | 17 | TalonFX | Shooter Bottom | `Constants.Shooter.kFollowerId` |
-| 18 | TalonFX (Kraken X44) | Shooter Top | not used: top roller is belted to the bottom roller |
+| 18 | TalonFX (Kraken X44) | Shooter Top | `Constants.Gooba` (**hood**; the name is old) |
 | 19 | TalonFX | Elevator | `Constants.Elevator` (climber) |
 | 20 | TalonFX | Right Ground Intake Raise | `Constants.GroundIntakePivot.kLeaderId` |
 | 21 | TalonFX | Left Ground Intake Raise | `Constants.GroundIntakePivot.kFollowerId` |
@@ -302,13 +306,13 @@ For swerve it is the module position.
 | 41 | Pigeon2 | Pigeon 2 | Swerve |
 
 All devices are on the roboRIO's built-in CAN bus (`TunerConstants.kCANBus` is `""`), no CANivore.
-IDs 51 and 61 no longer exist. The retired hood code still says 51 but is never created.
+IDs 51 and 61 no longer exist (the hood moved from 51 to 18).
 **Free IDs for new devices:** 23-40, 42-50, 52+. New CTRE devices ship as ID 0, so set the ID
 in Phoenix Tuner X before writing code.
 
 ## Patterns & Conventions
 
-- **Naming**: The team uses creative nicknames for subsystem classes: "Gooba" = hood/arc mechanism (retired), "Goober" = turret (easy to mix up with Gooba), "MariosEar" = multi-camera vision system (retired), "Marcos" = named-command registrar. Instance variables use plain descriptive names (`limelight`, `goober`, `groundIntakePivot`, ...).
+- **Naming**: The team uses creative nicknames for subsystem classes: "Gooba" = hood, "Goober" = turret (easy to mix up with Gooba), "MariosEar" = multi-camera vision system (retired), "Marcos" = named-command registrar. Instance variables use plain descriptive names (`limelight`, `goober`, `groundIntakePivot`, ...).
 - **Vision mounting**: The Limelight is mounted HORIZONTALLY and CENTERED on the shooter (2026 offseason remount) — `tx` aims the turret, `ty` feeds the distance trig. Re-measure `Constants.Limelight.kMountAngleDegrees`/`kLensHeightMeters` whenever the mount changes.
 - **Hub shifts**: `HubShiftTracker.isOurHubOpen()` implements the REBUILT shift schedule (game data at teleop start + match timer). Driver rumble and the dashboards read it via `RobotContainer.isHubOpenForUs()`.
 - **Constants**: All hardware IDs, PID gains, speeds, and positions live in `Constants.java` inner classes. Comments mark values as `//fixed` when confirmed on hardware.
@@ -332,4 +336,5 @@ in Phoenix Tuner X before writing code.
 - `Constants.Shooter.kFastTargetRPM = 7000` is clamped to `kMaxRPM = 3100` at runtime — raise `kMaxRPM` when the flywheel is trusted at higher speeds
 - X56 HOTAS is switched off; if re-enabled, its axis/button indices need on-hardware verification (docs/X56-HOTAS-SETUP.md)
 - Servo mechanism(s) replacing the pneumatics: not built yet, not coded yet (use WPILib `Servo` on a roboRIO PWM port when ready)
-- Hood retired: the shot map and AutoGooba are unused until a hood comes back
+- **Hood bring-up (Oct 25)**: confirm Left Stick Up raises it (else flip `Gooba.kInverted`), that 10.7 rotations is the real top, and that last season's ty shot map still scores; re-record points if not
+- **Limelight localization** (field position from AprilTags, so the turret aims at the hub center and the hood uses true distance): needs the turret-camera fix in `CommandSwerveDrivetrain`, plus measurements (turret center offset, camera offset/height/tilt, HOME direction, exact degrees per turret rotation)

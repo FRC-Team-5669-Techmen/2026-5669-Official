@@ -161,6 +161,7 @@ public class LimelightSubsystem extends SubsystemBase {
 
         // Publish vision data to SmartDashboard for tuning and debugging.
         SmartDashboard.putNumber("Limelight tx", getTX());
+        SmartDashboard.putNumber("Limelight ty", getTY());
         SmartDashboard.putNumber("Limelight Tag ID", getID());
         SmartDashboard.putString("Limelight Aiming At", alliance.isEmpty() ? "both hubs (no alliance yet)"
             : alliance.get() == Alliance.Red ? "RED hub (tags 2, 5, 10)" : "BLUE hub (tags 18, 21, 26)");

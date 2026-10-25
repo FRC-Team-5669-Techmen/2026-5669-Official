@@ -7,12 +7,12 @@ import frc.robot.subsystems.GoobaSubsystem;
 import frc.robot.subsystems.LimelightSubsystem;
 
 /**
- * Continuous hood auto-aim: converts the Limelight distance-to-target into a
- * hood position through the calibrated shot map.
+ * Continuous hood auto-aim: turns the Limelight's up/down angle to the tag (ty) into a
+ * hood position through the calibrated shot map. Runs together with GooberAlign when
+ * Operator RB turns auto-aim on.
  *
- * <p>The distance is run through a moving-average filter so the hood doesn't
- * chase pixel noise, and the hood simply holds its last position whenever the
- * target drops out of view.
+ * <p>ty is run through a moving-average filter so the hood doesn't chase pixel noise,
+ * and the hood simply holds its last position whenever the target drops out of view.
  *
  * <p>Requires only the gooba — do NOT add the Limelight to the requirements or
  * this will fight GooberAlign for it when the two run in parallel.
@@ -21,8 +21,9 @@ public class AutoGooba extends Command {
     private final GoobaSubsystem m_gooba;
     private final LimelightSubsystem m_vision;
 
-    // ~5 loops (100 ms) of smoothing on the measured distance
-    private final LinearFilter m_distanceFilter = LinearFilter.movingAverage(5);
+    // ~5 loops (100 ms) of smoothing on ty
+    private final LinearFilter m_tyFilter = LinearFilter.movingAverage(5);
+    private boolean m_hadTarget = false;
 
     public AutoGooba(GoobaSubsystem gooba, LimelightSubsystem vision) {
         this.m_gooba = gooba;
@@ -33,31 +34,36 @@ public class AutoGooba extends Command {
     @Override
     public void initialize() {
         // Drop any samples left over from the previous run
-        m_distanceFilter.reset();
+        m_tyFilter.reset();
+        m_hadTarget = false;
     }
 
     @Override
     public void execute() {
         // Only move on a valid, ID-filtered target; otherwise hold position.
         if (!m_vision.isValidTarget()) {
+            m_hadTarget = false;
             return;
         }
 
-        // Distance can still read 0.0 if the target drops between the check above
-        // and this NT read, or if the mount-angle geometry has no solution — never
-        // let those samples into the filter or the hood dives to the map minimum.
-        double measured = m_vision.distanceToTarget();
-        if (measured <= 0.0) {
-            return;
+        // Found the tag again: forget the samples from the last time we saw it, and
+        // start the filter at the real value so the hood doesn't swing toward ty = 0
+        double ty = m_vision.getTY();
+        if (!m_hadTarget) {
+            m_tyFilter.reset();
+            for (int i = 0; i < 4; i++) {
+                m_tyFilter.calculate(ty);
+            }
         }
+        m_hadTarget = true;
 
-        double distance = m_distanceFilter.calculate(measured);
-        double targetRotations = m_gooba.getRotationForDistance(distance);
+        double smoothedTy = m_tyFilter.calculate(ty);
+        double targetRotations = m_gooba.getRotationForTy(smoothedTy);
 
         m_gooba.setPosition(targetRotations);
 
         // Calibration aids: compare these while recording shot map points
-        SmartDashboard.putNumber("AutoGooba Distance (m)", distance);
+        SmartDashboard.putNumber("AutoGooba ty", smoothedTy);
         SmartDashboard.putNumber("AutoGooba Target Rot", targetRotations);
     }
 
