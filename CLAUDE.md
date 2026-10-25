@@ -92,7 +92,7 @@ This is a 2026 FRC robot with the following mechanical systems:
 - **Bottom roller**: TalonFX CAN 16 + CAN 17 (both named "Shooter Bottom" in Tuner X), mounted mirrored.
   The code drives both at the same speed with opposite inversion, which is correct for a mirrored pair.
 - **Top roller**: belted to the bottom roller, so it spins whenever the bottom roller does. **Nothing to code.** A Kraken X44 still shows on CAN as 18 ("Shooter Top"); the code never commands it. If it is attached to that belt, keep it in coast (the Talon FX default) or take it off: brake mode would drag the belt, and giving it its own speed would fight the bottom roller.
-- Velocity control (VelocityVoltage): fast 7000 RPM requested, `kMaxRPM` = 7000 (full power since Oct 25; was 3100), slow 2500, idle 2000 (Driver D-pad Left), reverse -1000
+- Velocity control (VelocityVoltage): fast 5400 RPM (`kMaxRPM` = 5800, the motor's free speed; was capped at 3100 until Oct 25), 0.25 s spin-up ramp, 60 A supply / 120 A stator per motor, slow 2500, idle 2000 (Driver D-pad Left), reverse -1000
 - PID: kP=0.11, kV=0.12
 
 ### Index / Feeder
@@ -322,7 +322,7 @@ in Phoenix Tuner X before writing code.
 - **Intake pivot sync**: Oct 23 Elastic data showed the two sides within ~0.03 rot while driven and ~0.1 rot at rest, so they're well coupled; the drift came from an unpowered free-fall after stopping early (fixed). Dual position control isn't needed unless that changes
 - Verify the turret aim sign after the Limelight remount: if the turret runs away from the target, flip the sign in `GooberAlign` (`-limelight.getTX()`)
 - Re-measure `Constants.Limelight.kMountAngleDegrees` and `kLensHeightMeters` on the new camera mount — `distanceToTarget()` is wrong until then
-- `kMaxRPM` raised to 7000 on Oct 25 (full power): 3100 could not reach the target. 7000 is above motor free speed, so fast = flat out
+- Oct 25: fast raised to 5400 RPM (cap 5800 = motor free speed); 3100 could not reach the target. Kept below free speed so the loop regulates shot speed
 - X56 HOTAS is switched off; if re-enabled, its axis/button indices need on-hardware verification (docs/X56-HOTAS-SETUP.md)
 - Servo mechanism(s) replacing the pneumatics: not built yet, not coded yet (use WPILib `Servo` on a roboRIO PWM port when ready)
 - Hood retired: the shot map and AutoGooba are unused until a hood comes back
