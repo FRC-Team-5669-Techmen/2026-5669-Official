@@ -67,7 +67,9 @@ public final class Constants {
         public static final double kSlowTargetRPM = 2500.0;
         public static final double kReverseRPM = -1000.0;
         public static final double kTestingRPM = 1500.0;
-        public static final double kMaxRPM = 3100.0; //7000
+        // FULL POWER (Oct 25): 7000 is above the motor's free speed, so the shooter runs
+        // flat out. Was 3100, which could not shoot high enough to reach the target.
+        public static final double kMaxRPM = 7000.0;
         // Driver D-pad Left idle speed. 2000 RPM = about 33.3 rotations per second
         // (the shooter code divides by 60 for you).
         public static final double kIdleRPM = 2000.0;
@@ -93,7 +95,8 @@ public final class Constants {
     public static final class ShooterIntake {
         public static final int kMotorId = 15; // Tuner X name: "UpTakeChannelForShooter"
         public static final boolean kInverted = true;
-        public static final double kForwardSpeed = 2.0;
+        // Duty cycle, -1 to 1. Was 2.0, which is out of range; 1.0 = full power, stated plainly.
+        public static final double kForwardSpeed = 1.0;
         public static final double kReverseSpeed = -0.6;
     }
 
