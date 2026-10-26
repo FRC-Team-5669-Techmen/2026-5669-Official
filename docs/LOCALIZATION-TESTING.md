@@ -37,6 +37,19 @@ Everything is also **logged**: the Driver Station console prints lines starting 
 (The roboRIO disk was nearly full on Oct 25. Clear old logs in the roboRIO's web page or DogLog
 can't save.)
 
+## Practicing at home (IMPORTANT)
+
+The robot finds itself by assuming every tag is exactly where the **official** field has it. Our
+shop field is not laid out like the official field (the climb and trench are in different spots),
+so tags 15/16 (climb) and 7 (trench) make the position jump and the turret aim "into air".
+
+**At home: turn ON "Practice Field: Hub Tags Only"** on the dashboard. The camera then uses only the
+tags on our hub. It is saved on the robot, so **turn it OFF at competition** (the "Localization
+Step" line starts with "[PRACTICE FIELD: hub tags only]" while it is on, as a reminder).
+
+If the robot on the Field picture is ever somewhere silly: press **"Re-find Position (camera)"**,
+then hold the robot still 2-3 m in front of a hub face until Vision Status says "OK SET from camera".
+
 ## Before every test
 
 1. Robot powered on with the **turret on its HOME mark**, intake UP, elevator DOWN.

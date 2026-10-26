@@ -45,6 +45,16 @@ public class LimelightSubsystem extends SubsystemBase {
     private static final int[] kAllFieldTags = IntStream.rangeClosed(1, 32).toArray();
     private Optional<Alliance> filterAlliance = Optional.empty(); // alliance the filter was last set for
 
+    // PRACTICE FIELD switch (dashboard "Practice Field: Hub Tags Only", saved on the roboRIO).
+    // Position needs every tag the camera sees to be where the OFFICIAL field has it. A home field
+    // whose climb/trench/walls are not at official spots gives contradictory positions (Oct 25: the
+    // pose jumped whenever it saw tags 15/16 on the shop climb or 7 on the trench). ON = the camera
+    // uses only the 8 tags on OUR hub (both hubs until the alliance is known). OFF at competition.
+    private static final String kPracticeKey = "Practice Field: Hub Tags Only";
+    private static final int[] kRedHubAllTags = {2, 3, 4, 5, 8, 9, 10, 11};
+    private static final int[] kBlueHubAllTags = {18, 19, 20, 21, 24, 25, 26, 27};
+    private Boolean filterPractice = null; // practice setting the filter was last set for
+
     public LimelightSubsystem() {
         // Adjust the table name if your limelight publishes under a different key.
         table = NetworkTableInstance.getDefault().getTable("limelight");
@@ -60,6 +70,33 @@ public class LimelightSubsystem extends SubsystemBase {
         // where the robot is (shoot from anywhere). Which tag the turret may aim at (OUR hub) is
         // picked here in code from the raw tag list instead of by the Limelight's ID filter.
         LimelightHelpers.SetFiducialIDFiltersOverride("limelight", kAllFieldTags);
+        edu.wpi.first.wpilibj.Preferences.initBoolean(kPracticeKey, false);
+        SmartDashboard.putBoolean(kPracticeKey, edu.wpi.first.wpilibj.Preferences.getBoolean(kPracticeKey, false));
+    }
+
+    /** True when the practice-field switch is on (camera uses only our hub's tags). */
+    public static boolean practiceFieldMode() {
+        return SmartDashboard.getBoolean(kPracticeKey, false);
+    }
+
+    /** Which tags the Limelight may use for position: all 32, or only our hub's (practice field). */
+    private void updateTagFilter(Optional<Alliance> alliance) {
+        boolean practice = practiceFieldMode();
+        if (filterPractice != null && filterPractice == practice && alliance.equals(filterAlliance)) return;
+        if (filterPractice == null || filterPractice != practice) {
+            edu.wpi.first.wpilibj.Preferences.setBoolean(kPracticeKey, practice);
+        }
+        filterPractice = practice;
+        int[] ids;
+        if (!practice) {
+            ids = kAllFieldTags;
+        } else if (alliance.isEmpty()) {
+            ids = IntStream.concat(Arrays.stream(kRedHubAllTags), Arrays.stream(kBlueHubAllTags)).toArray();
+        } else {
+            ids = alliance.get() == Alliance.Red ? kRedHubAllTags : kBlueHubAllTags;
+        }
+        LimelightHelpers.SetFiducialIDFiltersOverride("limelight", ids);
+        System.out.println("LOCALIZATION | camera tag filter: " + (practice ? "PRACTICE FIELD, hub tags " + Arrays.toString(ids) : "all 32 field tags"));
     }
 
     /**
@@ -156,6 +193,7 @@ public class LimelightSubsystem extends SubsystemBase {
         // Aim only at OUR hub once the Driver Station says which alliance we are. Keeps
         // checking, because the alliance can change before a match starts.
         Optional<Alliance> alliance = DriverStation.getAlliance();
+        updateTagFilter(alliance);
         if (!alliance.equals(filterAlliance)) {
             filterAlliance = alliance;
             if (alliance.isEmpty()) {

@@ -376,6 +376,7 @@ public class RobotContainer {
         // Shot table tuning (see AimSubsystem): record the "Tune" values at the current distance.
         SmartDashboard.putData("Record Shot Point", aim.recordPointCommand());
         SmartDashboard.putData("Test: Turret Sweep", localizationCheck.turretSweepTest());
+        SmartDashboard.putData("Re-find Position (camera)", localizer.refindCommand());
         SmartDashboard.putData("Clear Recorded Shot Points", aim.clearRecordedCommand());
 
         drivetrain.registerTelemetry(logger::telemeterize);

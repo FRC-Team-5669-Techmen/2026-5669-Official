@@ -60,13 +60,14 @@ public class LocalizationCheck extends SubsystemBase {
         if (!Aim.kGeometryMeasured) return "Turret/camera geometry not entered (Constants.Aim)";
         if (!turret.endMeasured()) return "Set the turret far end first (dashboard button)";
         if (!SmartDashboard.getBoolean("Vision Pose ON", true)) return "Vision is switched OFF (Vision Pose ON)";
+        String mode = LimelightSubsystem.practiceFieldMode() ? "[PRACTICE FIELD: hub tags only] " : "";
         int tags = (int) SmartDashboard.getNumber("Vision Tags", 0);
-        if (tags == 0) return "1) Point the Limelight at AprilTags (1-4 m away)";
-        if (!localizer.headingKnown()) return "2) See 2+ tags at once, or press Driver LB facing away from your driver station";
-        if (!localizer.poseTrusted()) return "3) Waiting for the first good vision fix";
-        if (Double.isNaN(aimCheckDeg)) return "4) Position OK. Point at OUR hub's tags to run the Aim Check";
-        if (Math.abs(aimCheckDeg) <= kAimCheckPassDeg) return "5) Aim Check PASS. Run Test: Turret Sweep, then shoot";
-        return "Aim Check FAIL (" + Math.round(aimCheckDeg) + " deg): run Test: Turret Sweep";
+        if (tags == 0) return mode + "1) Point the Limelight at AprilTags (1-4 m away)";
+        if (!localizer.headingKnown()) return mode + "2) See 2+ tags at once, or press Driver LB facing away from your driver station";
+        if (!localizer.poseTrusted()) return mode + "3) Waiting for the first good vision fix";
+        if (Double.isNaN(aimCheckDeg)) return mode + "4) Position OK. Point at OUR hub's tags to run the Aim Check";
+        if (Math.abs(aimCheckDeg) <= kAimCheckPassDeg) return mode + "5) Aim Check PASS. Run Test: Turret Sweep, then shoot";
+        return mode + "Aim Check FAIL (" + Math.round(aimCheckDeg) + " deg): run Test: Turret Sweep";
     }
 
     // ---------------- Aim Check (passive) ----------------

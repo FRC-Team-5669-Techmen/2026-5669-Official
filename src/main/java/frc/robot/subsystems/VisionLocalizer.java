@@ -56,6 +56,20 @@ public class VisionLocalizer extends SubsystemBase {
         headingKnown = true;
     }
 
+    /**
+     * Dashboard "Re-find Position (camera)": forget the heading and position so the next steady
+     * 2-tag view sets them again (robot still, both tags of a hub face in view). Works disabled.
+     */
+    public edu.wpi.first.wpilibj2.command.Command refindCommand() {
+        return edu.wpi.first.wpilibj2.command.Commands.runOnce(() -> {
+            headingKnown = false;
+            positionKnown = false;
+            seedCount = 0;
+            lastSeedPose = null;
+            System.out.println("LOCALIZATION | position forgotten: hold the robot still in view of 2 hub tags");
+        }).ignoringDisable(true).withName("Re-find Position (camera)");
+    }
+
     /** An auto is starting: its path sets the whole pose. */
     public void markPoseSetByAuto() {
         headingKnown = true;
