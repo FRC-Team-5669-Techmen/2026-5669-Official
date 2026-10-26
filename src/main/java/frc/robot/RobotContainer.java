@@ -39,6 +39,7 @@ import frc.robot.subsystems.IndexSubsystem;
 import frc.robot.subsystems.IntakeRollerSubsystem;
 import frc.robot.subsystems.LimelightSubsystem;
 import frc.robot.subsystems.LocalizationCheck;
+import frc.robot.subsystems.PitCheck;
 import frc.robot.subsystems.ShooterIntakeSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.VisionLocalizer;
@@ -102,6 +103,8 @@ public class RobotContainer {
     public final AimSubsystem aim = new AimSubsystem(drivetrain, localizer);
     // Beginner test helpers (docs/LOCALIZATION-TESTING.md): "Localization Step", "Aim Check", "Test: Turret Sweep".
     public final LocalizationCheck localizationCheck = new LocalizationCheck(drivetrain, goober, limelight, localizer);
+    // Self-check once a second: dashboard "Pit Check" = ALL GO or what is wrong. Read it before every match.
+    public final PitCheck pitCheck = new PitCheck(goober, localizer);
 
     // Not created on purpose: MariosEar (the 2 PhotonVision USB cameras), since the
     // Limelight is the only camera.

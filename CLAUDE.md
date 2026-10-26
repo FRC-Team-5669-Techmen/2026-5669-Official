@@ -21,6 +21,10 @@
 - **Team number**: loaded from `.wpilib/wpilib_preferences.json`
 - Main class: `frc.robot.Main`
 
+## Pit Check (read it before every match)
+
+`subsystems/PitCheck` checks the robot once a second, always (no button), and only reads: dashboard **"Pit Check"** = `ALL GO` or the list of problems; **"Pit Check Details"** shows every item; changes print to the DS console as `PIT CHECK |`. Checks: battery >= 12.4 V while disabled, all 23 CAN devices answering (IDs 1-22 + Pigeon 41), Limelight heartbeat, Practice Field switch OFF when an FMS is attached, alliance set, turret far end set, pose trusted, shot table has 4+ recorded points, roboRIO disk >= 50 MB free.
+
 ## Drive Team Controller Map
 
 `tools/controller-map/`: double-click **Start Controller Map.bat** on any Windows driver station laptop for a live map of both Xbox controllers under the docked Driver Station (reads the controllers in the background, so it follows presses while Driver Station has focus). See its README. **When a controller binding changes, update the `BIND` / `CALL` tables in `tools/controller-map/index.html` too.**
