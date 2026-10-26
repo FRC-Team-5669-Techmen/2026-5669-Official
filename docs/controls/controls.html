@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Techmen 5669 Controls</title>
+<!--
+  Printable driver + operator cheat sheet. To make a new PDF after a binding changes:
+  update the tables below (and controller-map.png: screenshot tools/controller-map), open this
+  file in Chrome, Print, Destination "Save as PDF", Landscape, Margins "Default".
+-->
+<style>
+  @page { size: letter landscape; margin: 0.35in; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Arial, Helvetica, sans-serif; color: #15171a; margin: 0; font-size: 10.5pt; }
+  .page { page-break-after: always; }
+  .page:last-child { page-break-after: auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 3px solid #e5b80b; padding-bottom: 4px; margin-bottom: 8px; }
+  h1 { font-size: 20pt; margin: 0; letter-spacing: 0.5px; }
+  h1 .num { color: #b08a00; }
+  .sub { font-size: 9pt; color: #555; }
+  img.map { width: 100%; border-radius: 6px; display: block; margin-bottom: 8px; }
+  .cols { display: flex; gap: 14px; }
+  .col { flex: 1; }
+  h2 { font-size: 12.5pt; margin: 2px 0 4px; }
+  h2 .port { font-weight: normal; color: #666; font-size: 10pt; }
+  table { width: 100%; border-collapse: collapse; }
+  td { border-bottom: 1px solid #ddd; padding: 3px 5px; vertical-align: top; }
+  td.btn { width: 30%; font-weight: 700; white-space: nowrap; }
+  td.how { width: 13%; color: #666; font-size: 8.5pt; text-transform: uppercase; white-space: nowrap; }
+  tr:nth-child(odd) td { background: #f6f6f4; }
+  .note { font-size: 9pt; color: #444; margin-top: 5px; }
+  .box { border: 1.5px solid #d9d9d4; border-radius: 6px; padding: 7px 10px; margin-bottom: 9px; }
+  .box h2 { margin-top: 0; }
+  .warn { border-color: #e5b80b; background: #fff9e3; }
+  ol, ul { margin: 3px 0 0 18px; padding: 0; }
+  li { margin: 2px 0; }
+  .key { display: inline-block; border: 1px solid #999; border-radius: 3px; padding: 0 5px; font-weight: 700; font-size: 9pt; background: #fff; }
+  footer { font-size: 8.5pt; color: #666; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header>
+    <h1>TECHMEN <span class="num">5669</span> · Driver &amp; Operator Controls</h1>
+    <span class="sub">Robot code: main, Oct 26 2026 · Driver = Port 0 · Operator = Port 1</span>
+  </header>
+
+  <img class="map" src="controller-map.png" alt="Controller map: driver on the left, operator on the right">
+
+  <div class="cols">
+    <div class="col">
+      <h2>Driver <span class="port">· Port 0 · driving, intake, climb</span></h2>
+      <table>
+        <tr><td class="btn">Left Stick</td><td class="how">stick</td><td>Drive (forward, back, left, right)</td></tr>
+        <tr><td class="btn">Right Stick</td><td class="how">stick</td><td>Turn the robot</td></tr>
+        <tr><td class="btn">Start</td><td class="how">hold</td><td>Slow mode</td></tr>
+        <tr><td class="btn">LB</td><td class="how">press</td><td>Reset gyro. <b>Point the robot straight away from your driver station first</b></td></tr>
+        <tr><td class="btn">RT</td><td class="how">hold</td><td>Intake roller: balls IN</td></tr>
+        <tr><td class="btn">LT</td><td class="how">hold</td><td>Intake roller: balls OUT (spit them back)</td></tr>
+        <tr><td class="btn">A</td><td class="how">press</td><td>Intake down / up</td></tr>
+        <tr><td class="btn">D-pad Up / Down</td><td class="how">hold</td><td>Climber up / down (stops by itself at the ends)</td></tr>
+        <tr><td class="btn">D-pad Left</td><td class="how">press</td><td>Shooter idle at 2000 RPM on / off</td></tr>
+        <tr><td class="btn">X</td><td class="how">·</td><td>Nothing</td></tr>
+      </table>
+    </div>
+    <div class="col">
+      <h2>Operator <span class="port">· Port 1 · aiming and shooting</span></h2>
+      <table>
+        <tr><td class="btn">RB</td><td class="how">press</td><td><b>Auto-aim on / off</b> (turret, hood and shooter speed aim at our hub from anywhere)</td></tr>
+        <tr><td class="btn">RT</td><td class="how">hold</td><td>Shoot. Auto-aim ON: fires only when ready (controller buzzes). OFF: feeds right away</td></tr>
+        <tr><td class="btn">LT</td><td class="how">hold</td><td>Spin up the shooter (with auto-aim ON it spins up by itself while you hold RT)</td></tr>
+        <tr><td class="btn">Y</td><td class="how">press</td><td>Hood up / down</td></tr>
+        <tr><td class="btn">D-pad Up / Down</td><td class="how">hold</td><td>Move the hood up / down slowly</td></tr>
+        <tr><td class="btn">D-pad Left / Right</td><td class="how">hold</td><td>Turn the turret left / right</td></tr>
+        <tr><td class="btn">Left Stick up / down</td><td class="how">hold</td><td>Move the intake up / down slowly (backup)</td></tr>
+        <tr><td class="btn">B</td><td class="how">hold</td><td>Spindex backwards (unjam)</td></tr>
+        <tr><td class="btn">A / X / LB</td><td class="how">press</td><td>Backup shots: A = Midshot, X = Left trench, LB = Right trench</td></tr>
+      </table>
+      <div class="note">Turret jog, hood jog or Y turns auto-aim OFF. Press RB to turn it back on.</div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+  <header>
+    <h1>TECHMEN <span class="num">5669</span> · How To Use It</h1>
+    <span class="sub">Keep this with the driver station</span>
+  </header>
+
+  <div class="cols">
+    <div class="col">
+      <div class="box warn">
+        <h2>Before every match or practice</h2>
+        <ol>
+          <li><b>Robot OFF.</b> Turret on the <b>HOME mark</b>. Hood <b>pushed all the way down</b> by hand. Intake <b>pushed all the way up</b>. Climber <b>all the way down</b>.</li>
+          <li><b>Turn the robot on</b> while holding the hood down.</li>
+          <li>Driver Station <b>USB tab</b>: driver controller in <b>slot 0</b>, operator in <b>slot 1</b>. Press a button to see which row lights up; drag to fix. <span class="key">F1</span> = rescan.</li>
+          <li>Driver Station <b>Team Station</b>: pick <b>our alliance color</b> (Red / Blue). At competition the field sets it.</li>
+          <li>Elastic: <b>"Pit Check"</b> should say <b>ALL GO</b>.</li>
+          <li>Enable, point the robot <b>straight away from your driver station</b>, press <b>Driver LB</b> once.</li>
+          <li>Shop field: <b>"Practice Field"</b> switch ON. <b>Competition: OFF.</b></li>
+        </ol>
+      </div>
+
+      <div class="box">
+        <h2>Emergency keys (Driver Station laptop)</h2>
+        <ul>
+          <li><span class="key">Enter</span> = <b>Disable</b> (stops the robot, no restart needed). Use this one.</li>
+          <li><span class="key">Space</span> = <b>Emergency stop</b>. The robot must be powered off and on again.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="box">
+        <h2>Shooting with auto-aim (normal way)</h2>
+        <ol>
+          <li>Operator presses <b>RB</b>: auto-aim ON. The turret and hood follow our hub by themselves.</li>
+          <li>Operator <b>holds RT</b>. The shooter spins up to the right speed for the distance and fires each ball the moment the shot is ready. The controller <b>buzzes</b> while it's ready.</li>
+          <li>The driver can keep driving. If the hub ends up behind the turret, the robot turns itself a little (the driver's turn stick always wins).</li>
+        </ol>
+      </div>
+
+      <div class="box">
+        <h2>Shooting without auto-aim</h2>
+        <ol>
+          <li>Aim with <b>D-pad Left / Right</b> (turret) and <b>D-pad Up / Down</b> or <b>Y</b> (hood).</li>
+          <li>Hold <b>LT</b> to spin up, then <b>RT</b> to shoot. RT feeds right away, ready or not.</li>
+        </ol>
+      </div>
+
+      <div class="box">
+        <h2>Backup shots (if the camera is having trouble)</h2>
+        <ol>
+          <li>Park on the spot: <b>Midshot</b> (between our hub and our climb), <b>Left trench</b> or <b>Right trench</b> (left / right as seen from our driver station).</li>
+          <li>Operator presses <b>A</b> (Midshot), <b>X</b> (Left trench) or <b>LB</b> (Right trench). This turns auto-aim on.</li>
+          <li>Hold <b>RT</b>.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <footer>Live version on any driver station laptop: <b>tools/controller-map/Start Controller Map.bat</b> (lights up each button as you press it). Full details: CLAUDE.md, "Controller Bindings".</footer>
+</div>
+
+</body>
+</html>
