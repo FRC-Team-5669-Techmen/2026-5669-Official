@@ -32,11 +32,13 @@ public class IndexSubsystem extends SubsystemBase {
         currentLimits.SupplyCurrentLimitEnable = true;
 
         // Let it push up to 160 Amps of torque to the physical coils
-        currentLimits.StatorCurrentLimit = 160.0; 
+        currentLimits.StatorCurrentLimit = 80.0; // Oct 25: was 160; 80 A at 16:1 still pushes ~250 N at the omni rim, and spares the gearbox in a jam 
         currentLimits.StatorCurrentLimitEnable = true;
         
         motor.getConfigurator().apply(config);
-        SmartDashboard.putNumber("Spindex Forward Volts", Constants.Index.kForwardSpeed);
+        // The tuned value is saved on the roboRIO, so Shot Map Day tuning survives reboots.
+        edu.wpi.first.wpilibj.Preferences.initDouble("Spindex Forward Volts", Constants.Index.kForwardSpeed);
+        SmartDashboard.putNumber("Spindex Forward Volts", edu.wpi.first.wpilibj.Preferences.getDouble("Spindex Forward Volts", Constants.Index.kForwardSpeed));
     }
 
     /**
@@ -58,6 +60,10 @@ public class IndexSubsystem extends SubsystemBase {
     /** "Spindex Speed (rot/s)" and "Spindex Amps": a slow speed with high amps = jammed or geared too low. */
     @Override
     public void periodic() {
+        double v = SmartDashboard.getNumber("Spindex Forward Volts", Constants.Index.kForwardSpeed);
+        if (v != edu.wpi.first.wpilibj.Preferences.getDouble("Spindex Forward Volts", Constants.Index.kForwardSpeed)) {
+            edu.wpi.first.wpilibj.Preferences.setDouble("Spindex Forward Volts", v);
+        }
         SmartDashboard.putNumber("Spindex Speed (rot/s)", motor.getVelocity().getValueAsDouble());
         SmartDashboard.putNumber("Spindex Amps", motor.getStatorCurrent().getValueAsDouble());
         SmartDashboard.putNumber("Spindex Volts", motor.getMotorVoltage().getValueAsDouble());

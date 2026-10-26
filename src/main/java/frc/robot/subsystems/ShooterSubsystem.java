@@ -84,6 +84,14 @@ public class ShooterSubsystem extends SubsystemBase {
     private double prevRpm = 0, minRpm = 0, launchRpm = 0, dipStart = 0;
     private boolean inDip = false;
     private int shots = 0, goodShots = 0;
+    // Finished shots (dip seen AND recovered or gave up), for the shot log.
+    private int finishedShots = 0;
+    private double lastLaunch = 0, lastDip = 0, lastRecovery = 0, lastTarget = 0;
+    public int finishedShots() { return finishedShots; }
+    public double lastLaunchRpm() { return lastLaunch; }
+    public double lastDipRpm() { return lastDip; }
+    public double lastRecoverySec() { return lastRecovery; }
+    public double lastShotTargetRpm() { return lastTarget; }
 
     private void meterShots(double rpm) {
         double target = m_targetRpm;
@@ -99,12 +107,16 @@ public class ShooterSubsystem extends SubsystemBase {
             minRpm = Math.min(minRpm, rpm);
             if (rpm >= target - kRecovered) {
                 inDip = false;
+                lastLaunch = launchRpm; lastDip = target - minRpm; lastRecovery = now - dipStart; lastTarget = target;
+                finishedShots++;
                 SmartDashboard.putNumber("Last Shot Dip (RPM)", target - minRpm);
                 SmartDashboard.putNumber("Last Shot Recovery (s)", now - dipStart);
                 dev.doglog.DogLog.log("Shooter/ShotDipRpm", target - minRpm);
                 dev.doglog.DogLog.log("Shooter/ShotRecoverySec", now - dipStart);
             } else if (now - dipStart > 1.0) {
                 inDip = false; // never recovered (shooter can't reach target): stop waiting
+                lastLaunch = launchRpm; lastDip = target - minRpm; lastRecovery = -1; lastTarget = target;
+                finishedShots++;
             }
         }
         prevRpm = rpm;

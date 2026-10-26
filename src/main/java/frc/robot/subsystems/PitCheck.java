@@ -98,6 +98,10 @@ public class PitCheck extends SubsystemBase {
         if (points < 4) problems.add("shot table has " + points + " recorded points (need 4+)");
         lines.add("Shot table recorded points: " + points);
 
+        // Feed speeds in use (tuned on Shot Map Day, saved on the roboRIO).
+        lines.add(String.format("Spindex %.1f V, Uptake %.1f V", IndexSubsystem.forwardVolts(),
+            SmartDashboard.getNumber("Uptake Forward Volts", 0)));
+
         // 9. roboRIO disk: logs stop saving when it fills up.
         long freeMb = new File("/home/lvuser").getUsableSpace() / (1024 * 1024);
         if (freeMb > 0 && freeMb < 50) problems.add("roboRIO disk " + freeMb + " MB free: delete old logs");

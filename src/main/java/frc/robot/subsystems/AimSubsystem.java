@@ -153,6 +153,29 @@ public class AimSubsystem extends SubsystemBase {
         }
     }
 
+    /** Times "Record Shot Point" was pressed since boot (the Shot Map guide watches this). */
+    private int recordCount = 0;
+    public int recordCount() { return recordCount; }
+
+    /** The table's current values at a distance (code points + recorded points). */
+    public double tableRpm(double d) { return table.rpm(d); }
+    public double tableHood(double d) { return table.hood(d); }
+
+    /** Distances (m) recorded on this robot so far. */
+    public java.util.List<Double> recordedDistances() {
+        return recordedPoints().stream().map(ShotTable.Point::distance).toList();
+    }
+
+    /** Java lines for ShotTable.defaults(), so a programmer can paste the recorded table into code. */
+    public String shotTableCode() {
+        StringBuilder sb = new StringBuilder();
+        for (ShotTable.Point p : recordedPoints()) {
+            sb.append(String.format(java.util.Locale.US, "t.put(new Point(%.2f, %.0f, %.3f, %.2f)); ",
+                p.distance(), p.rpm(), p.hood(), p.tof()));
+        }
+        return sb.toString();
+    }
+
     private java.util.List<ShotTable.Point> recordedPoints() {
         return new java.util.ArrayList<>(ShotTable.decode(Preferences.getString(kPrefKey, "")));
     }
@@ -170,8 +193,11 @@ public class AimSubsystem extends SubsystemBase {
             pts.sort((a, b) -> Double.compare(a.distance(), b.distance()));
             Preferences.setString(kPrefKey, ShotTable.encode(pts));
             loadRecorded();
+            recordCount++;
             System.out.println("SHOT POINT RECORDED: " + ShotTable.encode(java.util.List.of(pts.stream()
                 .filter(p -> p.distance() == d).findFirst().get())));
+            System.out.println("SHOT TABLE | " + ShotTable.encode(pts));
+            System.out.println("SHOT TABLE CODE | " + shotTableCode());
         }).ignoringDisable(true).withName("Record Shot Point");
     }
 

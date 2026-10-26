@@ -8,7 +8,9 @@ import com.ctre.phoenix6.HootAutoReplay;
 
 import dev.doglog.DogLog;
 import dev.doglog.DogLogOptions;
+import edu.wpi.first.net.WebServer;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -34,6 +36,12 @@ public class Robot extends TimedRobot {
                 .withNtPublish(true)
                 .withCaptureNt(true));
         DogLog.setPdh(new PowerDistribution());
+
+        // Elastic "Load Layout From Robot" (Ctrl+D) downloads src/main/deploy/elastic-layout.json from here.
+        WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
+        // Shot Map Day: the shot log, in any browser while connected: http://10.56.69.2:5805/shot-log.csv
+        new java.io.File("/home/lvuser/shotmap").mkdirs();
+        WebServer.start(5805, "/home/lvuser/shotmap");
     }
 
     @Override

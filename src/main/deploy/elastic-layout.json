@@ -1,0 +1,446 @@
+{
+  "version": 1.0,
+  "grid_size": 128,
+  "tabs": [
+    {
+      "name": "Shot Map",
+      "grid_layout": {
+        "layouts": [],
+        "containers": [
+          {
+            "title": "Shot Map Step",
+            "x": 0.0,
+            "y": 0.0,
+            "width": 1280.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Shot Map Step",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Shot Map Progress",
+            "x": 0.0,
+            "y": 128.0,
+            "width": 768.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Shot Map Progress",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Pit Check",
+            "x": 768.0,
+            "y": 128.0,
+            "width": 512.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Pit Check",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Aim Distance (m)",
+            "x": 0.0,
+            "y": 256.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Aim Distance (m)",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Tune RPM",
+            "x": 256.0,
+            "y": 256.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Tune RPM",
+              "period": 0.06,
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "Tune Hood (rot)",
+            "x": 512.0,
+            "y": 256.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Tune Hood (rot)",
+              "period": 0.06,
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "Shooter Actual RPM",
+            "x": 768.0,
+            "y": 256.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Shooter Actual RPM",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Shot Ready",
+            "x": 1024.0,
+            "y": 256.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Shot Ready",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Shot Tuning Mode",
+            "x": 0.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Toggle Switch",
+            "properties": {
+              "topic": "/SmartDashboard/Shot Tuning Mode",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Record Shot Point",
+            "x": 256.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Record Shot Point",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Shots At Speed",
+            "x": 512.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Shots At Speed",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Last Shot Launch RPM",
+            "x": 768.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Last Shot Launch RPM",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Reset Shot Stats",
+            "x": 1024.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Reset Shot Stats",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Shot Table",
+            "x": 0.0,
+            "y": 512.0,
+            "width": 768.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Shot Table",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Vision Status",
+            "x": 768.0,
+            "y": 512.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Vision Status",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Re-find Position (camera)",
+            "x": 1024.0,
+            "y": 512.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Re-find Position (camera)",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Feed + Spots",
+      "grid_layout": {
+        "layouts": [],
+        "containers": [
+          {
+            "title": "Spindex Forward Volts",
+            "x": 0.0,
+            "y": 0.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Spindex Forward Volts",
+              "period": 0.06,
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "Uptake Forward Volts",
+            "x": 256.0,
+            "y": 0.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Uptake Forward Volts",
+              "period": 0.06,
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "Shots At Speed",
+            "x": 512.0,
+            "y": 0.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Shots At Speed",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Last Shot Recovery (s)",
+            "x": 768.0,
+            "y": 0.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Last Shot Recovery (s)",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Reset Shot Stats",
+            "x": 1024.0,
+            "y": 0.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Reset Shot Stats",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Spindex Speed (rot/s)",
+            "x": 0.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Spindex Speed (rot/s)",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Spindex Amps",
+            "x": 256.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Spindex Amps",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Last Shot Launch RPM",
+            "x": 512.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Last Shot Launch RPM",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Shooter Actual RPM",
+            "x": 768.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Shooter Actual RPM",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Practice Field: Hub Tags Only",
+            "x": 1024.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Toggle Switch",
+            "properties": {
+              "topic": "/SmartDashboard/Practice Field: Hub Tags Only",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Backup Shot",
+            "x": 0.0,
+            "y": 256.0,
+            "width": 512.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Backup Shot",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Save Spot: Midshot",
+            "x": 512.0,
+            "y": 256.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Save Spot: Midshot",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Save Spot: Left Trench",
+            "x": 768.0,
+            "y": 256.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Save Spot: Left Trench",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Save Spot: Right Trench",
+            "x": 1024.0,
+            "y": 256.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Save Spot: Right Trench",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Pit Check",
+            "x": 0.0,
+            "y": 384.0,
+            "width": 768.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Pit Check",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Localization Step",
+            "x": 768.0,
+            "y": 384.0,
+            "width": 512.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Localization Step",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Shot Table Code",
+            "x": 0.0,
+            "y": 512.0,
+            "width": 1280.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Shot Table Code",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

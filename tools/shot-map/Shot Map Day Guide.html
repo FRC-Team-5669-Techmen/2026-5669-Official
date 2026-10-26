@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shot Map Day</title>
+<style>
+:root{
+  --bg:#0f1114; --panel:#181b20; --panel2:#1f232a; --line:#2c323b;
+  --fg:#e9ecf1; --muted:#9aa3af; --accent:#f5c518; --good:#3ecf6e; --bad:#ff5d5d; --info:#5cc8ff;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 "Segoe UI",system-ui,-apple-system,sans-serif}
+header{position:sticky;top:0;z-index:5;background:#0b0d10;border-bottom:1px solid var(--line);padding:12px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header h1{margin:0;font-size:22px;letter-spacing:.06em}
+header h1 b{color:var(--accent)}
+.bar{flex:1;min-width:160px;height:10px;background:var(--panel2);border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
+#pct{color:var(--muted);font-variant-numeric:tabular-nums;min-width:90px;text-align:right}
+button.reset{background:none;border:1px solid var(--line);color:var(--muted);border-radius:6px;padding:6px 10px;cursor:pointer}
+main{max-width:980px;margin:0 auto;padding:18px 16px 60px}
+.safety{border:2px solid var(--bad);background:#2a1414;border-radius:10px;padding:12px 16px;margin-bottom:18px}
+.safety b{color:var(--bad)}
+section{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:14px 0;overflow:hidden}
+section > h2{margin:0;padding:12px 16px;font-size:18px;display:flex;gap:12px;align-items:center;background:var(--panel2)}
+section > h2 .n{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--accent);color:#111;font-weight:800}
+section > h2 .who{margin-left:auto;font-size:13px;color:var(--muted);font-weight:500}
+ol.steps{list-style:none;margin:0;padding:8px 10px 12px}
+ol.steps li{display:flex;gap:10px;align-items:flex-start;padding:8px 6px;border-radius:8px}
+ol.steps li:hover{background:#20252c}
+ol.steps input{width:22px;height:22px;margin-top:2px;accent-color:var(--good);flex:none;cursor:pointer}
+ol.steps li.done span{color:var(--muted);text-decoration:line-through}
+kbd,code{background:#0b0d10;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-family:Consolas,monospace;font-size:14px;color:var(--accent)}
+.ok{color:var(--good);font-weight:600}.no{color:var(--bad);font-weight:600}
+details{margin:0 16px 14px;background:#12151a;border:1px solid var(--line);border-radius:8px}
+details summary{cursor:pointer;padding:8px 12px;color:var(--info)}
+details > div{padding:0 14px 10px}
+table{border-collapse:collapse;width:100%;font-size:15px}
+td,th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600}
+.tip{color:var(--muted);font-size:14px}
+@media (max-width:600px){header{padding:10px 16px}main{padding:12px 16px 40px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>TECHMEN <b>5669</b> · SHOT MAP DAY</h1>
+  <div class="bar" aria-hidden="true"><i id="fill"></i></div>
+  <span id="pct">0 / 0</span>
+  <button class="reset" id="reset" title="Uncheck everything">Start over</button>
+</header>
+<main>
+
+<div class="safety">
+  <b>SAFETY, ALL DAY:</b> safety glasses on everyone. One person's only job is the laptop:
+  <kbd>Enter</kbd> = <b>Disable</b> (use this). <kbd>Space</kbd> = <b>Emergency Stop</b>
+  (only for real emergencies: the robot then needs a reboot). Nobody stands in front of the shooter
+  or near the turret when the robot is enabled.
+</div>
+
+<section data-step>
+  <h2><span class="n">0</span>Marcos: put the newest code on the robot <span class="who">Marcos · 5 min · first thing</span></h2>
+  <ol class="steps">
+    <li><input type="checkbox"><span>On your laptop: get the latest robot code (<code>git pull</code> on <b>main</b> of <code>2026-5669-Official</code>).</span></li>
+    <li><input type="checkbox"><span>Connect to the robot, then deploy (WPILib VS Code: <b>Deploy Robot Code</b>, or <code>.\gradlew deploy</code>). Wait for <b>BUILD SUCCESSFUL</b>.</span></li>
+    <li><input type="checkbox"><span>Check: Elastic shows <b>Pit Check</b> and <b>Shot Map Step</b> in the SmartDashboard list. If they're missing, the new code isn't on the robot.</span></li>
+  </ol>
+</section>
+
+<section data-step>
+  <h2><span class="n">1</span>Re-gear the spindexer to 16:1 <span class="who">robot OFF · 2 people · ~20 min</span></h2>
+  <ol class="steps">
+    <li><input type="checkbox"><span>Robot <b>OFF</b> (main breaker). Take a <b>photo</b> of how the spindexer motor + gearbox is mounted.</span></li>
+    <li><input type="checkbox"><span>Remove the motor + gearbox from the robot. The motor stays wired; let it hang carefully.</span></li>
+    <li><input type="checkbox"><span>Remove the long screws that hold the gearbox stages together (they come out of the output end).</span></li>
+    <li><input type="checkbox"><span>The gearbox is three <b>4:1</b> stages (4 × 4 × 4 = 64:1). Take out <b>one 4:1 stage</b>. Now it's 4 × 4 = <b>16:1</b> (about 4× faster).</span></li>
+    <li><input type="checkbox"><span>Stack it back. Twist by hand so the splines engage. <b>No gap</b> between the stack and the input plate.</span></li>
+    <li><input type="checkbox"><span>Use <b>shorter screws</b> that match 2 stages (a 3-stage stack uses 2.5 in screws; with one stage gone the old ones are too long and will leave it loose). Snug, not cranked.</span></li>
+    <li><input type="checkbox"><span>Re-mount it like the photo. Turn the omni wheel by hand: smooth, no clicking.</span></li>
+    <li><input type="checkbox"><span>Write <b>16:1</b> on the gearbox with a paint pen.</span></li>
+  </ol>
+  <details><summary>Why 16:1?</summary><div>
+    At 64:1 the 8 in omni wheel's rim moves about 1 m/s: balls crawl. At 16:1 it can do about 4 m/s,
+    and we turn it down to the best speed in step 5 with a number on the dashboard. It is still far
+    stronger than foam balls need (about 250 N of push at the rim).
+  </div></details>
+</section>
+
+<section data-step>
+  <h2><span class="n">2</span>Power on the right way <span class="who">every time you power on</span></h2>
+  <ol class="steps">
+    <li><input type="checkbox"><span><b>Turret</b> on its <b>HOME</b> mark.</span></li>
+    <li><input type="checkbox"><span><b>Hood</b> pushed <b>all the way down</b> by hand.</span></li>
+    <li><input type="checkbox"><span><b>Intake</b> all the way <b>up</b>. <b>Elevator</b> all the way <b>down</b>.</span></li>
+    <li><input type="checkbox"><span>Fresh battery (<b>12.5 V or more</b>). Main breaker ON. Connect the laptop (robot Wi-Fi or USB cable).</span></li>
+  </ol>
+  <details><summary>Why?</summary><div>The turret, hood, intake and elevator call wherever they are at power-on "zero". Wrong spot at power-on = every position is wrong.</div></details>
+</section>
+
+<section data-step>
+  <h2><span class="n">3</span>Open everything <span class="who">laptop · 2 min</span></h2>
+  <ol class="steps">
+    <li><input type="checkbox"><span>Double-click <b>Start Shot Map Day</b> (on the desktop, or in <code>tools/shot-map</code> in the robot code). It opens the Driver Station, Elastic, the controller map and this page.</span></li>
+    <li><input type="checkbox"><span>Driver Station: <b>Communications</b> and <b>Robot Code</b> green. <b>Team Station</b> = the color of the hub you're shooting at (shop hub = <b>Red 1</b>).</span></li>
+    <li><input type="checkbox"><span>In <b>Elastic</b> press <kbd>Ctrl</kbd>+<kbd>D</kbd> (File, Load Layout From Robot). Pick <b>elastic-layout.json</b>, mode <b>Overwrite</b>, then Download.</span></li>
+    <li><input type="checkbox"><span>Two new tabs appear: <b>Shot Map</b> and <b>Feed + Spots</b>. Click <b>Shot Map</b>.</span></li>
+  </ol>
+  <details><summary>Using Marcos's own laptop?</summary><div>
+    It needs WPILib 2026 installed (it brings Elastic) and the FRC Driver Station.
+    Get the robot code (<code>git pull</code> on main), then double-click
+    <code>tools/shot-map/Start Shot Map Day.bat</code>. Everything else is the same.
+  </div></details>
+  <details><summary>Ctrl+D shows no file / fails?</summary><div>The laptop must be connected to the robot and Robot Code must be green. Still nothing: you can do the whole day with the SmartDashboard list in Elastic (Add Widget, SmartDashboard), the names are the same.</div></details>
+</section>
+
+<section data-step>
+  <h2><span class="n">4</span>Pit Check + position <span class="who">robot disabled · 2 min</span></h2>
+  <ol class="steps">
+    <li><input type="checkbox"><span><b>Pit Check</b> (top right of the Shot Map tab) shows only <b>"shot table has N recorded points"</b>. That one is today's job. Anything else: fix it first (see the table below).</span></li>
+    <li><input type="checkbox"><span>Tab <b>Feed + Spots</b>: <b>Practice Field: Hub Tags Only</b> = <span class="ok">ON</span> (our shop climb and trench tags are not where the real field has them).</span></li>
+    <li><input type="checkbox"><span>Put the robot 2 to 3 m in front of the hub, both tags of that face in view, and hold still. <b>Vision Status</b> says <span class="ok">OK SET from camera</span>.</span></li>
+  </ol>
+  <details><summary>Pit Check problems and fixes</summary><div><table>
+    <tr><th>It says</th><th>Do this</th></tr>
+    <tr><td>battery ... V: swap it</td><td>Fresh battery.</td></tr>
+    <tr><td>Talon NN not on CAN</td><td>That motor lost its wire. Robot off, check its CAN plug. Tell Marcos which number.</td></tr>
+    <tr><td>Limelight not responding</td><td>Check the camera's power and Ethernet cable. Wait 30 s after power-on.</td></tr>
+    <tr><td>no alliance</td><td>Driver Station, Team Station: Red 1.</td></tr>
+    <tr><td>turret far end not set</td><td>Ask Marcos (button "Set Turret Far End").</td></tr>
+    <tr><td>roboRIO disk ... MB free</td><td>Ask Marcos to delete old log files on the roboRIO.</td></tr>
+  </table></div></details>
+</section>
+
+<section data-step>
+  <h2><span class="n">5</span>Set the feed speeds <span class="who">enabled · ~15 min</span></h2>
+  <p class="tip" style="margin:10px 16px 0">Do this BEFORE the shot map: changing feed speed later changes every shot.</p>
+  <ol class="steps">
+    <li><input type="checkbox"><span>Park about <b>3 m</b> from the hub. Tab <b>Shot Map</b>: <b>Shot Tuning Mode</b> ON, then <b>Operator RB</b> (auto-aim ON).</span></li>
+    <li><input type="checkbox"><span>Tab <b>Feed + Spots</b>: type <b>8</b> into <b>Spindex Forward Volts</b> and press submit. Leave <b>Uptake Forward Volts</b> at <b>11</b>.</span></li>
+    <li><input type="checkbox"><span>Load a full hopper. Press <b>Reset Shot Stats</b>. Hold <b>Operator RT</b> until it's empty.</span></li>
+    <li><input type="checkbox"><span>Read <b>Shots At Speed</b>. <span class="ok">90% or more</span>: raise Spindex volts by 1 and repeat. <span class="no">Under 90%</span> (or jams): lower by 1. Keep the fastest setting that stays at 90%+ with no jams.</span></li>
+    <li><input type="checkbox"><span>Watch the balls go up: if two go up <b>touching</b>, raise Uptake volts by 0.5. If they <b>rattle</b> going in, lower it by 0.5.</span></li>
+    <li><input type="checkbox"><span><b>Write down</b> the final Spindex volts and Uptake volts for Marcos.</span></li>
+  </ol>
+  <details><summary>What "Shots At Speed" means</summary><div>Each ball slows the flywheel for a moment. If the next ball comes before it speeds back up, that ball flies short. "9 of 10 (90%)" means 9 balls left at full speed. "Last Shot Recovery (s)" is how long the wheel needs between balls.</div></details>
+</section>
+
+<section data-step>
+  <h2><span class="n">6</span>Save the 3 backup spots <span class="who">~5 min</span></h2>
+  <ol class="steps">
+    <li><input type="checkbox"><span>Drive to <b>Midshot</b> (right between our hub and the climb). Stop. Tab <b>Feed + Spots</b>: press <b>Save Spot: Midshot</b>. <b>Backup Shot</b> says <span class="ok">SAVED</span>.</span></li>
+    <li><input type="checkbox"><span>Drive to the <b>left trench</b> spot (left as seen from the driver station, robot poking out of the trench). Press <b>Save Spot: Left Trench</b>.</span></li>
+    <li><input type="checkbox"><span>Same for the <b>right trench</b>: <b>Save Spot: Right Trench</b>.</span></li>
+  </ol>
+  <details><summary>Says NOT SAVED?</summary><div>The robot doesn't know where it is. Go back in front of the hub until Vision Status says OK SET, then drive to the spot and press again.</div></details>
+</section>
+
+<section data-step>
+  <h2><span class="n">7</span>Record the shot map <span class="who">enabled · 45 to 60 min</span></h2>
+  <ol class="steps">
+    <li><input type="checkbox"><span>Tab <b>Shot Map</b>. Read the big line at the top: <b>Shot Map Step</b>. <b>Do exactly what it says.</b> It walks you through every distance, closest first, and puts in good starting numbers.</span></li>
+    <li><input type="checkbox"><span>At each distance: hold <b>RT</b> for 4 balls. <b>Short</b>: raise <b>Tune RPM</b> by 100. <b>Long</b>: lower it by 100. <b>Hitting the rim</b>: change <b>Tune Hood (rot)</b> by 0.05. Change one number at a time.</span></li>
+    <li><input type="checkbox"><span>3 of 4 go in? Press <b>Record Shot Point</b>. The checklist <b>Shot Map Progress</b> ticks that distance and the step moves on.</span></li>
+    <li><input type="checkbox"><span>Keep going until it says <span class="ok">DONE!</span> Then turn <b>Shot Tuning Mode OFF</b>.</span></li>
+  </ol>
+  <details><summary>Tips</summary><div>
+    Use the same battery level all session (swap below 12.3 V). Record in the middle of what works: if 4300 and 4500 both go in, record 4400.
+    Messed one up? Drive back to that distance and record again: the new one replaces it.
+  </div></details>
+</section>
+
+<section data-step>
+  <h2><span class="n">8</span>Test it for real <span class="who">~10 min</span></h2>
+  <ol class="steps">
+    <li><input type="checkbox"><span>Shot Tuning Mode <b>OFF</b>, auto-aim <b>ON</b> (RB). From 3 different spots, hold <b>RT</b>: it should score from each.</span></li>
+    <li><input type="checkbox"><span><b>Backup shots</b>: park on Midshot, press <b>Operator A</b>, hold <b>RT</b>. Then the left trench (<b>Operator X</b>) and the right trench (<b>Operator LB</b>).</span></li>
+  </ol>
+</section>
+
+<section data-step>
+  <h2><span class="n">9</span>Send the data to Marcos <span class="who">5 min</span></h2>
+  <ol class="steps">
+    <li><input type="checkbox"><span>Take a <b>photo</b> of the <b>Feed + Spots</b> tab (it has the <b>Shot Table Code</b> line) and the <b>Shot Map</b> tab.</span></li>
+    <li><input type="checkbox"><span>While still connected, open a browser to <code>http://10.56.69.2:5805/shot-log.csv</code> and save the file (every shot of the day).</span></li>
+    <li><input type="checkbox"><span>Send Marcos: the photos, the CSV, and the Spindex/Uptake volts you wrote down.</span></li>
+  </ol>
+  <details><summary>For Marcos (and his Claude)</summary><div>
+    Everything recorded is already saved on the roboRIO, so the robot shoots right even before any code change.
+    To make it permanent: paste the <b>Shot Table Code</b> line into <code>ShotTable.defaults()</code>, set
+    <code>Constants.Index.kForwardSpeed</code> and <code>Constants.ShooterIntake.kForwardVolts</code> to the measured volts,
+    build, deploy, push. The CSV columns are listed on its first line; <code>CLAUDE.md</code> explains the whole system.
+  </div></details>
+</section>
+
+<details style="margin:18px 0"><summary>Something's wrong? Quick fixes</summary><div><table>
+  <tr><th>Problem</th><th>Fix</th></tr>
+  <tr><td>RT only spins the shooter, never feeds</td><td>Read <b>Shot Ready</b>: it says what it's waiting for (turret, shooter speed, hood, position).</td></tr>
+  <tr><td>Turret points at nothing</td><td>Check the Field picture: the robot is in the wrong spot. Press <b>Re-find Position (camera)</b>, hold still in front of the hub.</td></tr>
+  <tr><td>Robot "Emergency Stopped"</td><td>Someone pressed Space. Driver Station, Diagnostics tab, <b>Reboot roboRIO</b>.</td></tr>
+  <tr><td>Field-centric driving feels turned</td><td>Point the robot straight away from the driver station wall, press <b>Driver LB</b>.</td></tr>
+  <tr><td>Balls jam in the spindexer</td><td>Lower Spindex Forward Volts. Hold <b>Operator B</b> to back it up.</td></tr>
+</table></div></details>
+
+</main>
+<script>
+(function(){
+  var KEY="techmen-shotmap-day-v1";
+  var boxes=[].slice.call(document.querySelectorAll('ol.steps input[type=checkbox]'));
+  var saved={};
+  try{saved=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){saved={}}
+  function update(){
+    var done=0;
+    boxes.forEach(function(b,i){ if(b.checked)done++; b.parentNode.classList.toggle('done',b.checked); saved[i]=b.checked; });
+    document.getElementById('fill').style.width=(boxes.length?100*done/boxes.length:0)+'%';
+    document.getElementById('pct').textContent=done+' / '+boxes.length;
+    try{localStorage.setItem(KEY,JSON.stringify(saved))}catch(e){}
+  }
+  boxes.forEach(function(b,i){ b.checked=!!saved[i]; b.addEventListener('change',update); });
+  document.getElementById('reset').addEventListener('click',function(){ boxes.forEach(function(b){b.checked=false}); update(); });
+  update();
+})();
+</script>
+</body>
+</html>

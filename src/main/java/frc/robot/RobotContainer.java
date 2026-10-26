@@ -40,6 +40,8 @@ import frc.robot.subsystems.IntakeRollerSubsystem;
 import frc.robot.subsystems.LimelightSubsystem;
 import frc.robot.subsystems.LocalizationCheck;
 import frc.robot.subsystems.PitCheck;
+import frc.robot.subsystems.ShotMapGuide;
+import frc.robot.subsystems.BackupShots;
 import frc.robot.subsystems.ShooterIntakeSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.VisionLocalizer;
@@ -105,6 +107,11 @@ public class RobotContainer {
     public final LocalizationCheck localizationCheck = new LocalizationCheck(drivetrain, goober, limelight, localizer);
     // Self-check once a second: dashboard "Pit Check" = ALL GO or what is wrong. Read it before every match.
     public final PitCheck pitCheck = new PitCheck(goober, localizer);
+    // Shot Map Day guide: "Shot Map Step" says what to do next; every shot goes to shot-log.csv.
+    public final ShotMapGuide shotMapGuide = new ShotMapGuide(aim, shooter, gooba);
+    // One shared auto-aim command: Operator RB toggles it, the backup-shot buttons turn it on.
+    private final AimCommand aimCommand = new AimCommand(aim, goober, gooba, limelight, drivetrain);
+    public final BackupShots backupShots = new BackupShots(drivetrain, localizer);
 
     // Not created on purpose: MariosEar (the 2 PhotonVision USB cameras), since the
     // Limelight is the only camera.
@@ -281,7 +288,14 @@ public class RobotContainer {
         // stops the whole auto-aim (turret and hood).
         // SHOOT FROM ANYWHERE (Oct 26): aims from the robot's field position (falls back to the
         // hub tag when the position isn't known). See AimCommand.
-        operatorController.rightBumper().toggleOnTrue(new AimCommand(aim, goober, gooba, limelight, drivetrain));
+        operatorController.rightBumper().toggleOnTrue(aimCommand);
+
+        // BACKUP SHOTS (camera-proof): park on the spot, press its button, then hold RT.
+        // A = Midshot (between hub and climb), X = Left trench, LB = Right trench (left/right as
+        // seen from our driver station). See subsystems/BackupShots.
+        operatorController.a().onTrue(backupShots.useCommand(BackupShots.Spot.MIDSHOT, aimCommand));
+        operatorController.x().onTrue(backupShots.useCommand(BackupShots.Spot.LEFT_TRENCH, aimCommand));
+        operatorController.leftBumper().onTrue(backupShots.useCommand(BackupShots.Spot.RIGHT_TRENCH, aimCommand));
 
         // LOCKED Y (press): toggle the hood between stowed and deployed (the drive team's
         // map: "Toggle Gooba Hood"). Back now that the hood motor (18) is.
@@ -381,6 +395,9 @@ public class RobotContainer {
         SmartDashboard.putData("Test: Turret Sweep", localizationCheck.turretSweepTest());
         SmartDashboard.putData("Re-find Position (camera)", localizer.refindCommand());
         SmartDashboard.putData("Reset Shot Stats", shooter.resetShotStatsCommand());
+        SmartDashboard.putData("Save Spot: Midshot", backupShots.saveCommand(BackupShots.Spot.MIDSHOT));
+        SmartDashboard.putData("Save Spot: Left Trench", backupShots.saveCommand(BackupShots.Spot.LEFT_TRENCH));
+        SmartDashboard.putData("Save Spot: Right Trench", backupShots.saveCommand(BackupShots.Spot.RIGHT_TRENCH));
         SmartDashboard.putData("Clear Recorded Shot Points", aim.clearRecordedCommand());
 
         drivetrain.registerTelemetry(logger::telemeterize);

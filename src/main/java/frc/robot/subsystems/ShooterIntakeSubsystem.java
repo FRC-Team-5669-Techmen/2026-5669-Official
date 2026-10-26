@@ -37,7 +37,17 @@ public class ShooterIntakeSubsystem extends SubsystemBase {
         currentLimits.StatorCurrentLimitEnable = true;
 
         motor.getConfigurator().apply(config);
-        SmartDashboard.putNumber("Uptake Forward Volts", Constants.ShooterIntake.kForwardVolts);
+        // The tuned value is saved on the roboRIO, so Shot Map Day tuning survives reboots.
+        edu.wpi.first.wpilibj.Preferences.initDouble("Uptake Forward Volts", Constants.ShooterIntake.kForwardVolts);
+        SmartDashboard.putNumber("Uptake Forward Volts", edu.wpi.first.wpilibj.Preferences.getDouble("Uptake Forward Volts", Constants.ShooterIntake.kForwardVolts));
+    }
+
+    @Override
+    public void periodic() {
+        double v = SmartDashboard.getNumber("Uptake Forward Volts", Constants.ShooterIntake.kForwardVolts);
+        if (v != edu.wpi.first.wpilibj.Preferences.getDouble("Uptake Forward Volts", Constants.ShooterIntake.kForwardVolts)) {
+            edu.wpi.first.wpilibj.Preferences.setDouble("Uptake Forward Volts", v);
+        }
     }
 
     /** Feed the shooter at the dashboard's "Uptake Forward Volts" (battery-proof). */

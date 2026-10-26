@@ -377,6 +377,9 @@ const BIND = {
     DU:{t:"Hood jog up",m:"HOLD",fx:"hoodJog",n:"D-PAD UP"},
     DD:{t:"Hood jog down",m:"HOLD",fx:"hoodJog",n:"D-PAD DOWN"},
     B:{t:"Unjam",m:"HOLD",fx:"unjam",n:"B"},
+    A:{t:"Backup: Midshot",m:"PRESS",fx:"backup",n:"A"},
+    X:{t:"Backup: Left trench",m:"PRESS",fx:"backup",n:"X"},
+    LB:{t:"Backup: Right trench",m:"PRESS",fx:"backup",n:"LB"},
   }
 };
 const CALL = {
@@ -392,14 +395,17 @@ const CALL = {
     {keys:["RS"],k:"R STICK",t:"Rotate",m:"STICK",side:"R",y:236,ax:366,ay:198},
   ],
   operator: [
-    {keys:["LT"],k:"LT",t:"Spin up shooter",m:"HOLD",side:"L",y:63,ax:192,ay:63},
-    {keys:["LS"],k:"L STICK",t:"Intake jog",m:"STICK",side:"L",y:142,ax:206,ay:142},
-    {keys:["DU","DD"],k:"D-PAD ▲ ▼",t:"Hood jog",m:"HOLD",side:"L",y:200,ax:250,ay:182},
-    {keys:["DL","DR"],k:"D-PAD ◀ ▶",t:"Turret jog",m:"HOLD",side:"L",y:258,ax:238,ay:203},
-    {keys:["RT"],k:"RT",t:"Shoot when ready",m:"HOLD",side:"R",y:63,ax:408,ay:63},
-    {keys:["RB"],k:"RB",t:"Auto-aim anywhere",m:"TOGGLE",side:"R",y:112,ax:412,ay:84},
-    {keys:["Y"],k:"Y",t:"Hood up / down",m:"TOGGLE",side:"R",y:170,ax:381,ay:120},
-    {keys:["B"],k:"B",t:"Unjam",m:"HOLD",side:"R",y:228,ax:403,ay:142},
+    {keys:["LT"],k:"LT",t:"Spin up shooter",m:"HOLD",side:"L",y:40,ax:192,ay:63},
+    {keys:["LB"],k:"LB",t:"Backup: R trench",m:"PRESS",side:"L",y:92,ax:188,ay:84},
+    {keys:["LS"],k:"L STICK",t:"Intake jog",m:"STICK",side:"L",y:144,ax:206,ay:142},
+    {keys:["DU","DD"],k:"D-PAD ▲ ▼",t:"Hood jog",m:"HOLD",side:"L",y:196,ax:250,ay:182},
+    {keys:["DL","DR"],k:"D-PAD ◀ ▶",t:"Turret jog",m:"HOLD",side:"L",y:248,ax:238,ay:203},
+    {keys:["RT"],k:"RT",t:"Shoot when ready",m:"HOLD",side:"R",y:40,ax:408,ay:63},
+    {keys:["RB"],k:"RB",t:"Auto-aim anywhere",m:"TOGGLE",side:"R",y:90,ax:412,ay:84},
+    {keys:["Y"],k:"Y",t:"Hood up / down",m:"TOGGLE",side:"R",y:140,ax:381,ay:120},
+    {keys:["B"],k:"B",t:"Unjam",m:"HOLD",side:"R",y:190,ax:403,ay:142},
+    {keys:["A"],k:"A",t:"Backup: Midshot",m:"PRESS",side:"R",y:240,ax:381,ay:164},
+    {keys:["X"],k:"X",t:"Backup: L trench",m:"PRESS",side:"R",y:290,ax:359,ay:142},
   ]
 };
 const OX=130, OY=47;

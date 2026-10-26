@@ -25,6 +25,16 @@
 
 `subsystems/PitCheck` checks the robot once a second, always (no button), and only reads: dashboard **"Pit Check"** = `ALL GO` or the list of problems; **"Pit Check Details"** shows every item; changes print to the DS console as `PIT CHECK |`. Checks: battery >= 12.4 V while disabled, all 23 CAN devices answering (IDs 1-22 + Pigeon 41), Limelight heartbeat, Practice Field switch OFF when an FMS is attached, alliance set, turret far end set, pose trusted, shot table has 4+ recorded points, roboRIO disk >= 50 MB free.
 
+## Shot Map Day (Oct 26) and backup shots
+
+**Guide for the students: `tools/shot-map/Shot Map Day Guide.html`** (open it with `tools/shot-map/Start Shot Map Day.bat`, which also opens the Driver Station, Elastic and the controller map). Order: deploy newest code, regear the spindexer 64:1 to 16:1 (remove one 4:1 MAXPlanetary stage, shorter screws), power on with zeros, Elastic Ctrl+D loads `src/main/deploy/elastic-layout.json` (tabs "Shot Map" and "Feed + Spots"; served by `WebServer` on port 5800 in `Robot`), Pit Check, tune feed volts, save backup spots, record the shot map, test, send data.
+
+- `subsystems/ShotMapGuide`: "Shot Map Step" (one plain-English instruction), "Shot Map Progress" (checklist of distances: the 3 backup-spot distances + 1.5/2.25/3.0/3.75/4.5/5.25 m not near them), pre-fills Tune RPM/Hood from the table at each new distance, writes **every shot and every Record press to `/home/lvuser/shotmap/shot-log.csv`**, downloadable at **http://10.56.69.2:5805/shot-log.csv** (WebServer port 5805). Columns are in the CSV header.
+- "Record Shot Point" now also prints `SHOT TABLE | ...` and `SHOT TABLE CODE | t.put(new Point(...)); ...` to the console; dashboard "Shot Table Code" has the same Java. **To make a session permanent: paste that into `ShotTable.defaults()`** (recorded points also live in roboRIO Preferences "Shot Table Recorded", used immediately).
+- Feed volts "Spindex Forward Volts" / "Uptake Forward Volts" are saved in roboRIO Preferences when changed on the dashboard (survive reboots); copy the tuned values into `Constants.Index.kForwardSpeed` / `Constants.ShooterIntake.kForwardVolts`. Spindex stator limit 80 A (was 160) for the 16:1 gearing.
+- **Backup shots** (`subsystems/BackupShots`, camera-proof): park on the spot, press **Operator A = Midshot** (between our hub and our climb), **Operator X = Left trench**, **Operator LB = Right trench** (left/right as seen from our driver station). It resets the pose to that spot (keeps the gyro heading; if the heading is unknown it assumes the robot faces straight away from our DS), turns auto-aim on (shared `aimCommand` with Operator RB), then RT fires as usual. Spots are stored relative to our hub (forward toward our DS wall, left = driver's left) so they mirror for red/blue; defaults are estimates (Midshot 2.30 m forward; trenches 1.05 m forward, 3.39 m left/right); **"Save Spot: ..." dashboard buttons store the real spot** (Preferences "Backup Spot Midshot" etc., needs Pose Trusted).
+- Driver Station keys: **Enter = Disable, Space = Emergency Stop** (needs a roboRIO reboot after).
+
 ## Drive Team Controller Map
 
 `tools/controller-map/`: double-click **Start Controller Map.bat** on any Windows driver station laptop for a live map of both Xbox controllers under the docked Driver Station (reads the controllers in the background, so it follows presses while Driver Station has focus). See its README. **When a controller binding changes, update the `BIND` / `CALL` tables in `tools/controller-map/index.html` too.**
@@ -257,8 +267,11 @@ This matches the drive team's official map. **LOCKED** = practiced, must stay ex
 | Left Stick up/down (hold) | Jog ground intake up/down slowly (manual backup; was the D-pad) | OPEN |
 | D-Pad Left/Right (hold) | Manual turret jog (Right = turn right, away from HOME; diagonals count, so it doesn't stutter) | OPEN |
 | B (hold) | Spindex backwards to clear a jam | not on map, kept on purpose |
+| A (press) | **Backup shot: Midshot** (between hub and climb): seeds the pose there, auto-aim on, then RT | added Oct 25 |
+| X (press) | **Backup shot: Left trench** (as seen from our DS) | added Oct 25 |
+| Left Bumper (press) | **Backup shot: Right trench** | added Oct 25 (was unbound) |
 
-Removed because they weren't on the map: Driver D-pad Right (tank-drive toggle, and tank mode itself) and Operator Left Bumper (aim while held).
+Removed because they weren't on the map: Driver D-pad Right (tank-drive toggle, and tank mode itself) and the old Operator Left Bumper "aim while held" (LB is now the right-trench backup shot).
 
 ### HOTAS (Ports 2/3 - Logitech X56): SWITCHED OFF
 `Constants.Hotas.kEnabled = false`, so only the two Xbox controllers can drive. The code stays in the
