@@ -377,6 +377,7 @@ public class RobotContainer {
         SmartDashboard.putData("Record Shot Point", aim.recordPointCommand());
         SmartDashboard.putData("Test: Turret Sweep", localizationCheck.turretSweepTest());
         SmartDashboard.putData("Re-find Position (camera)", localizer.refindCommand());
+        SmartDashboard.putData("Reset Shot Stats", shooter.resetShotStatsCommand());
         SmartDashboard.putData("Clear Recorded Shot Points", aim.clearRecordedCommand());
 
         drivetrain.registerTelemetry(logger::telemeterize);

@@ -73,6 +73,52 @@ public class ShooterSubsystem extends SubsystemBase {
         follower.getConfigurator().apply(followerConfig);
     }
 
+    // ---- Shot consistency meter ----
+    // Each ball pulls the wheel speed down (a "dip"). The speed just BEFORE the dip is the speed
+    // that ball launched at. If balls come faster than the wheel recovers, later balls launch slow
+    // and fall short. Dashboard: "Shots Counted", "Shots At Speed", "Last Shot Launch RPM",
+    // "Last Shot Dip (RPM)", "Last Shot Recovery (s)". Button "Reset Shot Stats".
+    private static final double kDipStart = 120;   // RPM below target that counts as a ball hitting
+    private static final double kRecovered = 50;   // RPM below target that counts as recovered
+    private static final double kAtSpeed = 100;    // launch within this of target = a good shot
+    private double prevRpm = 0, minRpm = 0, launchRpm = 0, dipStart = 0;
+    private boolean inDip = false;
+    private int shots = 0, goodShots = 0;
+
+    private void meterShots(double rpm) {
+        double target = m_targetRpm;
+        if (target < 1000) { inDip = false; prevRpm = rpm; return; }
+        double now = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
+        if (!inDip && rpm < target - kDipStart && prevRpm >= target - kDipStart) {
+            inDip = true; dipStart = now; minRpm = rpm; launchRpm = prevRpm; shots++;
+            if (Math.abs(launchRpm - target) <= kAtSpeed) goodShots++;
+            SmartDashboard.putNumber("Last Shot Launch RPM", launchRpm);
+            dev.doglog.DogLog.log("Shooter/ShotLaunchRpm", launchRpm);
+            dev.doglog.DogLog.log("Shooter/ShotTargetRpm", target);
+        } else if (inDip) {
+            minRpm = Math.min(minRpm, rpm);
+            if (rpm >= target - kRecovered) {
+                inDip = false;
+                SmartDashboard.putNumber("Last Shot Dip (RPM)", target - minRpm);
+                SmartDashboard.putNumber("Last Shot Recovery (s)", now - dipStart);
+                dev.doglog.DogLog.log("Shooter/ShotDipRpm", target - minRpm);
+                dev.doglog.DogLog.log("Shooter/ShotRecoverySec", now - dipStart);
+            } else if (now - dipStart > 1.0) {
+                inDip = false; // never recovered (shooter can't reach target): stop waiting
+            }
+        }
+        prevRpm = rpm;
+        SmartDashboard.putNumber("Shots Counted", shots);
+        SmartDashboard.putString("Shots At Speed", shots == 0 ? "-" : goodShots + " of " + shots
+            + " (" + Math.round(100.0 * goodShots / shots) + "%)");
+    }
+
+    /** "Reset Shot Stats" dashboard button. */
+    public edu.wpi.first.wpilibj2.command.Command resetShotStatsCommand() {
+        return edu.wpi.first.wpilibj2.command.Commands.runOnce(() -> { shots = 0; goodShots = 0; })
+            .ignoringDisable(true).withName("Reset Shot Stats");
+    }
+
     public double getCurrentRpm() {
         // Phoenix 6 returns rotations per second, so multiply by 60 to get RPM
         return leader.getVelocity().getValueAsDouble() * 60.0;
@@ -143,6 +189,7 @@ public class ShooterSubsystem extends SubsystemBase {
         double currentDraw = Math.round(leader.getStatorCurrent().getValueAsDouble() * 10.0) / 10.0;
 
         SmartDashboard.putNumber("Shooter Actual RPM", getCurrentRpm());
+        meterShots(getCurrentRpm());
         SmartDashboard.putNumber("Shooter Target RPM", m_targetRpm);
         SmartDashboard.putNumber("Shooter RPM Error", m_targetRpm == 0 ? 0 : getCurrentRpm() - m_targetRpm);
         SmartDashboard.putNumber("Shooter Torque Amps", currentDraw);

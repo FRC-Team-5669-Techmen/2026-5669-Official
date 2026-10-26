@@ -103,7 +103,11 @@ public final class Constants {
         public static final int kMotorId = 15; // Tuner X name: "UpTakeChannelForShooter"
         public static final boolean kInverted = true;
         // Duty cycle, -1 to 1. Was 2.0, which is out of range; 1.0 = full power, stated plainly.
-        public static final double kForwardSpeed = 1.0;
+        public static final double kForwardSpeed = 1.0;   // percent (only FuelHandlingCommand still uses it)
+        // Feeding volts (Oct 25): fixed voltage instead of 100% so ball entry speed doesn't change
+        // with the battery. 11 V stays below a battery sagging under the shooter. Dashboard
+        // "Uptake Forward Volts" tunes it live; tune it BEFORE recording the shot table.
+        public static final double kForwardVolts = 11.0;
         public static final double kReverseSpeed = -0.6;
     }
 

@@ -128,13 +128,15 @@ This is a 2026 FRC robot with the following mechanical systems:
 - **Top roller**: belted to the bottom roller, so it spins whenever the bottom roller does. **Nothing to code.** The Kraken X44 on CAN 18 (Tuner X name "Shooter Top") drives the **hood**, not this roller (programming lead, Oct 25).
 - Velocity control (VelocityVoltage): fast 5400 RPM (`kMaxRPM` = 5800, the motor's free speed; was capped at 3100 until Oct 25), 0.25 s spin-up ramp, 60 A supply / 120 A stator per motor, slow 2500, idle 2000 (Driver D-pad Left), reverse -1000
 - PID: kP=0.25, kS=0.20, kV=0.12 (Oct 25 audit: kP 0.11 with no kS left it a few hundred RPM short, so "ready to fire" never came true). Dashboard "Shooter RPM Error"
+- **Shot consistency meter** (`ShooterSubsystem.meterShots`): each ball dips the wheel; the speed just before the dip is the launch speed. Dashboard "Shots At Speed" (X of Y launched within 100 RPM of target), "Last Shot Launch RPM", "Last Shot Dip (RPM)", "Last Shot Recovery (s)", button "Reset Shot Stats"; DogLog Shooter/*. If later balls in a burst launch slow, the spindexer is feeding faster than the wheel recovers: lower "Spindex Forward Volts"
 
 ### Index / Feeder
 - Single TalonFX (CAN 13, Tuner X: "Spindex"), VoltageOut (FOC off, unlicensed): +12 V forward by default, trimmed live with dashboard **"Spindex Forward Volts"** (0-12) for tuning after a gear change, -6 V reverse. Slow at 64:1 is the gearing: 64:1 = ~94 RPM, about 1 m/s at the 8 in omni rim. Recommended: **16:1** (two 4:1 MAXPlanetary stages, ~375 RPM, ~4 m/s free) and trim down with the dashboard volts if it flings or jams at the uptake; then lower the 160 A stator limit to ~80 A. Dashboard "Spindex Speed (rot/s)", "Spindex Amps", "Spindex Volts"
 - Feeds fuel from intake to shooter, brake mode
 
 ### Shooter Intake
-- Single TalonFX (CAN 15, Tuner X: "UpTakeChannelForShooter"), DutyCycleOut (FOC off, unlicensed): forward 1.0 (100%), reverse -0.6
+- Single TalonFX (CAN 15, Tuner X: "UpTakeChannelForShooter"). **Feeding uses VoltageOut at a fixed voltage** (`kForwardVolts` 11 V, dashboard **"Uptake Forward Volts"** tunes it live), not 100% duty: 100% meant 12.8 V on a fresh battery and ~11 V on a tired one, so the ball entered the shooter at a different speed each match. Reverse -0.6 duty. FOC off (unlicensed)
+- **Feed order rule**: each stage a bit faster than the one before (spindexer rim < uptake < flywheel) so balls separate into single file. Tune Spindex and Uptake volts BEFORE recording the shot table; changing them later shifts every shot
 - Pulls fuel into the shooter path, brake mode
 
 ### Gooba (Hood)

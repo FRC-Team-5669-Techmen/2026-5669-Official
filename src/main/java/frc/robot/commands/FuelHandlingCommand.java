@@ -49,7 +49,11 @@ public class FuelHandlingCommand extends Command {
 
         // Run all motors in unison
         index.run(indexSpeed);
-        shooterIntake.run(intakeSpeed);
+        if (isForward) {
+            shooterIntake.feed(); // same battery-proof volts as teleop shooting
+        } else {
+            shooterIntake.run(intakeSpeed);
+        }
         
         // Use RPM control (VelocityVoltage) for the shooter
         shooter.runAtRPM(shooterRPM);

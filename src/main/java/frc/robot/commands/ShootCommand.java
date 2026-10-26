@@ -63,7 +63,7 @@ public class ShootCommand extends Command {
         firing = firing ? aim.keepFiring(turret) : aim.readyToFire(turret, shooter, hood);
         if (firing) {
             index.run(frc.robot.subsystems.IndexSubsystem.forwardVolts());
-            uptake.run(Constants.ShooterIntake.kForwardSpeed);
+            uptake.feed();
             SmartDashboard.putString("Shot Ready", "FIRING");
         } else {
             index.stop();
