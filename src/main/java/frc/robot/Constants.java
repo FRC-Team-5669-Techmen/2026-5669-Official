@@ -137,8 +137,11 @@ public final class Constants {
         // so pressing it by mistake at HOME can't lock the turret in place.
         public static final double kMinEndPosition = 1.0;
         // How far kEndPosition is from HOME, in degrees. Turns rotations into degrees.
-        // Oct 25 (programming lead): the far end is a little past 270, about 280 degrees from HOME.
-        public static final double kEndDegrees = 280.0;
+        // MEASURED Oct 25 with a square: shooter set square to the robot side read 84.07 deg and
+        // straight back read 168.99 deg with 280 here, so the code under-read by ~6.5%.
+        // 280 x 180/168.3 = 299.5 -> 300. The far end (saved on the roboRIO) is ~300 deg from HOME.
+        // If "Set Turret Far End" is ever pressed at a different spot, re-measure this the same way.
+        public static final double kEndDegrees = 300.0;
         // Auto-aim and the search sweep stay this far inside each end, so they never push on
         // the limits. The D-pad jog can go all the way to the ends.
         public static final double kAimMarginDegrees = 10.0;
