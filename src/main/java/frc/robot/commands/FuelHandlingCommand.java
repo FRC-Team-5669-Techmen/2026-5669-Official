@@ -37,7 +37,7 @@ public class FuelHandlingCommand extends Command {
 
         if (isForward) {
             // "Intake" / Shooting direction
-            indexSpeed = Constants.Index.kForwardSpeed;
+            indexSpeed = frc.robot.subsystems.IndexSubsystem.forwardVolts();
             intakeSpeed = Constants.ShooterIntake.kForwardSpeed;
             shooterRPM = Constants.Shooter.kFastTargetRPM; // clamped to kMaxRPM by the subsystem
         } else {

@@ -109,10 +109,10 @@ public class AimSubsystem extends SubsystemBase {
         if (!active) return false;
         if (!poseUsable()) {
             // Tag-only fallback: turret locked on the hub tag, shooter at speed (hood follows ty).
-            return turret.targetLocked() && Math.abs(shooter.getCurrentRpm() - targetRpm()) <= Aim.kRpmTolerance;
+            return turret.targetLocked() && rpmReady(shooter);
         }
         if (!solution.reachable() || !turret.aimLocked()) return false;
-        if (Math.abs(shooter.getCurrentRpm() - targetRpm()) > Aim.kRpmTolerance) return false;
+        if (!rpmReady(shooter)) return false;
         return !Constants.Gooba.kHoodEnabled || Math.abs(hood.getPosition() - targetHood()) <= Aim.kHoodTolerance;
     }
 
@@ -127,13 +127,19 @@ public class AimSubsystem extends SubsystemBase {
         return solution.reachable() && Math.abs(turret.aimErrorDegrees()) <= Aim.kKeepFiringDegrees;
     }
 
+    /** Shooter within tolerance of its target (150 RPM or 4%, whichever is bigger). */
+    public boolean rpmReady(ShooterSubsystem shooter) {
+        double target = targetRpm();
+        return Math.abs(shooter.getCurrentRpm() - target) <= Math.max(Aim.kRpmTolerance, Aim.kRpmTolerancePct * Math.abs(target));
+    }
+
     /** Why it isn't ready (dashboard "Shot Ready" text). */
     public String readyText(Goober turret, ShooterSubsystem shooter, GoobaSubsystem hood) {
         if (!active) return "aim off (Operator RB)";
         if (!poseUsable()) return turret.targetLocked() ? "tag-only: shooter spinning up" : "tag-only: turret not on hub tag";
         if (!solution.reachable()) return "hub behind turret: turning robot";
         if (!turret.aimLocked()) return "turret turning";
-        if (Math.abs(shooter.getCurrentRpm() - targetRpm()) > Aim.kRpmTolerance) return "shooter spinning up";
+        if (!rpmReady(shooter)) return "shooter spinning up";
         if (Constants.Gooba.kHoodEnabled && Math.abs(hood.getPosition() - targetHood()) > Aim.kHoodTolerance) return "hood moving";
         return "READY";
     }

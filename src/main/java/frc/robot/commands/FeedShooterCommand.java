@@ -19,7 +19,7 @@ public class FeedShooterCommand extends Command {
 
     @Override
     public void execute() {
-        index.run(Constants.Index.kForwardSpeed);
+        index.run(frc.robot.subsystems.IndexSubsystem.forwardVolts());
         shooterIntake.run(Constants.ShooterIntake.kForwardSpeed);
     }
 

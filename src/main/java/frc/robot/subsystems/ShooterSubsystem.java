@@ -33,11 +33,13 @@ public class ShooterSubsystem extends SubsystemBase {
 
         leaderConfig.Slot0.kP = Constants.Shooter.kP;
         leaderConfig.Slot0.kV = Constants.Shooter.kV;
+        leaderConfig.Slot0.kS = Constants.Shooter.kS;
         leaderConfig.Slot0.kI = Constants.Shooter.kI;
         leaderConfig.Slot0.kD = Constants.Shooter.kD;
 
         followerConfig.Slot0.kP = Constants.Shooter.kP;
         followerConfig.Slot0.kV = Constants.Shooter.kV;
+        followerConfig.Slot0.kS = Constants.Shooter.kS;
         followerConfig.Slot0.kI = Constants.Shooter.kI;
         followerConfig.Slot0.kD = Constants.Shooter.kD;
 
@@ -142,6 +144,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
         SmartDashboard.putNumber("Shooter Actual RPM", getCurrentRpm());
         SmartDashboard.putNumber("Shooter Target RPM", m_targetRpm);
+        SmartDashboard.putNumber("Shooter RPM Error", m_targetRpm == 0 ? 0 : getCurrentRpm() - m_targetRpm);
         SmartDashboard.putNumber("Shooter Torque Amps", currentDraw);
     }
 }

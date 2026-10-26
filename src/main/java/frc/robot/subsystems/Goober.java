@@ -158,7 +158,13 @@ public class Goober extends SubsystemBase {
         double angle = getAngleDegrees();
         // Robot turning CCW at w makes the needed turret angle (clockwise from HOME) grow at w.
         double feedforward = Aim.kTurretFF * Math.toDegrees(robotSpinRadPerSec);
+        double error = angleTarget - angle;
         double output = anglePID.calculate(angle, angleTarget) + feedforward;
+        // Static-friction kick so small errors still move the turret (no kick once close).
+        if (Math.abs(error) > Aim.kTurretToleranceDegrees * 0.5) {
+            output += Math.copySign(Aim.kTurretKS, error);
+        }
+        SmartDashboard.putNumber("Turret Aim Error (deg)", -error);
         setMotorSpeed(MathUtil.clamp(output, -Aim.kTurretMaxOutput, Aim.kTurretMaxOutput));
         aimStatus = aimLocked() ? "LOCKED" : "TURNING";
     }

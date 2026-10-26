@@ -77,7 +77,10 @@ public final class Constants {
         public static final double kIdleRPM = 2000.0;
         public static final double kDecelerateStep = 60.0;
         public static final double kIdleAccelerateStep = 50.0;
-        public static final double kP = 0.11;
+        // Oct 25 audit: kP 0.11 with no kS left the wheel a few hundred RPM short at high speed
+        // (each 0.1 V of friction = ~55 RPM of error), so "ready" could never come true.
+        public static final double kP = 0.25;   // volts per (rot/s) of error
+        public static final double kS = 0.20;   // volts to overcome friction
         public static final double kI = 0.0;
         public static final double kD = 0.0;
         public static final double kV = 0.12;
@@ -92,7 +95,7 @@ public final class Constants {
     public static final class Index {
         public static final int kMotorId = 13; // Tuner X name: "Spindex"
         public static final boolean kInverted = false;
-        public static final double kForwardSpeed = 12.0; // volts
+        public static final double kForwardSpeed = 12.0; // volts (default; dashboard "Spindex Forward Volts" trims it live)
         public static final double kReverseSpeed = -6.0; // volts
     }
 
@@ -418,11 +421,15 @@ public final class Constants {
         public static final double kTurretFF = 0.0013;
         public static final double kTurretMaxOutput = 0.8;
         // "On target" when within this many degrees and turning slower than kLockedMaxSpeed.
-        public static final double kTurretToleranceDegrees = 1.5;
+        public static final double kTurretToleranceDegrees = 2.0; // was 1.5; at 4 m, 2 deg = 14 cm on a ~1 m hub opening
+        // Static-friction kick (percent power): P alone gives only ~0.03 power at 1.5 deg off, too
+        // little to move the turret, so it could stall just outside "locked" and never fire.
+        public static final double kTurretKS = 0.03;
         public static final double kLockedMaxSpeedDegPerSec = 30.0;
 
         // ---- Ready to fire (Operator RT only feeds the shooter when all are true) ----
-        public static final double kRpmTolerance = 150.0;   // to START firing
+        public static final double kRpmTolerance = 150.0;   // to START firing (or kRpmTolerancePct, whichever is bigger)
+        public static final double kRpmTolerancePct = 0.04; // 4%: 200 RPM at 5000
         public static final double kKeepFiringDegrees = 4.0; // once firing, keep feeding unless the turret is this far off
         public static final double kHoodTolerance = 0.12; // rotations
 

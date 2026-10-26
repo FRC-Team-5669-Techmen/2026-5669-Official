@@ -36,6 +36,15 @@ public class IndexSubsystem extends SubsystemBase {
         currentLimits.StatorCurrentLimitEnable = true;
         
         motor.getConfigurator().apply(config);
+        SmartDashboard.putNumber("Spindex Forward Volts", Constants.Index.kForwardSpeed);
+    }
+
+    /**
+     * Forward feed volts: dashboard "Spindex Forward Volts" (0-12, default 12). Lets the team
+     * trim the spindexer speed live after a gear change, without redeploying.
+     */
+    public static double forwardVolts() {
+        return edu.wpi.first.math.MathUtil.clamp(SmartDashboard.getNumber("Spindex Forward Volts", Constants.Index.kForwardSpeed), 0.0, 12.0);
     }
 
     public void run(double volts) {
