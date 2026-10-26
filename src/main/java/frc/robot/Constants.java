@@ -397,8 +397,9 @@ public final class Constants {
         // MEASURE: camera tilt, degrees UP from level.
         // MEASURED Oct 25: lens points UP, tilted back 25 degrees (phone level on top: -25 to -26).
         // Hood all the way UP: also 25 (measured Oct 25; a belt keeps the camera angle as the hood rises).
-        public static final double kCameraPitchHoodDown = 25.0;
-        public static final double kCameraPitchHoodUp = 25.0;   // measured Oct 25: a belt compensation mechanism keeps the camera at 25 deg as the hood rises
+        // Oct 25 evening: Limelight re-aimed (it had tipped up); phone level now reads 22-24 -> 23.
+        public static final double kCameraPitchHoodDown = 23.0;
+        public static final double kCameraPitchHoodUp = 23.0;   // measured Oct 25: a belt compensation mechanism keeps the camera at 25 deg as the hood rises
         // Skip vision while the hood (and camera) is moving faster than this (rotations/second).
         public static final double kMaxHoodSpeedForVision = 1.0;
         // Limelight's robot-space axes. Its web UI labels them "forward / right / up" and turns
