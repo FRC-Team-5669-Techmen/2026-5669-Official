@@ -69,6 +69,13 @@ Research behind all of it (6328, 1678, 581, 5000 public 2026 code, the TU22 game
 - Elastic: new **Match** tab (Shot Target, Shot Ready, Our Hub, Vacuum Mode, Climbing, Near Trench, Pit Check, Field, distance, speed, RPMs, Agitator).
 - **To tune on the robot**: `kReleaseLatency` (film a moving shot; balls land behind the motion = raise it), `kDragK` (balls land AHEAD in the direction of travel = lead too small = LOWER k), the pass table, and real flight times (film: release to landing; the recorded SCORE points all carry the 0.9 s placeholder "Tune TOF").
 
+## Shuttle from their zone, pass-lane look-ahead, defense mode (Oct 27 evening)
+
+- **Shuttle** (`TargetPicker.passTarget`, automatic in AUTO/PASS, vacuum too): a pass corner further than **"Pass Max Range (m)"** (dashboard, saved, default 12 m = 393 in; measure on a real field) is skipped. Deep in the OPPONENT's alliance zone no corner is in range, so it lobs to a **relay point in the neutral zone on our half**: 6.0 m (236 in) from our wall, 1.65 m (65 in) from the side wall, robot's side first (1678 did this). A partner or our own vacuum mode then passes it home. Dashboard "Shot Target" says SHUTTLE and "[in THEIR zone]". Behind their hub every lane is blocked: it holds ("move sideways").
+- **Pass lane look-ahead**: a lane must miss both hubs (+0.30 m / 12 in) from the turret pivot NOW and from where it will be in `kLaneLookahead` 0.40 s (balls already in the uptake still leave), so feeding stops BEFORE a hub slides into the line and stays stopped while it's there; mid-volley it re-picks another clear lane if one exists. Covers both hubs (ours = G407 foul, theirs = points for them). Dashboard "Pass Lane Clear".
+- **Defense mode** (`subsystems/DefenseMode`, **Driver Y** toggle): auto-aim and vacuum off, intake UP (`raiseIfDown`), hood stowed, stick slew 6/s (normal 3/s), sticks centered + robot under 0.3 m/s = wheels in an **X** (`SwerveDriveBrake`). Ends when the operator turns aim or vacuum on. Warnings (driver rumble + dashboard "Defense"): **G418 pin clock** (`defense/PinClock`: stick over 0.5, robot under 0.25 m/s, drive motors over 50 A average for 0.5 s; strong pulses from 2 s, rule is 3 s; resets after 3 s apart), and always in the last 30 s **G420** near THEIR tower (`defense/TowerGuard`, steady rumble). Numbers in `Constants.Defense`. The drive is already at its traction limit (120 A slip current x 4 ~ 1290 N vs ~800 N of grip), so more current would only spin the wheels.
+- Rules checked (manual TU22): nothing forbids launching from the opponent's zone; G404 (not at robots), G405 (keep FUEL in the field), G415 (bumpers outside our zone: no damaging contact inside their frame), G418 (3 s pins), G420 (last 30 s, their tower).
+
 ## Drive Team Controller Map
 
 `tools/controller-map/`: double-click **Start Controller Map.bat** on any Windows driver station laptop for a live map of both Xbox controllers under the docked Driver Station (reads the controllers in the background, so it follows presses while Driver Station has focus). See its README. **When a controller binding changes, update the `BIND` / `CALL` tables in `tools/controller-map/index.html` too.**
@@ -296,6 +303,7 @@ This matches the drive team's official map. **LOCKED** = practiced, must stay ex
 | Left Trigger (hold) | Ground intake roller **backwards** (spit balls out) | added Oct 25 |
 | A (press) | Toggle ground intake DOWN / UP (does nothing until `kDownPosition` is set) | LOCKED |
 | X | Reserved, bound to nothing (was the climb piston) | LOCKED |
+| Y (press) | **DEFENSE MODE** toggle: intake up, hood down, quicker drive, X-lock when the sticks are centered, pin/tower warnings | added Oct 27 |
 | D-Pad Up (hold) | Climb up (elevator 19) | LOCKED |
 | D-Pad Down (hold) | Climb down (elevator 19) | LOCKED |
 | D-Pad Left (press) | Toggle shooter idle at 2000 RPM (press again = off) | LOCKED |
@@ -426,6 +434,7 @@ in Phoenix Tuner X before writing code.
 
 ## Known TODOs / FIXMEs
 
+- **Talon FX 22 replaced Oct 27** with a used Kraken. It still dragged the bus down with both CAN pairs connected (fine on one pair): its pass-through is damaged, so it is wired as a short stub (one pair, the other capped). Watch Driver Station Diagnostics "CAN Bus Off"; replace the motor when possible.
 - **Talon FX 22 (intake roller) took down the whole CAN bus, Oct 26 night**: every device blinked red ("no CAN"); with 22 unplugged everything else went orange. Bus wiring measured fine (121 ohm yellow-to-green at the roboRIO plug, roboRIO unplugged). Next: test 22 ALONE on a short known-good CAN run to the roboRIO. Orange = its CAN leads/robot wiring are damaged (check where they cross the intake pivot, which flexed a lot with agitation pumps): splice. Still red = its CAN transceiver is dead: replace the Kraken (new one ships as ID 0: set ID 22 + name "Intake motor(22)" in Tuner X; it won't have Pro, which the roller doesn't need). Until fixed, 22 can stay unplugged: the roller and agitation roller blinks just do nothing, Pit Check lists it.
 - **Shot table (Oct 26)**: recorded on the robot at 1.5, 2.3 (Midshot), 3.0, 3.55 (Trench) m; 4.5 and 5.25 m still to do (shop ceiling blocks long arcs: record at Beach Blitz). The points live in roboRIO Preferences "Shot Table Recorded" until pasted into `ShotTable.defaults()` from the "Shot Table Code" dashboard line / http://10.56.69.2:5805/shot-log.csv.
 

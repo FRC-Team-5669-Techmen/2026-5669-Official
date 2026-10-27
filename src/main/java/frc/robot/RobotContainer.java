@@ -18,6 +18,7 @@ import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
@@ -33,6 +34,7 @@ import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.Agitator;
 import frc.robot.subsystems.AimSubsystem;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
+import frc.robot.subsystems.DefenseMode;
 import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.Goober;
 import frc.robot.subsystems.GoobaSubsystem;
@@ -75,6 +77,12 @@ public class RobotContainer {
     private final SlewRateLimiter xLimiter = new SlewRateLimiter(3.0);
     private final SlewRateLimiter yLimiter = new SlewRateLimiter(3.0);
     private final SlewRateLimiter rotLimiter = new SlewRateLimiter(3.0);
+    // Defense mode: quicker response (both sets run every loop so switching never jumps).
+    private final SlewRateLimiter xFast = new SlewRateLimiter(Constants.Defense.kSlewRate);
+    private final SlewRateLimiter yFast = new SlewRateLimiter(Constants.Defense.kSlewRate);
+    private final SlewRateLimiter rotFast = new SlewRateLimiter(Constants.Defense.kSlewRate);
+    // Defense mode, sticks centered: wheels in an X so the robot is hard to push.
+    private final SwerveRequest.SwerveDriveBrake xLock = new SwerveRequest.SwerveDriveBrake();
 
     private final SendableChooser<String> driveModeChooser = new SendableChooser<>();
     private final SendableChooser<Double> globalSpeedLimiter = new SendableChooser<>();
@@ -119,6 +127,8 @@ public class RobotContainer {
     private final VacuumCommand vacuumCommand = new VacuumCommand(aim, shooter, index, shooterIntake,
         goober, gooba, groundIntakePivot, intakeRoller, aimCommand);
     public final BackupShots backupShots = new BackupShots(drivetrain, localizer);
+    // Defense mode (Driver Y): intake up, hood down, quick drive, X-lock, pin + tower warnings.
+    public final DefenseMode defense = new DefenseMode(drivetrain, aim);
 
     // Not created on purpose: MariosEar (the 2 PhotonVision USB cameras), since the
     // Limelight is the only camera.
@@ -197,9 +207,30 @@ public class RobotContainer {
                 }
 
                 // Cubic curve for fine control at low speed, then slew-rate limiting
-                double scaledX = xLimiter.calculate(Math.signum(xInput) * Math.pow(Math.abs(xInput), 3));
-                double scaledY = yLimiter.calculate(Math.signum(yInput) * Math.pow(Math.abs(yInput), 3));
-                double scaledRot = rotLimiter.calculate(Math.signum(rInput) * Math.pow(Math.abs(rInput), 3));
+                double cx = Math.signum(xInput) * Math.pow(Math.abs(xInput), 3);
+                double cy = Math.signum(yInput) * Math.pow(Math.abs(yInput), 3);
+                double cr = Math.signum(rInput) * Math.pow(Math.abs(rInput), 3);
+                double scaledX = xLimiter.calculate(cx);
+                double scaledY = yLimiter.calculate(cy);
+                double scaledRot = rotLimiter.calculate(cr);
+                double fastX = xFast.calculate(cx), fastY = yFast.calculate(cy), fastRot = rotFast.calculate(cr);
+                boolean defending = DefenseMode.active();
+                DefenseMode.reportDriverStick(Math.hypot(xInput, yInput));
+                if (defending) {
+                    scaledX = fastX;
+                    scaledY = fastY;
+                    scaledRot = fastRot;
+                    // Sticks centered and the robot nearly stopped: lock the wheels in an X (only
+                    // once slow, so a full-speed stick release doesn't snap the modules sideways).
+                    var st = drivetrain.getState().Speeds;
+                    boolean centered = Math.abs(xInput) < Constants.Operator.kDeadband
+                        && Math.abs(yInput) < Constants.Operator.kDeadband
+                        && Math.abs(rInput) < Constants.Operator.kRotationalDeadband;
+                    if (centered && Math.hypot(st.vxMetersPerSecond, st.vyMetersPerSecond) < 0.3) {
+                        Agitator.reportDriverSticks(xInput, yInput, rInput);
+                        return xLock;
+                    }
+                }
 
                 double currentMaxSpeed = maxSpeed * speedMultiplier;
                 double currentMaxAngularRate = maxAngularRate * speedMultiplier;
@@ -208,7 +239,7 @@ public class RobotContainer {
                 // SHOOT FROM ANYWHERE heading assist: with auto-aim on and the hub behind the
                 // turret (its ~90 degree dead zone), turn the robot just enough to bring the hub in
                 // reach. The driver's rotate stick always wins.
-                if (aim.isActive() && aim.poseUsable() && !aim.solution().reachable()
+                if (!defending && aim.isActive() && aim.poseUsable() && !aim.solution().reachable()
                         && !ElevatorSubsystem.isRaised()   // climbing: never turn the robot by itself
                         && Math.abs(rInput) < Constants.Aim.kDriverRotateOverride) {
                     rotationRate = MathUtil.clamp(
@@ -271,6 +302,16 @@ public class RobotContainer {
         driverController.a().onTrue(groundIntakePivot.toggleCommand());
 
         // LOCKED X: reserved (was the climb piston). Bind nothing.
+
+        // Y (press): DEFENSE MODE toggle (added Oct 27). On: auto-aim and vacuum off, intake UP,
+        // hood DOWN, quicker drive response, wheels lock in an X when the sticks are centered,
+        // pin (G418) and tower (G420) warnings. See subsystems/DefenseMode.
+        driverController.y().onTrue(defense.toggleCommand(() -> {
+            vacuumCommand.cancel();
+            aimCommand.cancel();
+            groundIntakePivot.raiseIfDown();
+            CommandScheduler.getInstance().schedule(gooba.stowCommand());
+        }));
 
         // LOCKED D-pad Up/Down (hold): climb up / down
         driverController.povUp().whileTrue(elevator.upCommand());

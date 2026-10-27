@@ -84,4 +84,61 @@ class TargetPickerTest {
         TargetPicker t = picker();
         assertFalse(t.blocked(p(8.0, 1.0), p(0.94, 1.65), false));
     }
+
+    // With the shuttle settings (12 m max pass, relay 6.0 m from our wall, 1.65 m from the side).
+    static TargetPicker shuttlePicker() {
+        return new TargetPicker(new TargetPicker.Field(16.541, 8.069, 4.6255, 4.0346, 0.597,
+            4.19, 0.25, 0.94, 1.65, 1.40, 1.00, 0.30, 12.0, 6.0, 1.65));
+    }
+
+    @Test
+    void deepInTheirZoneItShuttlesToTheNeutralZone() {
+        TargetPicker t = shuttlePicker();
+        // Blue robot at x 15.0 (in red's alliance zone), low side: our corner is 14 m away.
+        TargetPicker.Target tg = t.pick(p(15.0, 1.2), p(15.0, 1.2), p(15.0, 1.2), false, TargetPicker.Mode.AUTO, 12.0);
+        assertEquals(TargetPicker.Kind.PASS, tg.kind());
+        assertTrue(TargetPicker.isRelay(tg), tg.name());
+        assertEquals(6.0, tg.point().getX(), 1e-9);
+        assertEquals(1.65, tg.point().getY(), 1e-9);
+        assertTrue(tg.laneClear());
+        assertTrue(t.inTheirZone(p(15.0, 1.2), false, 4.029));
+        assertFalse(t.inTheirZone(p(10.0, 1.2), false, 4.029));
+    }
+
+    @Test
+    void inRangeItStillPassesStraightHome() {
+        TargetPicker t = shuttlePicker();
+        TargetPicker.Target tg = t.pick(p(11.0, 1.2), p(11.0, 1.2), p(11.0, 1.2), false, TargetPicker.Mode.AUTO, 12.0);
+        assertFalse(TargetPicker.isRelay(tg));
+        assertEquals(0.94, tg.point().getX(), 1e-9);
+    }
+
+    @Test
+    void redShuttleMirrors() {
+        TargetPicker t = shuttlePicker();
+        TargetPicker.Target tg = t.pick(p(1.5, 7.0), p(1.5, 7.0), p(1.5, 7.0), true, TargetPicker.Mode.AUTO, 12.0);
+        assertTrue(TargetPicker.isRelay(tg));
+        assertEquals(16.541 - 6.0, tg.point().getX(), 1e-9);
+        assertEquals(8.069 - 1.65, tg.point().getY(), 1e-9);
+    }
+
+    @Test
+    void behindTheirHubEveryShuttleLaneIsBlocked() {
+        // Right behind the red hub (x 11.9) at hub height: every line home crosses it.
+        TargetPicker t = shuttlePicker();
+        TargetPicker.Target tg = t.pick(p(14.0, 4.0), p(14.0, 4.0), p(14.0, 4.0), false, TargetPicker.Mode.AUTO, 12.0);
+        assertFalse(tg.laneClear(), tg.name());
+    }
+
+    @Test
+    void stopsBeforeAHubSlidesIntoTheLane() {
+        // Driving across the field toward the hub's shadow: clear from here, blocked from where the
+        // robot will be when the last ball leaves = hold now, before the hub is in the way.
+        TargetPicker t = shuttlePicker();
+        Translation2d now = p(7.5, 3.3), later = p(7.5, 4.0);
+        Translation2d corner = p(0.94, 1.65);
+        assertFalse(t.blocked(now, corner, false));
+        assertTrue(t.blocked(later, corner, false));
+        assertFalse(t.laneClear(now, later, corner, false));
+    }
 }

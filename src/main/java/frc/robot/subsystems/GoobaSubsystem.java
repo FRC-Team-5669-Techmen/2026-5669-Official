@@ -145,6 +145,14 @@ public class GoobaSubsystem extends SubsystemBase {
         });
     }
 
+    /** Defense mode: hood to the stowed preset (low and out of the way). */
+    public Command stowCommand() {
+        return runOnce(() -> {
+            m_deployed = false;
+            setPosition(Gooba.kPositionStowed);
+        }).withName("Stow hood");
+    }
+
     /** On disable: drop the target so the hood can't jump to an old one when re-enabled. */
     public Command stopCommand() {
         return runOnce(this::stop).ignoringDisable(true);

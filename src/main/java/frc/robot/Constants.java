@@ -454,6 +454,22 @@ public final class Constants {
      * Directions: x = toward the robot's FRONT (the side the field-centric "forward" faces when
      * the gyro is reset), y = toward the robot's LEFT, angles counter-clockwise seen from above.
      */
+    /** DEFENSE MODE (Driver Y): see subsystems/DefenseMode. */
+    public static final class Defense {
+        // Drive response: the stick slew limit (per s) in defense mode (normal driving uses 3.0).
+        public static final double kSlewRate = 6.0;
+        // G418 pin clock: stick out at least this much, robot slower than this, drive motors
+        // averaging at least this many amps (stator), for kPinStartSeconds = pushing.
+        public static final double kPinStick = 0.5;
+        public static final double kPinMaxSpeed = 0.25;     // m/s
+        public static final double kPinAmps = 50.0;
+        public static final double kPinStartSeconds = 0.5;
+        public static final double kPinWarnSeconds = 2.0;   // rumble from here (rule: 3 s)
+        public static final double kPinResetSeconds = 3.0;  // apart this long = count starts over
+        // G420 warning zone around THEIR tower: robot half size + room for a robot on it (m).
+        public static final double kTowerMargin = 0.9;      // 35 in
+    }
+
     public static final class Aim {
         // Flip to true once every number marked MEASURE has been measured on the robot.
         // While false the dashboard shows "AIM GEOMETRY NOT MEASURED".
@@ -579,6 +595,17 @@ public final class Constants {
         public static final double kPassBackupDepth = 1.40;
         public static final double kPassBackupSide = 1.00;
         public static final double kPassObstaclePad = 0.30;    // 581: 12 in around each hub
+        // A pass lane must be clear from where the launcher is AND where it will be this long from
+        // now (release latency + ~0.25 s for the balls already in the uptake to leave + margin), so
+        // feeding stops BEFORE a hub slides into the line, and stays stopped while it's there.
+        public static final double kLaneLookahead = 0.40; // s
+        // SHUTTLE (deep in the OPPONENT's alliance zone): our corners are too far, so it relays into
+        // the neutral zone on our half (1678 did the same). Dashboard "Pass Max Range (m)" (saved)
+        // sets how far the shooter can really pass: a corner further than that = use the relay.
+        public static final double kPassMaxRange = 12.0;       // m (393 in); measure on a real field
+        public static final double kRelayDepth = 6.0;          // m from our wall (236 in), past our hub band
+        public static final double kRelaySide = 1.65;          // m from the side wall (65 in), same lane as the corner
+        public static final double kAllianceZoneDepth = 4.029; // m (158.6 in), manual 5.3
         // Passing ready check is looser (a floor zone, not a hub opening).
         // TRENCH: 22.25 in clearance. The Limelight rides on the hood: 20.75 in hood down, 22.35 in
         // hood fully up, so near a trench the hood is capped here (lens ~22.0 in).

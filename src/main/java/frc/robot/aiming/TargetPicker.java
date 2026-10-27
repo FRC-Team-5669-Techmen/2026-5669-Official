@@ -33,7 +33,17 @@ public final class TargetPicker {
         double hysteresis,          // so it doesn't flicker at the line
         double passDepth, double passSide,          // primary pass point: from our wall / from the side wall
         double backupDepth, double backupSide,      // backup pass point
-        double obstaclePad) {}
+        double obstaclePad,
+        double maxPassRange,                        // longest pass the shooter can make (m)
+        double relayDepth, double relaySide) {      // SHUTTLE relay point in the neutral zone, our half
+        /** Without shuttle settings: corners only, any range. */
+        public Field(double length, double width, double hubDepth, double hubY, double hubHalfSize,
+                     double scoreMaxDepth, double hysteresis, double passDepth, double passSide,
+                     double backupDepth, double backupSide, double obstaclePad) {
+            this(length, width, hubDepth, hubY, hubHalfSize, scoreMaxDepth, hysteresis, passDepth, passSide,
+                backupDepth, backupSide, obstaclePad, Double.POSITIVE_INFINITY, 6.0, 1.65);
+        }
+    }
 
     public record Target(Kind kind, Translation2d point, String name, boolean laneClear) {
         public Target(Kind kind, Translation2d point, String name) { this(kind, point, name, true); }
@@ -69,6 +79,16 @@ public final class TargetPicker {
      * @param mode        AUTO / forced SCORE / forced PASS
      */
     public Target pick(Translation2d robotCenter, Translation2d launcher, boolean red, Mode mode) {
+        return pick(robotCenter, launcher, launcher, red, mode, f.maxPassRange());
+    }
+
+    /**
+     * @param launcherAhead where the launcher will be when the last ball now in the robot leaves
+     *     (a pass lane must be clear from BOTH spots, so it stops BEFORE a hub gets in the way)
+     * @param maxRange      longest pass the shooter can make right now (dashboard-tunable)
+     */
+    public Target pick(Translation2d robotCenter, Translation2d launcher, Translation2d launcherAhead,
+                       boolean red, Mode mode, double maxRange) {
         Kind kind;
         if (mode == Mode.SCORE) kind = Kind.SCORE;
         else if (mode == Mode.PASS) kind = Kind.PASS;
@@ -80,28 +100,75 @@ public final class TargetPicker {
         }
         last = kind;
         if (kind == Kind.SCORE) return new Target(Kind.SCORE, ourHub(red), "HUB");
-        return passTarget(launcher, red);
+        return passTarget(launcher, launcherAhead, red, maxRange);
+    }
+
+    /** Corners only, lane checked from one spot, any range (kept for the tests and old callers). */
+    public Target passTarget(Translation2d launcher, boolean red) {
+        return passTarget(launcher, launcher, red, f.maxPassRange());
     }
 
     /**
-     * The pass point on the launcher's side, else its backup, else the far side's corner and
-     * backup: the first whose straight line misses both hubs. All blocked = laneClear false (hold:
-     * a lob that drops into our hub from outside the zone is a foul, and the hub eats it anyway).
+     * Where to pass, best first:
+     * <ol>
+     *   <li>the corner of our alliance zone on the launcher's side, then its backup, then the far
+     *       side's corner and backup (the first that is in range and whose lane is clear);</li>
+     *   <li>SHUTTLE: none of those in range (deep in the OPPONENT's alliance zone) = the relay
+     *       point in the neutral zone on our half, launcher's side first. A partner (or our own
+     *       vacuum mode) passes it home from there. 1678 did the same from the opponent's zone.</li>
+     * </ol>
+     * A lane counts as clear only if the straight line misses both hubs (plus padding) from the
+     * launcher now AND from where it will be when the last ball leaves. All blocked = laneClear
+     * false: hold fire (a lob into our hub from outside our zone is a G407 foul, into theirs it
+     * scores for them, and either hub eats the ball).
      */
-    public Target passTarget(Translation2d launcher, boolean red) {
+    public Target passTarget(Translation2d launcher, Translation2d ahead, boolean red, double maxRange) {
         boolean lowSide = launcher.getY() < f.width() / 2;
         String[] sideNames = lowSide ? new String[] {"low-y", "high-y"} : new String[] {"high-y", "low-y"};
         boolean[] lows = {lowSide, !lowSide};
         Target first = null;
+        boolean anyInRange = false;
         for (int i = 0; i < 2; i++) {
             boolean low = lows[i];
             Translation2d corner = fromOurWall(f.passDepth(), low ? f.passSide() : f.width() - f.passSide(), red);
             Translation2d backup = fromOurWall(f.backupDepth(), low ? f.backupSide() : f.width() - f.backupSide(), red);
-            if (first == null) first = new Target(Kind.PASS, corner, "PASS " + sideNames[i] + " corner (LANE BLOCKED)", false);
-            if (!blocked(launcher, corner, red)) return new Target(Kind.PASS, corner, "PASS " + sideNames[i] + " corner");
-            if (!blocked(launcher, backup, red)) return new Target(Kind.PASS, backup, "PASS " + sideNames[i] + " backup");
+            for (int j = 0; j < 2; j++) {
+                Translation2d pt = j == 0 ? corner : backup;
+                if (!inRange(launcher, ahead, pt, maxRange)) continue;
+                anyInRange = true;
+                String name = "PASS " + sideNames[i] + (j == 0 ? " corner" : " backup");
+                if (first == null) first = new Target(Kind.PASS, pt, name + " (LANE BLOCKED)", false);
+                if (laneClear(launcher, ahead, pt, red)) return new Target(Kind.PASS, pt, name);
+            }
+        }
+        if (anyInRange) return first;
+        // SHUTTLE: our zone is out of reach, relay into the neutral zone on our half.
+        for (int i = 0; i < 2; i++) {
+            boolean low = lows[i];
+            Translation2d relay = fromOurWall(f.relayDepth(), low ? f.relaySide() : f.width() - f.relaySide(), red);
+            String name = "SHUTTLE " + sideNames[i] + " relay (neutral zone)";
+            if (first == null) first = new Target(Kind.PASS, relay, name + " (LANE BLOCKED)", false);
+            if (laneClear(launcher, ahead, relay, red)) return new Target(Kind.PASS, relay, name);
         }
         return first;
+    }
+
+    /** Pass point reachable from the launcher now and where it will be (m). */
+    public static boolean inRange(Translation2d launcher, Translation2d ahead, Translation2d pt, double maxRange) {
+        return Math.max(launcher.getDistance(pt), ahead.getDistance(pt)) <= maxRange;
+    }
+
+    /** Straight line to the point misses both hubs from the launcher now and where it will be. */
+    public boolean laneClear(Translation2d launcher, Translation2d ahead, Translation2d pt, boolean red) {
+        return !blocked(launcher, pt, red) && !blocked(ahead, pt, red);
+    }
+
+    /** True for a SHUTTLE relay target (not one of our alliance zone's corners). */
+    public static boolean isRelay(Target t) { return t.name().startsWith("SHUTTLE"); }
+
+    /** Robot (center) is inside the OPPONENT's alliance zone (zoneDepth from their wall). */
+    public boolean inTheirZone(Translation2d p, boolean red, double zoneDepth) {
+        return depth(p, red) >= f.length() - zoneDepth;
     }
 
     /** True if the segment a-b passes over either hub's footprint (plus padding). */

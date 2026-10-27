@@ -365,6 +365,7 @@ const BIND = {
     DU:{t:"Climb up",m:"HOLD",fx:"climbUp",n:"D-PAD UP"},
     DD:{t:"Climb down",m:"HOLD",fx:"climbDown",n:"D-PAD DOWN"},
     DL:{t:"Shooter idle 2000",m:"TOGGLE",fx:"idle",n:"D-PAD LEFT"},
+    Y:{t:"Defense mode",m:"TOGGLE",fx:"defense",n:"Y"},
   },
   operator: {
     LT:{t:"Spin up shooter",m:"HOLD",fx:"spin",n:"LT"},
@@ -393,6 +394,7 @@ const CALL = {
     {keys:["DL"],k:"D-PAD ◀",t:"Shooter idle",m:"TOGGLE",side:"L",y:258,ax:238,ay:203},
     {keys:["START"],k:"START",t:"Slow mode",m:"HOLD",side:"T",y:20,ax:328,ay:134},
     {keys:["RT"],k:"RT",t:"Intake roller",m:"HOLD",side:"R",y:63,ax:408,ay:63},
+    {keys:["Y"],k:"Y",t:"Defense mode",m:"TOGGLE",side:"R",y:113,ax:381,ay:120},
     {keys:["A"],k:"A",t:"Intake down / up",m:"TOGGLE",side:"R",y:164,ax:381,ay:164},
     {keys:["RS"],k:"R STICK",t:"Rotate",m:"STICK",side:"R",y:236,ax:366,ay:198},
   ],
@@ -512,7 +514,7 @@ const S={};
 function resetModel(){Object.assign(S,{elev:0,pivot:0,pivotT:0,roller:false,rollerA:0,idle:false,rpm:0,wheelA:0,feed:0,spinA:0,ballP:0,aim:false,tur:0,aimT:0,slow:false,hdg:0,gyroFlash:0,wheelsA:0,demo:{drive:0,rotate:0},focus:{}});}
 resetModel();
 const FXPART={gyro:"p-drive",drive:"p-drive",rotate:"p-drive",slow:"p-drive",roller:"p-intake",rollerOut:"p-intake",hood:"p-shooter",hoodJog:"p-shooter",pivot:"p-intake",jogU:"p-intake",jogD:"p-intake",climbUp:"p-elev",climbDown:"p-elev",idle:"p-shooter",spin:"p-shooter",feed:"p-feed",unjam:"p-feed",aim:"p-turret",turL:"p-turret",turR:"p-turret"};
-const FXTELE={gyro:"t-drive",drive:"t-drive",rotate:"t-drive",slow:"t-slow",roller:"t-intake",rollerOut:"t-intake",hood:"t-shooter",hoodJog:"t-shooter",pivot:"t-intake",jogU:"t-intake",jogD:"t-intake",climbUp:"t-climb",climbDown:"t-climb",idle:"t-idle",spin:"t-shooter",feed:"t-shooter",unjam:"t-shooter",aim:"t-aim",vacuum:"t-aim",target:"t-aim",turL:"t-turret",turR:"t-turret"};
+const FXTELE={gyro:"t-drive",drive:"t-drive",rotate:"t-drive",slow:"t-slow",roller:"t-intake",rollerOut:"t-intake",hood:"t-shooter",hoodJog:"t-shooter",pivot:"t-intake",jogU:"t-intake",jogD:"t-intake",climbUp:"t-climb",climbDown:"t-climb",idle:"t-idle",spin:"t-shooter",feed:"t-shooter",unjam:"t-shooter",aim:"t-aim",vacuum:"t-aim",defense:"t-drive",target:"t-aim",turL:"t-turret",turR:"t-turret"};
 const $=id=>document.getElementById(id);
 const ra=$("ra"), rs=$("rs");
 function announce(who,k){
@@ -531,11 +533,12 @@ function onPress(who,k){
     case "pivot": S.pivotT = S.pivotT>0.5?0:1; break;
     case "idle": S.idle=!S.idle; break;
     case "aim": S.aim=!S.aim; S.aimT=0; break;
+    case "defense": S.def=!S.def; if(S.def){S.aim=false;S.vac=false;S.pivotT=0;} break;
     case "vacuum": S.vac=!S.vac; if(S.vac){S.aim=true;S.aimT=0;S.pivotT=1;} break;
   }
   if(b.m==="TOGGLE") rs.innerHTML+=` · now <b>${toggleState(who,k)}</b>`;
 }
-function toggleState(who,k){const fx=BIND[who][k].fx;if(fx==="pivot")return S.pivotT>0.5?"DOWN":"UP";if(fx==="idle")return S.idle?"ON":"OFF";if(fx==="aim")return S.aim?"ON":"OFF";if(fx==="vacuum")return S.vac?"ON":"OFF";return"";}
+function toggleState(who,k){const fx=BIND[who][k].fx;if(fx==="pivot")return S.pivotT>0.5?"DOWN":"UP";if(fx==="idle")return S.idle?"ON":"OFF";if(fx==="aim")return S.aim?"ON":"OFF";if(fx==="vacuum")return S.vac?"ON":"OFF";if(fx==="defense")return S.def?"ON":"OFF";return"";}
 const held=(who,k)=>!!(mouse[who][k]||padb[who][k]);
 
 // ---------- controller input ----------

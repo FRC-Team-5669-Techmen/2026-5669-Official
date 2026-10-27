@@ -3,6 +3,7 @@ package frc.robot.subsystems;
 import java.util.Optional;
 
 import dev.doglog.DogLog;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -52,7 +53,9 @@ public class AimSubsystem extends SubsystemBase {
     private final TargetPicker picker = new TargetPicker(new TargetPicker.Field(
         Aim.kFieldLength, Aim.kFieldWidth, Aim.kBlueHubX, Aim.kHubY, Aim.kHubHalfSize,
         Aim.kScoreMaxRobotDepth, Aim.kTargetHysteresis, Aim.kPassDepth, Aim.kPassSide,
-        Aim.kPassBackupDepth, Aim.kPassBackupSide, Aim.kPassObstaclePad));
+        Aim.kPassBackupDepth, Aim.kPassBackupSide, Aim.kPassObstaclePad,
+        Aim.kPassMaxRange, Aim.kRelayDepth, Aim.kRelaySide));
+    private static final String kRangeKey = "Pass Max Range (m)";
 
     private ShotTable table = ShotTable.defaults();
     private ShotTable passTable = ShotTable.passDefaults();
@@ -62,6 +65,7 @@ public class AimSubsystem extends SubsystemBase {
     private double robotSpeed = 0;
     private boolean legalToScore = true;
     private boolean nearTrench = false;
+    private boolean inTheirZone = false;
     private boolean active = false; // auto-aim (Operator RB / vacuum mode) or an auto is aiming
     private boolean firing = false; // ShootCommand is feeding balls right now
     private boolean vacuum = false; // vacuum mode: fires by itself, so it must know where it is
@@ -77,6 +81,8 @@ public class AimSubsystem extends SubsystemBase {
         SmartDashboard.putNumber("Tune Hood (rot)", 1.0);
         SmartDashboard.putNumber("Tune TOF (s)", 0.9);
         Preferences.initBoolean(kHoldKey, true);
+        Preferences.initDouble(kRangeKey, Aim.kPassMaxRange);
+        SmartDashboard.putNumber(kRangeKey, Preferences.getDouble(kRangeKey, Aim.kPassMaxRange));
         SmartDashboard.putBoolean(kHoldKey, Preferences.getBoolean(kHoldKey, true));
         modeChooser.setDefaultOption("AUTO (score near our hub, pass from past it)", TargetPicker.Mode.AUTO);
         modeChooser.addOption("SCORE only", TargetPicker.Mode.SCORE);
@@ -153,18 +159,24 @@ public class AimSubsystem extends SubsystemBase {
         // Heading toward or under a trench: approach margin grows with speed (0.4 s look-ahead).
         nearTrench = poseUsable() && picker.nearTrench(pose.getTranslation(), Aim.kTrenchOpeningY,
             0.45 + 0.4 * robotSpeed);
+        // Where the launcher will be when the balls now in the robot have left (lane check).
+        Translation2d pivotAhead = pivot.plus(new Translation2d(
+            fs.vxMetersPerSecond * Aim.kLaneLookahead, fs.vyMetersPerSecond * Aim.kLaneLookahead));
+        double range = passRange();
+        inTheirZone = poseUsable() && picker.inTheirZone(pose.getTranslation(), red(), Aim.kAllianceZoneDepth);
         // No position: passing is impossible, aim falls back to our hub tag (scoring).
         if (!poseUsable()) {
             target = new TargetPicker.Target(TargetPicker.Kind.SCORE, ourHub(), "HUB (tag only)");
         } else if (firing && target != null && target.kind() == TargetPicker.Kind.PASS
-                && mode != TargetPicker.Mode.SCORE) {
+                && mode != TargetPicker.Mode.SCORE && target.laneClear()
+                && picker.laneClear(pivot, pivotAhead, target.point(), red())
+                && TargetPicker.inRange(pivot, pivotAhead, target.point(), range)) {
             // Mid-volley while passing: keep the same landing point so the burst doesn't jump
-            // corners (1678 froze its target while firing), but re-check the lane every loop: a
-            // lob that drops into our hub from outside the zone is a G407 foul.
-            target = new TargetPicker.Target(target.kind(), target.point(), target.name(),
-                !picker.blocked(pivot, target.point(), red()));
+            // corners (1678 froze its target while firing), as long as its lane stays clear from
+            // here and from where the robot will be in kLaneLookahead. Once a hub gets in the way
+            // it picks again: another clear lane, or hold fire until one opens.
         } else {
-            target = picker.pick(pose.getTranslation(), pivot, red(), mode);
+            target = picker.pick(pose.getTranslation(), pivot, pivotAhead, red(), mode, range);
         }
         // During an agitation shimmy the robot rocks a centimeter or two: no motion lead then.
         boolean lead = Aim.kShootWhileMoving && !Agitator.shimmying();
@@ -199,6 +211,16 @@ public class AimSubsystem extends SubsystemBase {
     }
 
     public boolean nearTrench() { return nearTrench; }
+
+    /** Robot is inside the OPPONENT's alliance zone (shuttling from there). */
+    public boolean inTheirZone() { return inTheirZone; }
+
+    /** Longest pass (m): dashboard "Pass Max Range (m)", saved on the roboRIO. */
+    private double passRange() {
+        double r = MathUtil.clamp(SmartDashboard.getNumber(kRangeKey, Aim.kPassMaxRange), 3.0, 20.0);
+        if (r != Preferences.getDouble(kRangeKey, Aim.kPassMaxRange)) Preferences.setDouble(kRangeKey, r);
+        return r;
+    }
 
     /** Turret feedforward rate (deg/s clockwise) for the current target, 0 without position. */
     public double turretRate() { return poseUsable() ? solution.turretRateDegPerSec() : 0.0; }
@@ -287,9 +309,10 @@ public class AimSubsystem extends SubsystemBase {
             if (vacuum) return "VACUUM holds: position unknown (face the hub until Vision Status says OK)";
             return turret.targetLocked() ? "tag-only: shooter spinning up" : "tag-only: turret not on hub tag";
         }
-        String what = passing() ? "PASS" : "SCORE";
+        String what = passing() ? (TargetPicker.isRelay(target) ? "SHUTTLE" : "PASS") : "SCORE";
         if (!passing() && !legalToScore) return "SCORE: outside our alliance zone (G407 foul): drive in or PASS";
-        if (passing() && !target.laneClear()) return "PASS: a hub blocks every lane: move sideways";
+        if (passing() && !target.laneClear()) return (TargetPicker.isRelay(target) ? "SHUTTLE" : "PASS")
+            + ": a hub is (or is about to be) in every lane: hold, move sideways";
         if (!solution.reachable()) return what + ": target behind turret, turning robot";
         if (!speedOk()) return String.format(java.util.Locale.US, "%s: slow down (%.1f m/s, max %.1f)",
             what, robotSpeed, passing() ? Aim.kMaxPassSpeed : Aim.kMaxScoreSpeed);
@@ -398,7 +421,9 @@ public class AimSubsystem extends SubsystemBase {
         field.getObject("Target").setPose(new Pose2d(target.point(), Rotation2d.kZero));
         field.getObject("Aim Point").setPose(new Pose2d(solution.aimPoint(), Rotation2d.kZero));
 
-        SmartDashboard.putString("Shot Target", (passing() ? "PASS" : "SCORE") + " (" + currentMode() + "): " + target.name());
+        SmartDashboard.putString("Shot Target", (passing() ? "PASS" : "SCORE") + " (" + currentMode() + "): " + target.name()
+            + (inTheirZone ? " [in THEIR zone]" : ""));
+        SmartDashboard.putBoolean("Pass Lane Clear", !passing() || target.laneClear());
         SmartDashboard.putNumber("Aim Distance (m)", solution.distanceMeters());
         SmartDashboard.putNumber("Aim Turret Angle (deg)", solution.turretDegrees());
         SmartDashboard.putNumber("Aim Turret Rate (deg per s)", solution.turretRateDegPerSec());
@@ -421,6 +446,8 @@ public class AimSubsystem extends SubsystemBase {
         DogLog.log("Aim/TurretRate", solution.turretRateDegPerSec());
         DogLog.log("Aim/Reachable", solution.reachable());
         DogLog.log("Aim/Passing", passing());
+        DogLog.log("Aim/LaneClear", !passing() || target.laneClear());
+        DogLog.log("Aim/Shuttle", passing() && TargetPicker.isRelay(target));
         DogLog.log("Aim/Target", new Pose2d(target.point(), Rotation2d.kZero));
         DogLog.log("Aim/AimPoint", new Pose2d(solution.aimPoint(), Rotation2d.kZero));
     }

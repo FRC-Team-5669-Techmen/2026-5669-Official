@@ -10,6 +10,7 @@ import dev.doglog.DogLog;
 import dev.doglog.DogLogOptions;
 import edu.wpi.first.net.WebServer;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.PowerDistribution;
@@ -72,6 +73,18 @@ public class Robot extends TimedRobot {
 
         double matchTime = DriverStation.getMatchTime();
         double rumble = 0.0;
+
+        // DEFENSE warnings come first: pin count near the 3 s limit = strong fast pulses; last
+        // 30 s next to THEIR tower = steady strong rumble (see DefenseMode).
+        var defense = m_robotContainer.defense;
+        if (defense.pinWarning()) {
+            driverHid.setRumble(RumbleType.kBothRumble, (Timer.getFPGATimestamp() % 0.25) < 0.15 ? 1.0 : 0.0);
+            return;
+        }
+        if (defense.towerWarning()) {
+            driverHid.setRumble(RumbleType.kBothRumble, 0.6);
+            return;
+        }
 
         // SHIFT-change countdown: shifts run 2:10 -> 0:30 in 25 s windows
         if (matchTime <= 130 && matchTime > 30) {
