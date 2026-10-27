@@ -340,14 +340,15 @@ ignores an Xbox controller that lands in its slot. See `docs/X56-HOTAS-SETUP.md`
 - Holonomic mode, robot size 0.9m x 0.9m
 - Default max velocity: 3.0 m/s, max acceleration: 3.0 m/s^2
 - Default max angular velocity: 540 deg/s, max angular acceleration: 720 deg/s^2
-- Robot mass: 74.088 kg, MOI: 6.883
+- Robot mass: **47.63 kg in `settings.json`** (MOI 6.883). The path follower uses it (wheel force feedforwards from `RobotConfig.fromGUISettings()`): weigh the robot WITH bumpers and battery and set it in the PathPlanner GUI Settings
 - Drive motor: Kraken X60, wheel COF: 1.1
 
 ### AutoBuilder
 - Configured in `CommandSwerveDrivetrain.configureAutoBuilder()`
 - Translation PID: (10, 0, 0), Rotation PID: (7, 0, 0)
 - Alliance-aware path flipping (Red vs Blue)
-- Auto chooser defaults to "Tests"
+- Auto chooser defaults to "Tests", which doesn't exist (= do nothing): **pick an auto before every match**
+- **Auto is 20 s** in REBUILT. PathPlanner's "Simulated Driving Time" counts only driving, so add each `score` (up to 3.5 s). The 3-piece autos are ~16.2 s of driving + 2 x 3.5 s = ~23 s: the last volley gets cut off until the paths are faster or `prepareShot` zones save the spin-up time
 
 ### Named Commands (registered in `Marcos.java`)
 The registered strings are referenced by the deployed `.auto`/`.path` files — do not
@@ -358,16 +359,21 @@ rename them without updating the autos in `src/main/deploy/pathplanner/`.
 | `spinUpShooter` | RunShooterCommand (fast RPM) | 1.5s |
 | `spinUpShooterSlow` | RunShooterCommand (slow RPM) | 1.5s |
 | `score` | AimCommand + ShootCommand: aim from position, fire every ball the moment it's ready | 3.5s |
-| `scorePreload` | Spin up → FuelHandling forward → stop (no vision) | staged |
+| `scorePreload` | Same as `score` (Oct 27; it used to fire at a fixed 5400 RPM with the turret wherever it was, which faced our own wall in Center Preload) | 3.5s |
+| `prepareShot` | AimCommand + shooter at the table speed, no feeding. Event marker ZONE on the end of a path into a shooting spot, so the `score` after it fires at once | zone |
 | `visionScore` | Same as `score` | 3.5s |
 | `shoot` | FuelHandlingCommand (forward) | 2.0s |
 | `stopShooter` | InstantCommand → shooter.stop() | - |
-| `intake` | FuelHandlingCommand (reverse) | 2.0s |
+| `intake` | Ground intake down + roller in (Oct 27; used to run the feeders and shooter backwards) | 2.0s |
+| `reverseFeed` | FuelHandlingCommand (reverse): spindexer, uptake and shooter backwards (the old `intake`) | 2.0s |
 | `aimTurret` | AimCommand (turret + hood from position) | 2.0s |
 | `alignTurret` | AimCommand | 2.0s |
 | `deployGooba` / `stowGooba` | Hood to deployed / stowed preset | instant |
 | `autoAimGooba` | AutoGooba (hood follows ty) | 2.0s |
-| `lowerIntake`, `togglePiston1`, `togglePiston2`, `runGroundIntake` | No-ops (pneumatics removed; kept so old autos load cleanly) | - |
+| `lowerIntake` / `intakeDown` | Ground intake DOWN + roller in **for the rest of auto** (scheduled on its own, stops when auto ends). Were no-ops until Oct 27, so the 3-piece autos picked nothing up | instant |
+| `raiseIntake` | Roller off + intake UP | instant |
+| `runGroundIntake` | Roller in for the rest of auto. The trigger-only `runGroundIntake` event markers in the pickup paths fire it too (`EventTrigger`) | instant |
+| `togglePiston1`, `togglePiston2` | No-ops (pneumatics removed; kept so old autos load cleanly) | - |
 
 ### Paths & Autos
 - **Autos**: `Center Preload - Dumb`, `Center Preload - Vision`, `Left 3-Piece Auto`, `Right 3-Piece Auto`

@@ -136,7 +136,8 @@ public class RobotContainer {
         DriverStation.silenceJoystickConnectionWarning(true);
 
         Marcos.registerNamedCommands(
-            shooter, index, shooterIntake, goober, limelight, gooba, aim, drivetrain
+            shooter, index, shooterIntake, goober, limelight, gooba, aim, drivetrain,
+            groundIntakePivot, intakeRoller
         );
 
         autoChooser = AutoBuilder.buildAutoChooser("Tests");

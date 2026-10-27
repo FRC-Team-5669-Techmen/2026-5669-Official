@@ -217,6 +217,13 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
         CommandScheduler.getInstance().schedule(downMove());
     }
 
+    /** Autos ("raiseIntake"): put the intake UP if it's down (same move as the A button's UP). */
+    public void stowIfDown() {
+        if (!isDownPositionValid() || !isDown) return;
+        isDown = false;
+        CommandScheduler.getInstance().schedule(upMove());
+    }
+
     /** Operator D-pad Up: hold to jog up slowly, release to stop. */
     public Command jogUpCommand() {
         return startEnd(() -> startJog(GroundIntakePivot.kJogVolts), this::endJog);
