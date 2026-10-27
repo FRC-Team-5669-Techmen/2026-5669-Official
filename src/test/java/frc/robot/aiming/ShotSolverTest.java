@@ -108,4 +108,55 @@ class ShotSolverTest {
         assertEquals(-170.0, ShotSolver.wrap180(190), TOL);
         assertEquals(-180.0, ShotSolver.wrap180(180), TOL);
     }
+
+    // ---------------- shoot on the move, full model ----------------
+
+    @Test
+    void spinningInPlaceFeedsTheTurretTheOppositeWay() {
+        // Robot spins CCW at 2 rad/s, turret at center: the turret must turn clockwise at 2 rad/s.
+        Pose2d robot = new Pose2d(1.6255, 4.0346, Rotation2d.fromDegrees(90));
+        ShotSolver.Solution s = ShotSolver.solve(robot, 0, 0, 2.0, HUB, FRONT_HOME, d -> 0.5, 0.0);
+        assertEquals(Math.toDegrees(2.0), s.turretRateDegPerSec(), 1e-6);
+    }
+
+    @Test
+    void drivingPastTheTargetTurnsTheTurret() {
+        // Robot 3 m from the hub on its -x side, facing +y (hub on its right, turret 90).
+        // Driving +y at 1 m/s with no flight time: the hub slides behind it (turret angle grows
+        // toward 180), so the turret turns clockwise at v / r = 1/3 rad/s.
+        Pose2d robot = new Pose2d(1.6255, 4.0346, Rotation2d.fromDegrees(90));
+        ShotSolver.Solution s = ShotSolver.solve(robot, 0, 1.0, 0.0, HUB, FRONT_HOME, d -> 0.0, 0.0);
+        assertEquals(Math.toDegrees(1.0 / 3.0), s.turretRateDegPerSec(), 1e-6);
+    }
+
+    @Test
+    void spinningOffCenterTurretLeadsForItsOwnVelocity() {
+        // Pivot 0.5 m left of center, robot faces +x, spins CCW at 2 rad/s: the pivot moves at
+        // 1 m/s toward -x (straight back), i.e. AWAY from a hub ahead of it -> no sideways lead,
+        // but the virtual target moves 1 m/s * tof TOWARD the robot... aim = hub + (1,0)*tof.
+        ShotSolver.Geometry g = new ShotSolver.Geometry(new Translation2d(0, 0.5), 0.0, 360.0, 0.0);
+        Pose2d robot = new Pose2d(1.6255, 3.5346, Rotation2d.kZero); // pivot at hub y
+        ShotSolver.Solution s = ShotSolver.solve(robot, 0, 0, 2.0, HUB, g, d -> 0.5, 0.0);
+        assertEquals(HUB.getX() + 0.5, s.aimPoint().getX(), 1e-6);
+        assertEquals(HUB.getY(), s.aimPoint().getY(), 1e-6);
+    }
+
+    @Test
+    void releaseLatencyAimsFromWhereTheRobotWillBe() {
+        // Driving straight at the hub at 2 m/s from 3 m with 0.25 s latency: the ball leaves 0.5 m
+        // closer. Flight time 0 isolates the latency effect.
+        Pose2d robot = new Pose2d(1.6255, 4.0346, Rotation2d.fromDegrees(90));
+        ShotSolver.Solution s = ShotSolver.solve(robot, 2.0, 0, 0.0, HUB, FRONT_HOME, d -> 0.0, 0.25);
+        assertEquals(2.5, s.distanceMeters(), 1e-6);
+    }
+
+    @Test
+    void distanceDependentFlightTimeConverges() {
+        // TOF grows with distance (0.3 s per m): the virtual point must satisfy aim = hub - v*tof(aim).
+        Pose2d robot = new Pose2d(1.6255, 4.0346, Rotation2d.fromDegrees(90));
+        java.util.function.DoubleUnaryOperator tof = d -> 0.3 * d;
+        ShotSolver.Solution s = ShotSolver.solve(robot, 0, 1.5, 0.0, HUB, FRONT_HOME, tof, 0.0);
+        double expectedY = HUB.getY() - 1.5 * tof.applyAsDouble(s.distanceMeters());
+        assertEquals(expectedY, s.aimPoint().getY(), 0.01);
+    }
 }
