@@ -87,7 +87,7 @@ public final class Constants {
         public static final double kS = 0.20;   // volts to overcome friction
         public static final double kI = 0.0;
         public static final double kD = 0.0;
-        public static final double kV = 0.18;   // volts per rot/s (was 0.12)
+        public static final double kV = 0.15;   // volts per rot/s (measured Oct 26: 11.1 V held ~4450 RPM; 0.18 overshot)
         // Per motor (2 motors). 60 A supply each keeps a cold spin-up from browning out the battery.
         public static final double kSupplyCurrentLimit = 60.0;
         public static final double kStatorCurrentLimit = 120.0;
