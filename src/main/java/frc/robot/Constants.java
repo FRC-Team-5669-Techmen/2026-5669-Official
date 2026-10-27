@@ -79,11 +79,15 @@ public final class Constants {
         public static final double kIdleAccelerateStep = 50.0;
         // Oct 25 audit: kP 0.11 with no kS left the wheel a few hundred RPM short at high speed
         // (each 0.1 V of friction = ~55 RPM of error), so "ready" could never come true.
-        public static final double kP = 0.25;   // volts per (rot/s) of error
+        // Oct 26 (Shot Map Day): with kP 0.25 / kV 0.12 the wheel settled at ~82% of any target
+        // (4000 -> ~3300, 5400 -> ~4400), so auto-aim's "ready" never came true. The real wheel
+        // needs ~0.16-0.20 V per rot/s (belted top roller), not the bare motor's 0.12.
+        // kV 0.18 + kP 0.6 lands within ~100 RPM of the target across that whole range.
+        public static final double kP = 0.6;    // volts per (rot/s) of error
         public static final double kS = 0.20;   // volts to overcome friction
         public static final double kI = 0.0;
         public static final double kD = 0.0;
-        public static final double kV = 0.12;
+        public static final double kV = 0.18;   // volts per rot/s (was 0.12)
         // Per motor (2 motors). 60 A supply each keeps a cold spin-up from browning out the battery.
         public static final double kSupplyCurrentLimit = 60.0;
         public static final double kStatorCurrentLimit = 120.0;
