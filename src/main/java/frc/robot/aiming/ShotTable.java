@@ -43,6 +43,22 @@ public final class ShotTable {
         return t;
     }
 
+    /**
+     * !!! PASSING STARTING GUESSES, NOT MEASURED: distance from the turret to the landing point
+     * (meters) -> RPM, hood, flight time. Passes are lower, longer lobs onto the floor. Hood high,
+     * RPM rising with distance (the elite teams' pattern: 6328 fixed its hood at max and only
+     * changed speed). Record real ones with "Shot Tuning Mode" while passing ("Shot Target" PASS).
+     */
+    public static ShotTable passDefaults() {
+        ShotTable t = new ShotTable();
+        t.put(new Point(4.0, 3300, 2.60, 1.10));
+        t.put(new Point(6.0, 3700, 2.80, 1.35));
+        t.put(new Point(8.0, 4000, 3.00, 1.55));
+        t.put(new Point(10.0, 4250, 3.20, 1.75));
+        t.put(new Point(12.0, 4450, 3.40, 1.95));
+        return t;
+    }
+
     /** Adds a point, replacing any point within kSameDistance of it. */
     public void put(Point p) {
         points.subMap(p.distance() - kSameDistance, false, p.distance() + kSameDistance, false).clear();

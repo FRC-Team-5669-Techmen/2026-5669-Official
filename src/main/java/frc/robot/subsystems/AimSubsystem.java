@@ -11,37 +11,59 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.Constants.Aim;
+import frc.robot.HubShiftTracker;
 import frc.robot.aiming.ShotSolver;
 import frc.robot.aiming.ShotTable;
+import frc.robot.aiming.TargetPicker;
 
 /**
- * The shot brain for shooting from anywhere. Every loop it works out, from where the robot is:
- * the turret angle to our hub, the distance, and from the shot table the shooter speed and hood
- * position. It never moves a motor itself (AimCommand and ShootCommand do), so nothing ever
- * "requires" it.
+ * The shot brain. Every loop, from where the robot is and how it moves:
+ * <ul>
+ *   <li>WHAT to shoot at (TargetPicker): our hub (SCORE), or a corner of our alliance zone (PASS)
+ *       once the robot is past our hub. Operator Start cycles AUTO / SCORE / PASS.</li>
+ *   <li>The turret angle, distance and turret rate, with shoot-on-the-move (ShotSolver).</li>
+ *   <li>Shooter RPM and hood from the SCORE or PASS table at the (virtual) distance.</li>
+ *   <li>Whether it's ready to fire (looser for passing), and whether a scoring shot would land
+ *       in our hub while it's CLOSED (hub shifts, from FMS game data).</li>
+ * </ul>
+ * It never moves a motor itself (AimCommand and ShootCommand do), so nothing ever "requires" it.
  *
- * <p>Shot table tuning (no redeploy): turn on "Shot Tuning Mode", type "Tune RPM" and
- * "Tune Hood (rot)", shoot until it goes in, press "Record Shot Point". The point is saved on the
- * roboRIO and used right away. "Clear Recorded Shot Points" goes back to the code's table.
+ * <p>Table tuning (no redeploy): "Shot Tuning Mode" ON, set "Tune RPM" / "Tune Hood (rot)", shoot
+ * until it works, "Record Shot Point". It records into the table of the CURRENT target (SCORE or
+ * PASS, dashboard "Shot Target"), saved on the roboRIO and used right away.
  */
 public class AimSubsystem extends SubsystemBase {
     private static final String kPrefKey = "Shot Table Recorded";
+    private static final String kPassPrefKey = "Pass Table Recorded";
+    private static final String kHoldKey = "Hold Fire: Hub Closed";
 
     private final CommandSwerveDrivetrain drivetrain;
     private final VisionLocalizer localizer;
     private final ShotSolver.Geometry geometry = new ShotSolver.Geometry(
         new Translation2d(Aim.kTurretPivotX, Aim.kTurretPivotY),
         Aim.kHomeYawDegrees, Constants.Turret.kEndDegrees, Constants.Turret.kAimMarginDegrees);
+    private final TargetPicker picker = new TargetPicker(new TargetPicker.Field(
+        Aim.kFieldLength, Aim.kFieldWidth, Aim.kBlueHubX, Aim.kHubY, Aim.kHubHalfSize,
+        Aim.kScoreMaxRobotDepth, Aim.kTargetHysteresis, Aim.kPassDepth, Aim.kPassSide,
+        Aim.kPassBackupDepth, Aim.kPassBackupSide, Aim.kPassObstaclePad));
 
     private ShotTable table = ShotTable.defaults();
+    private ShotTable passTable = ShotTable.passDefaults();
     private ShotSolver.Solution solution;
-    private boolean active = false; // auto-aim (Operator RB) or an auto is aiming
+    private TargetPicker.Target target;
+    private TargetPicker.Mode mode = TargetPicker.Mode.AUTO;
+    private double robotSpeed = 0;
+    private boolean legalToScore = true;
+    private boolean active = false; // auto-aim (Operator RB / vacuum mode) or an auto is aiming
     private final Field2d field = new Field2d();
+    private final SendableChooser<TargetPicker.Mode> modeChooser = new SendableChooser<>();
 
     public AimSubsystem(CommandSwerveDrivetrain drivetrain, VisionLocalizer localizer) {
         this.drivetrain = drivetrain;
@@ -51,27 +73,81 @@ public class AimSubsystem extends SubsystemBase {
         SmartDashboard.putNumber("Tune RPM", 4000);
         SmartDashboard.putNumber("Tune Hood (rot)", 1.0);
         SmartDashboard.putNumber("Tune TOF (s)", 0.9);
+        Preferences.initBoolean(kHoldKey, true);
+        SmartDashboard.putBoolean(kHoldKey, Preferences.getBoolean(kHoldKey, true));
+        modeChooser.setDefaultOption("AUTO (score near our hub, pass from past it)", TargetPicker.Mode.AUTO);
+        modeChooser.addOption("SCORE only", TargetPicker.Mode.SCORE);
+        modeChooser.addOption("PASS only", TargetPicker.Mode.PASS);
+        SmartDashboard.putData("Shot Target Mode", modeChooser);
         SmartDashboard.putData("Field", field);
         solve();
     }
 
+    private static boolean red() {
+        Optional<Alliance> a = DriverStation.getAlliance();
+        return a.isPresent() && a.get() == Alliance.Red;
+    }
+
     /** Our hub's center: red or blue from the Driver Station (blue until it says). */
     public static Translation2d ourHub() {
-        Optional<Alliance> a = DriverStation.getAlliance();
-        boolean red = a.isPresent() && a.get() == Alliance.Red;
-        return new Translation2d(red ? Aim.kRedHubX : Aim.kBlueHubX, Aim.kHubY);
+        return new Translation2d(red() ? Aim.kRedHubX : Aim.kBlueHubX, Aim.kHubY);
+    }
+
+    // ---------- target mode (Operator Start cycles it; dashboard "Shot Target Mode" too) ----------
+
+    private TargetPicker.Mode buttonMode = null; // set by Operator Start, overrides the chooser
+
+    public void cycleMode() {
+        TargetPicker.Mode cur = currentMode();
+        buttonMode = switch (cur) {
+            case AUTO -> TargetPicker.Mode.SCORE;
+            case SCORE -> TargetPicker.Mode.PASS;
+            case PASS -> TargetPicker.Mode.AUTO;
+        };
+        System.out.println("AIM | Shot target mode: " + buttonMode);
+    }
+
+    public TargetPicker.Mode currentMode() {
+        if (buttonMode != null) return buttonMode;
+        TargetPicker.Mode m = modeChooser.getSelected();
+        return m == null ? TargetPicker.Mode.AUTO : m;
+    }
+
+    /** SCORE or PASS right now. */
+    public TargetPicker.Kind targetKind() { return target.kind(); }
+    public boolean passing() { return target.kind() == TargetPicker.Kind.PASS; }
+
+    private ShotTable activeTable() { return passing() ? passTable : table; }
+
+    // ---------- solving ----------
+
+    private double effectiveTof(double distance) {
+        double t = rawTof(distance);
+        double k = Aim.kDragK;
+        return k <= 0 ? t : (1.0 - Math.exp(-k * t)) / k;
+    }
+
+    private double rawTof(double distance) {
+        return tuningMode() ? SmartDashboard.getNumber("Tune TOF (s)", 0.9) : activeTable().timeOfFlight(distance);
     }
 
     private void solve() {
         var state = drivetrain.getState();
         Pose2d pose = state.Pose;
         // CTRE reports robot-relative speeds: turn them into field speeds.
-        ChassisSpeeds field = ChassisSpeeds.fromRobotRelativeSpeeds(state.Speeds, pose.getRotation());
-        // During an agitation shimmy the robot rocks a centimeter or two: aim at the hub itself,
-        // or the shoot-while-moving lead would swing the aim point back and forth.
+        ChassisSpeeds fs = ChassisSpeeds.fromRobotRelativeSpeeds(state.Speeds, pose.getRotation());
+        robotSpeed = Math.hypot(fs.vxMetersPerSecond, fs.vyMetersPerSecond);
+        Translation2d pivot = pose.getTranslation().plus(geometry.turretPivot().rotateBy(pose.getRotation()));
+        mode = currentMode();
+        legalToScore = !poseUsable() || picker.legalToScore(pose.getTranslation(), red());
+        // No position: passing is impossible, aim falls back to our hub tag (scoring).
+        target = poseUsable() ? picker.pick(pose.getTranslation(), pivot, red(), mode)
+            : new TargetPicker.Target(TargetPicker.Kind.SCORE, ourHub(), "HUB (tag only)");
+        // During an agitation shimmy the robot rocks a centimeter or two: no motion lead then.
         boolean lead = Aim.kShootWhileMoving && !Agitator.shimmying();
-        solution = ShotSolver.solve(pose, field.vxMetersPerSecond, field.vyMetersPerSecond, ourHub(),
-            geometry, this::timeOfFlight, lead);
+        solution = ShotSolver.solve(pose, fs.vxMetersPerSecond, fs.vyMetersPerSecond,
+            state.Speeds.omegaRadiansPerSecond, target.point(), geometry, this::effectiveTof,
+            lead ? Aim.kReleaseLatency : -1.0);
     }
 
     // ---------- what the commands ask ----------
@@ -90,23 +166,45 @@ public class AimSubsystem extends SubsystemBase {
     public double targetRpm() {
         if (tuningMode()) return SmartDashboard.getNumber("Tune RPM", 4000);
         // Position unknown: the distance is meaningless, use the fast preset (tag-only fallback).
-        return poseUsable() ? table.rpm(solution.distanceMeters()) : Constants.Shooter.kFastTargetRPM;
+        return poseUsable() ? activeTable().rpm(solution.distanceMeters()) : Constants.Shooter.kFastTargetRPM;
     }
 
     public double targetHood() {
-        return tuningMode() ? SmartDashboard.getNumber("Tune Hood (rot)", 1.0) : table.hood(solution.distanceMeters());
+        return tuningMode() ? SmartDashboard.getNumber("Tune Hood (rot)", 1.0) : activeTable().hood(solution.distanceMeters());
     }
 
-    private double timeOfFlight(double distance) {
-        return tuningMode() ? SmartDashboard.getNumber("Tune TOF (s)", 0.9) : table.timeOfFlight(distance);
-    }
+    /** Turret feedforward rate (deg/s clockwise) for the current target, 0 without position. */
+    public double turretRate() { return poseUsable() ? solution.turretRateDegPerSec() : 0.0; }
 
     public boolean isActive() { return active; }
     public void setActive(boolean on) { active = on; }
 
+    /** Aim tolerance (deg) for the current target and distance. */
+    public double aimToleranceDegrees() {
+        double margin = passing() ? Aim.kPassAimMargin : Aim.kScoreAimMargin;
+        double deg = Math.toDegrees(Math.atan2(margin, Math.max(solution.distanceMeters(), 0.5)));
+        return Math.max(Aim.kTurretToleranceDegrees, deg);
+    }
+
+    private boolean turretOnTarget(Goober turret) {
+        return turret.aimTracking(aimToleranceDegrees(), turretRate(), Aim.kTurretRateTolerance);
+    }
+
+    private boolean speedOk() {
+        return robotSpeed <= (passing() ? Aim.kMaxPassSpeed : Aim.kMaxScoreSpeed);
+    }
+
+    /** A scoring shot fired now would land in our hub while it's CLOSED (FMS data needed). */
+    public boolean hubClosedForShot() {
+        if (passing() || !SmartDashboard.getBoolean(kHoldKey, true)) return false;
+        double arrive = rawTof(solution.distanceMeters()) + Aim.kHubArrivalMargin;
+        return HubShiftTracker.ourHubStateAt(arrive) == HubShiftTracker.HubState.CLOSED;
+    }
+
     /**
-     * All clear to feed balls: aiming, position known, hub in reach, turret on target, shooter at
-     * speed, hood in place.
+     * All clear to feed balls: aiming, position known, target in reach, turret on target (and
+     * tracking it at the right speed while moving), robot not too fast, shooter at speed, hood in
+     * place, and (scoring) our hub open when the ball gets there.
      */
     public boolean readyToFire(Goober turret, ShooterSubsystem shooter, GoobaSubsystem hood) {
         if (!active) return false;
@@ -114,97 +212,121 @@ public class AimSubsystem extends SubsystemBase {
             // Tag-only fallback: turret locked on the hub tag, shooter at speed (hood follows ty).
             return turret.targetLocked() && rpmReady(shooter);
         }
-        if (!solution.reachable() || !turret.aimLocked()) return false;
-        if (!rpmReady(shooter)) return false;
-        return !Constants.Gooba.kHoodEnabled || Math.abs(hood.getPosition() - targetHood()) <= Aim.kHoodTolerance;
+        if (!solution.reachable() || !turretOnTarget(turret) || !speedOk()) return false;
+        if (!passing() && !legalToScore) return false; // G407: not inside our alliance zone
+        if (passing() && !target.laneClear()) return false; // a hub is in every pass lane
+        if (!rpmReady(shooter) || hubClosedForShot()) return false;
+        return !Constants.Gooba.kHoodEnabled || Math.abs(hood.getPosition() - targetHood()) <= hoodTolerance();
     }
 
+    private double hoodTolerance() { return passing() ? Aim.kPassHoodTolerance : Aim.kHoodTolerance; }
+
     /**
-     * Once firing has started, keep feeding through the normal RPM dip each ball causes (that dip
-     * used to pause the feed after every ball, so balls crawled in). Feeding only stops if aim is
-     * switched off, the hub goes behind the turret, or the turret falls well off target.
+     * Once firing has started, keep feeding through the normal RPM dip each ball causes. Feeding
+     * only stops if aim is switched off, the target goes behind the turret, the turret falls well
+     * off target, the robot gets too fast, or (scoring) our hub is about to be closed.
      */
     public boolean keepFiring(Goober turret) {
         if (!active) return false;
         if (!poseUsable()) return true;
-        return solution.reachable() && Math.abs(turret.aimErrorDegrees()) <= Aim.kKeepFiringDegrees;
+        double keep = Math.max(Aim.kKeepFiringDegrees, aimToleranceDegrees() * 1.5);
+        return solution.reachable() && Math.abs(turret.aimErrorDegrees()) <= keep
+            && speedOk() && !hubClosedForShot() && (passing() ? target.laneClear() : legalToScore);
     }
 
-    /** Shooter within tolerance of its target (150 RPM or 4%, whichever is bigger). */
+    /** Shooter within tolerance of its target (looser for passing). */
     public boolean rpmReady(ShooterSubsystem shooter) {
-        double target = targetRpm();
-        return Math.abs(shooter.getCurrentRpm() - target) <= Math.max(Aim.kRpmTolerance, Aim.kRpmTolerancePct * Math.abs(target));
+        double t = targetRpm();
+        double tol = passing() ? Aim.kPassRpmTolerance
+            : Math.max(Aim.kRpmTolerance, Aim.kRpmTolerancePct * Math.abs(t));
+        return Math.abs(shooter.getCurrentRpm() - t) <= tol;
     }
 
     /** Why it isn't ready (dashboard "Shot Ready" text). */
     public String readyText(Goober turret, ShooterSubsystem shooter, GoobaSubsystem hood) {
         if (!active) return "aim off (Operator RB)";
         if (!poseUsable()) return turret.targetLocked() ? "tag-only: shooter spinning up" : "tag-only: turret not on hub tag";
-        if (!solution.reachable()) return "hub behind turret: turning robot";
-        if (!turret.aimLocked()) return "turret turning";
-        if (!rpmReady(shooter)) return "shooter spinning up";
-        if (Constants.Gooba.kHoodEnabled && Math.abs(hood.getPosition() - targetHood()) > Aim.kHoodTolerance) return "hood moving";
-        return "READY";
+        String what = passing() ? "PASS" : "SCORE";
+        if (!passing() && !legalToScore) return "SCORE: outside our alliance zone (G407 foul): drive in or PASS";
+        if (passing() && !target.laneClear()) return "PASS: a hub blocks every lane: move sideways";
+        if (!solution.reachable()) return what + ": target behind turret, turning robot";
+        if (!speedOk()) return String.format(java.util.Locale.US, "%s: slow down (%.1f m/s, max %.1f)",
+            what, robotSpeed, passing() ? Aim.kMaxPassSpeed : Aim.kMaxScoreSpeed);
+        if (!turretOnTarget(turret)) return what + ": turret turning";
+        if (!rpmReady(shooter)) return what + ": shooter spinning up";
+        if (Constants.Gooba.kHoodEnabled && Math.abs(hood.getPosition() - targetHood()) > hoodTolerance()) return what + ": hood moving";
+        if (hubClosedForShot()) {
+            double s = HubShiftTracker.secondsUntilChange(DriverStation.getMatchTime());
+            return s > 0 ? String.format(java.util.Locale.US, "HUB CLOSED: opens in %.0f s (pass instead?)", s)
+                : "HUB CLOSED";
+        }
+        return what + " READY";
     }
 
     // ---------- shot table recording ----------
 
     private void loadRecorded() {
         table = ShotTable.defaults();
-        for (ShotTable.Point p : ShotTable.decode(Preferences.getString(kPrefKey, ""))) {
-            table.put(p);
-        }
+        for (ShotTable.Point p : ShotTable.decode(Preferences.getString(kPrefKey, ""))) table.put(p);
+        passTable = ShotTable.passDefaults();
+        for (ShotTable.Point p : ShotTable.decode(Preferences.getString(kPassPrefKey, ""))) passTable.put(p);
     }
 
     /** Times "Record Shot Point" was pressed since boot (the Shot Map guide watches this). */
     private int recordCount = 0;
     public int recordCount() { return recordCount; }
 
-    /** The table's current values at a distance (code points + recorded points). */
+    /** The SCORE table's current values at a distance (code points + recorded points). */
     public double tableRpm(double d) { return table.rpm(d); }
     public double tableHood(double d) { return table.hood(d); }
 
-    /** Distances (m) recorded on this robot so far. */
+    /** SCORE distances (m) recorded on this robot so far. */
     public java.util.List<Double> recordedDistances() {
-        return recordedPoints().stream().map(ShotTable.Point::distance).toList();
+        return recordedPoints(kPrefKey).stream().map(ShotTable.Point::distance).toList();
     }
 
-    /** Java lines for ShotTable.defaults(), so a programmer can paste the recorded table into code. */
+    /** Java lines for ShotTable.defaults() / passDefaults(), to paste the recorded tables into code. */
     public String shotTableCode() {
+        return code(recordedPoints(kPrefKey)) + (recordedPoints(kPassPrefKey).isEmpty() ? ""
+            : " | PASS: " + code(recordedPoints(kPassPrefKey)));
+    }
+
+    private static String code(java.util.List<ShotTable.Point> pts) {
         StringBuilder sb = new StringBuilder();
-        for (ShotTable.Point p : recordedPoints()) {
+        for (ShotTable.Point p : pts) {
             sb.append(String.format(java.util.Locale.US, "t.put(new Point(%.2f, %.0f, %.3f, %.2f)); ",
                 p.distance(), p.rpm(), p.hood(), p.tof()));
         }
         return sb.toString();
     }
 
-    private java.util.List<ShotTable.Point> recordedPoints() {
-        return new java.util.ArrayList<>(ShotTable.decode(Preferences.getString(kPrefKey, "")));
+    private java.util.List<ShotTable.Point> recordedPoints(String key) {
+        return new java.util.ArrayList<>(ShotTable.decode(Preferences.getString(key, "")));
     }
 
-    /** "Record Shot Point": saves the Tune values at the current distance. */
+    /** "Record Shot Point": saves the Tune values at the current distance, into the current target's table. */
     public Command recordPointCommand() {
         return runOnce(() -> {
+            String key = passing() ? kPassPrefKey : kPrefKey;
             double d = solution.distanceMeters();
-            var pts = recordedPoints();
+            var pts = recordedPoints(key);
             pts.removeIf(p -> Math.abs(p.distance() - d) < ShotTable.kSameDistance);
             pts.add(new ShotTable.Point(d,
                 SmartDashboard.getNumber("Tune RPM", 4000),
                 SmartDashboard.getNumber("Tune Hood (rot)", 1.0),
                 SmartDashboard.getNumber("Tune TOF (s)", 0.9)));
             pts.sort((a, b) -> Double.compare(a.distance(), b.distance()));
-            Preferences.setString(kPrefKey, ShotTable.encode(pts));
+            Preferences.setString(key, ShotTable.encode(pts));
             loadRecorded();
             recordCount++;
-            System.out.println("SHOT POINT RECORDED: " + ShotTable.encode(java.util.List.of(pts.stream()
-                .filter(p -> p.distance() == d).findFirst().get())));
-            System.out.println("SHOT TABLE | " + ShotTable.encode(pts));
+            String which = passing() ? "PASS" : "SHOT";
+            System.out.println(which + " POINT RECORDED at " + String.format(java.util.Locale.US, "%.2f m", d));
+            System.out.println(which + " TABLE | " + ShotTable.encode(pts));
             System.out.println("SHOT TABLE CODE | " + shotTableCode());
         }).ignoringDisable(true).withName("Record Shot Point");
     }
 
-    /** "Clear Recorded Shot Points": back to the code's table. */
+    /** "Clear Recorded Shot Points": back to the code's SCORE table (pass table: its own button). */
     public Command clearRecordedCommand() {
         return runOnce(() -> {
             Preferences.setString(kPrefKey, "");
@@ -212,27 +334,51 @@ public class AimSubsystem extends SubsystemBase {
         }).ignoringDisable(true).withName("Clear Recorded Shot Points");
     }
 
+    public Command clearRecordedPassCommand() {
+        return runOnce(() -> {
+            Preferences.setString(kPassPrefKey, "");
+            loadRecorded();
+        }).ignoringDisable(true).withName("Clear Recorded Pass Points");
+    }
+
+    /** Operator Start: cycle AUTO / SCORE / PASS. */
+    public Command cycleModeCommand() {
+        return Commands.runOnce(this::cycleMode).ignoringDisable(true).withName("Cycle shot target");
+    }
+
     @Override
     public void periodic() {
+        boolean hold = SmartDashboard.getBoolean(kHoldKey, true);
+        if (hold != Preferences.getBoolean(kHoldKey, true)) Preferences.setBoolean(kHoldKey, hold);
         solve();
         Pose2d pose = drivetrain.getState().Pose;
         field.setRobotPose(pose);
-        Translation2d hub = ourHub();
-        field.getObject("Hub").setPose(new Pose2d(hub, Rotation2d.kZero));
+        field.getObject("Hub").setPose(new Pose2d(ourHub(), Rotation2d.kZero));
+        field.getObject("Target").setPose(new Pose2d(target.point(), Rotation2d.kZero));
         field.getObject("Aim Point").setPose(new Pose2d(solution.aimPoint(), Rotation2d.kZero));
 
+        SmartDashboard.putString("Shot Target", (passing() ? "PASS" : "SCORE") + " (" + currentMode() + "): " + target.name());
         SmartDashboard.putNumber("Aim Distance (m)", solution.distanceMeters());
         SmartDashboard.putNumber("Aim Turret Angle (deg)", solution.turretDegrees());
+        SmartDashboard.putNumber("Aim Turret Rate (deg per s)", solution.turretRateDegPerSec());
         SmartDashboard.putBoolean("Aim Hub In Reach", solution.reachable());
         SmartDashboard.putNumber("Aim Robot Turn Needed (deg)", Math.toDegrees(solution.headingErrorRad()));
         SmartDashboard.putNumber("Aim Shooter RPM", targetRpm());
         SmartDashboard.putNumber("Aim Hood (rot)", targetHood());
+        SmartDashboard.putNumber("Aim Tolerance (deg)", aimToleranceDegrees());
+        SmartDashboard.putNumber("Robot Speed (m per s)", robotSpeed);
         SmartDashboard.putBoolean("Aim Active", active);
+        HubShiftTracker.HubState hub = HubShiftTracker.ourHubStateAt(0);
+        SmartDashboard.putString("Our Hub", hub == HubShiftTracker.HubState.UNKNOWN ? "unknown (no FMS)" : hub.name());
         SmartDashboard.putString("Aim Geometry", Aim.kGeometryMeasured ? "measured" : "AIM GEOMETRY NOT MEASURED");
         SmartDashboard.putString("Shot Table", table.describe());
+        SmartDashboard.putString("Pass Table", passTable.describe());
         DogLog.log("Aim/Distance", solution.distanceMeters());
         DogLog.log("Aim/TurretTarget", solution.turretDegrees());
+        DogLog.log("Aim/TurretRate", solution.turretRateDegPerSec());
         DogLog.log("Aim/Reachable", solution.reachable());
+        DogLog.log("Aim/Passing", passing());
+        DogLog.log("Aim/Target", new Pose2d(target.point(), Rotation2d.kZero));
         DogLog.log("Aim/AimPoint", new Pose2d(solution.aimPoint(), Rotation2d.kZero));
     }
 }

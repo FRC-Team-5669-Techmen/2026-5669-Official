@@ -117,8 +117,15 @@ public final class HubShiftTracker {
         if (c != 'R' && c != 'B') return HubState.UNKNOWN;
         double t = matchTime - Math.max(0.0, secondsAhead);
         if (t < 0) t = 0;
-        return computeOurHubOpen(false, true, alliance, gameData, t) ? HubState.OPEN : HubState.CLOSED;
+        // The hub keeps counting FUEL for 3 s after it deactivates (game manual): a ball that
+        // arrives up to kCloseGrace after closing still scores.
+        boolean open = computeOurHubOpen(false, true, alliance, gameData, t)
+            || computeOurHubOpen(false, true, alliance, gameData, t + kCloseGrace);
+        return open ? HubState.OPEN : HubState.CLOSED;
     }
+
+    /** Seconds after deactivating that the hub still counts FUEL: 3 s by rule, 2.5 s to be safe. */
+    public static final double kCloseGrace = 2.5;
 
     /** Seconds until our hub next changes state (teleop, FMS data known), or -1 if unknown. */
     public static double secondsUntilChange(double matchTime) {

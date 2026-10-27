@@ -105,4 +105,32 @@ class HubShiftTrackerTest {
         assertTrue(blueWonAuto(55.0));   // SHIFT 4 starts
         assertTrue(blueWonAuto(30.0));   // END GAME starts
     }
+
+    // ---------- hub state when the ball arrives ----------
+
+    private HubShiftTracker.HubState blueAt(String data, double matchTime, double ahead) {
+        return HubShiftTracker.computeHubStateAt(false, true, Alliance.Blue, data, matchTime, ahead);
+    }
+
+    @Test
+    void noGameDataIsUnknownSoShotsAreNeverHeld() {
+        assertTrue(HubShiftTracker.computeHubStateAt(false, true, Alliance.Blue, "", 100, 1.0)
+            == HubShiftTracker.HubState.UNKNOWN);
+        assertTrue(HubShiftTracker.computeHubStateAt(false, false, Alliance.Blue, "B", 100, 1.0)
+            == HubShiftTracker.HubState.UNKNOWN);
+    }
+
+    @Test
+    void shootsEarlySoTheFirstBallsLandAsTheHubOpens() {
+        // Blue won AUTO ("B"): blue hub closed in SHIFT 1 (2:10-1:45), opens at 105 s.
+        assertTrue(blueAt("B", 107.0, 0.0) == HubShiftTracker.HubState.CLOSED);
+        assertTrue(blueAt("B", 107.0, 2.5) == HubShiftTracker.HubState.OPEN);  // lands at 104.5
+    }
+
+    @Test
+    void ballsArrivingJustAfterCloseStillCount() {
+        // Blue lost AUTO ("R"): blue hub open in SHIFT 1, closes at 105 s.
+        assertTrue(blueAt("R", 106.0, 2.0) == HubShiftTracker.HubState.OPEN);   // lands 104: 1 s after close
+        assertTrue(blueAt("R", 106.0, 5.0) == HubShiftTracker.HubState.CLOSED); // lands 101: too late
+    }
 }

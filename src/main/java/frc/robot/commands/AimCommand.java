@@ -53,10 +53,11 @@ public class AimCommand extends Command {
     public void execute() {
         if (aim.poseUsable()) {
             ShotSolver.Solution s = aim.solution();
-            double spin = drivetrain.getState().Speeds.omegaRadiansPerSecond;
-            turret.aimAtAngle(s.turretDegrees(), spin);
+            // Feedforward = how fast the target moves around the turret (robot spin + sliding past).
+            turret.aimAtAngleWithRate(s.turretDegrees(), s.reachable() ? s.turretRateDegPerSec()
+                : Math.toDegrees(drivetrain.getState().Speeds.omegaRadiansPerSecond));
             if (!s.reachable()) {
-                turret.setAimStatus("HUB BEHIND: turning robot");
+                turret.setAimStatus((aim.passing() ? "PASS" : "HUB") + " BEHIND: turning robot");
             }
             if (Constants.Gooba.kHoodEnabled) {
                 hood.setPosition(aim.targetHood());

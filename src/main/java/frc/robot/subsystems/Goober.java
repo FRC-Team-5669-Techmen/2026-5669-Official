@@ -147,6 +147,18 @@ public class Goober extends SubsystemBase {
      * Clamped inside the aim range. Does nothing until the far end is set.
      */
     public void aimAtAngle(double targetDegrees, double robotSpinRadPerSec) {
+        aimAtAngleWithRate(targetDegrees, Math.toDegrees(robotSpinRadPerSec));
+    }
+
+    private double rateTarget = 0.0; // deg/s the turret target is moving (feedforward)
+
+    /**
+     * Turn to an angle while its target moves at rateDegPerSec (clockwise +): shoot on the move.
+     * The rate comes from ShotSolver (robot sliding past the target + robot spin), so the turret
+     * keeps up instead of lagging behind.
+     */
+    public void aimAtAngleWithRate(double targetDegrees, double rateDegPerSec) {
+        rateTarget = rateDegPerSec;
         if (!endMeasured()) {
             stop();
             aimStatus = "OFF: far end not set";
@@ -156,8 +168,7 @@ public class Goober extends SubsystemBase {
         double hi = Turret.kEndDegrees - Turret.kAimMarginDegrees;
         angleTarget = MathUtil.clamp(targetDegrees, lo, hi);
         double angle = getAngleDegrees();
-        // Robot turning CCW at w makes the needed turret angle (clockwise from HOME) grow at w.
-        double feedforward = Aim.kTurretFF * Math.toDegrees(robotSpinRadPerSec);
+        double feedforward = Aim.kTurretFF * rateDegPerSec;
         double error = angleTarget - angle;
         double output = anglePID.calculate(angle, angleTarget) + feedforward;
         // Static-friction kick so small errors still move the turret (no kick once close).
@@ -174,6 +185,18 @@ public class Goober extends SubsystemBase {
         return !Double.isNaN(angleTarget)
             && Math.abs(getAngleDegrees() - angleTarget) <= Aim.kTurretToleranceDegrees
             && Math.abs(getVelocityDegPerSec()) <= Aim.kLockedMaxSpeedDegPerSec;
+    }
+
+    /**
+     * Shoot-on-the-move "on target": within toleranceDeg of the angle target, and turning at the
+     * speed it SHOULD be (the target's rate) within rateToleranceDegPerSec. Standing still this is
+     * the same as aimLocked() with a wider angle window; moving, the turret is allowed to be
+     * turning, as long as it's keeping up.
+     */
+    public boolean aimTracking(double toleranceDeg, double targetRateDegPerSec, double rateToleranceDegPerSec) {
+        return !Double.isNaN(angleTarget)
+            && Math.abs(getAngleDegrees() - angleTarget) <= toleranceDeg
+            && Math.abs(getVelocityDegPerSec() - targetRateDegPerSec) <= rateToleranceDegPerSec;
     }
 
     /** Degrees between the turret and its angle target (0 when not aiming at an angle). */

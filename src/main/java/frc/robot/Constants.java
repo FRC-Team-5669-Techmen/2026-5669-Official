@@ -525,10 +525,55 @@ public final class Constants {
         public static final double kHeadingAssistMax = 2.5; // rad/s
         public static final double kDriverRotateOverride = 0.15; // right-stick deflection that takes over
 
-        // ---- Shooting while moving ----
-        // Aim at where the hub will be relative to the robot when the ball gets there
-        // (robot velocity x time of flight). Time of flight comes from the shot table.
+        // ---- Shooting while moving (ShotSolver.solve; research: docs/PASSING-AND-SOTM-RESEARCH.md) ----
+        // Aim at a VIRTUAL target: target - (turret pivot velocity) x (effective flight time),
+        // iterated, from where the robot will be when the ball leaves. RPM/hood are read at the
+        // virtual distance. Same approach as 581, 6328 and 5000 (2026 public code).
         public static final boolean kShootWhileMoving = true;
+        // Seconds from "fire" to the ball leaving (feed travel + control delay). Pose is projected
+        // this far ahead. 6328 used 0.03 s; 581 measured 0.25 s feeder travel. Tune from video.
+        public static final double kReleaseLatency = 0.10;
+        // Air drag: lead by the effective flight time (1 - e^(-k t)) / k, not the raw table time
+        // (581 k = 0.465, 6328 k = 0.375). Raw time over-leads ~20%. 0 = no drag correction.
+        public static final double kDragK = 0.42;
+        // Ready to fire while moving: robot speed limits (581: 1.5 m/s scoring, 4.0 m/s passing)
+        public static final double kMaxScoreSpeed = 1.5;   // m/s
+        public static final double kMaxPassSpeed = 4.0;    // m/s
+        // Aim tolerance = the angle that keeps the ball within this many meters of the target's
+        // center at the shot distance (581: 5 in scoring, 20 in passing), never below the turret's
+        // own 2 deg tolerance.
+        public static final double kScoreAimMargin = 0.15;  // m (hub opening ~41.7 in wide)
+        public static final double kPassAimMargin = 0.50;   // m
+        // While the turret tracks a moving target it can't be "nearly still": instead its speed
+        // must be within this of the speed it SHOULD be turning (feedforward rate).
+        public static final double kTurretRateTolerance = 30.0; // deg/s
+
+        // ---- Hub shifts: hold scoring shots that would land in our CLOSED hub ----
+        // Uses FMS game data (no data = never holds). A ball fired now arrives after its flight
+        // time; start this much early so the first balls land just as the hub opens.
+        public static final double kHubArrivalMargin = 0.3; // s
+
+        // ---- PASSING (TargetPicker): from past our hub, lob into a corner of our alliance zone ----
+        // Field (WPILib 2026 welded field, meters).
+        public static final double kFieldLength = 16.541;
+        public static final double kFieldWidth = 8.069;
+        public static final double kHubHalfSize = 0.597;       // hub footprint 47 in square
+        // G407 (MAJOR FOUL): launch into our hub only with the bumpers (partly) inside our alliance
+        // zone (4.029 m from our wall incl. the 2 in line). With 29.5 x 24.5 in bumpers that is
+        // guaranteed at any heading while the robot CENTER is within 4.34 m; minus 0.15 m for pose
+        // error. Past it the robot will not score (AUTO switches to PASS; forced SCORE holds fire).
+        public static final double kScoreMaxRobotDepth = 4.19;
+        public static final double kTargetHysteresis = 0.25;
+        // Pass landing point: from our wall / from the side wall on the robot's side (6328: 37 in, 65 in).
+        public static final double kPassDepth = 0.94;
+        public static final double kPassSide = 1.65;
+        // Backup when a hub blocks the straight line (581: ~1.4 m off the wall, 1.0 m off the side).
+        public static final double kPassBackupDepth = 1.40;
+        public static final double kPassBackupSide = 1.00;
+        public static final double kPassObstaclePad = 0.30;    // 581: 12 in around each hub
+        // Passing ready check is looser (a floor zone, not a hub opening).
+        public static final double kPassRpmTolerance = 400.0;
+        public static final double kPassHoodTolerance = 0.25;
 
         // ---- Vision position (Limelight MegaTag) ----
         // Ignore vision while the turret (and camera) is swinging faster than this, or the robot
