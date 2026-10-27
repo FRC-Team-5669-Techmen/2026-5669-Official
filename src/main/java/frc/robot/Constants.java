@@ -364,9 +364,10 @@ public final class Constants {
         public static final double kPumpLift = 2.0;
         public static final int kPumpCycles = 2;
         public static final double kPumpLegTimeout = 0.55;   // seconds per up or down leg, max
-        // Roller blink (nudge and pump): out for a moment (frees the pile at the bumper), then in.
-        public static final double kRollerOutVolts = -9.0;
-        public static final double kRollerOutSeconds = 0.15;
+        // Roller blink (nudge and pump): a gentle tap out (loosens the pile at the bumper), then in.
+        // Oct 26: -9 V for 0.15 s threw a ball all the way out of the robot, so it's softer now.
+        public static final double kRollerOutVolts = -4.0;
+        public static final double kRollerOutSeconds = 0.08;
         public static final double kRollerInVolts = 12.0;
         // Prevention (Team 581's pattern): roller turns in gently the whole time balls are fed,
         // keeping the pile moving toward the spindexer. Only with the intake down and the driver
