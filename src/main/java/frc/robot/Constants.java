@@ -347,23 +347,47 @@ public final class Constants {
      * is doing), "Last Volley" (balls, seconds, longest gap, pumps, unjams).
      */
     public static final class Agitation {
-        // Starving: feeding, shooter spun up, but no ball has left for this long.
+        // ---- Escalation ladder (see feeding/AgitationPlanner), reset by every ball that leaves ----
+        // 1) NUDGE after this long with no ball while feeding: roller blinks out then in (the
+        //    spindexer keeps feeding). Intake stowed: a short spindexer reverse shake instead.
+        public static final double kNudgeSeconds = 0.35;
+        // 2) PUMP after this long: lift the deployed intake part way and drop it, twice.
+        //    (At 8 balls/s every 0.1 s of waiting costs almost a ball, so these are short.)
         public static final double kStarveSeconds = 0.8;
+        // 3) SHIMMY (dashboard "Agitate Drive Shimmy", OFF by default): if a pump brought no ball,
+        //    shuffle the drivetrain forward/back. Only with the driver's sticks centered.
+        // 4) EMPTY: this many big agitations (pump/shake/shimmy) in a row with no ball = stop.
+        public static final int kMaxPumpsWithoutShot = 3;
+        public static final double kPumpCooldown = 0.3;      // let balls arrive before judging again
+
         // Pump the intake: lift this far above DOWN (rotations; DOWN to UP is about 5.7), then back.
         public static final double kPumpLift = 2.0;
         public static final int kPumpCycles = 2;
-        public static final double kPumpLegTimeout = 0.45;   // seconds per up or down leg, max
-        // Roller during a pump: out for a blink (frees the pile at the bumper), then in.
-        public static final double kRollerOutVolts = -6.0;
+        public static final double kPumpLegTimeout = 0.55;   // seconds per up or down leg, max
+        // Roller blink (nudge and pump): out for a moment (frees the pile at the bumper), then in.
+        public static final double kRollerOutVolts = -9.0;
         public static final double kRollerOutSeconds = 0.15;
         public static final double kRollerInVolts = 12.0;
-        // After a pump, give balls this long to arrive before pumping again.
-        public static final double kPumpCooldown = 0.6;
-        // This many pumps in a row with no ball out = the hopper is probably empty: stop pumping
-        // until a ball leaves or feeding restarts.
-        public static final int kMaxPumpsWithoutShot = 3;
-        // Intake is UP (stowed): it can't pump, so shake the spindexer instead (short reverse).
-        public static final double kShakeSeconds = 0.15;
+        // Prevention (Team 581's pattern): roller turns in gently the whole time balls are fed,
+        // keeping the pile moving toward the spindexer. Only with the intake down and the driver
+        // not using the roller. Dashboard "Roller Assist Volts" (saved; 0 = off).
+        public static final double kRollerAssistVolts = 5.0;
+        public static final double kShakeSeconds = 0.15;     // spindexer reverse shake
+
+        // Drivetrain shimmy: robot-relative forward/back only (never a rotation wiggle: turning
+        // spins the turret past its 30 deg/s "steady" limit and feeding stops). 0.3 m/s at
+        // 25 rad/s (~4 Hz) moves the robot about 1.2 cm each way. Shoot-while-moving lead is
+        // switched off during it so the aim point doesn't swing.
+        public static final double kShimmySpeed = 0.3;       // m/s
+        public static final double kShimmyRate = 25.0;       // rad/s of the back-and-forth
+        public static final double kShimmySeconds = 0.4;
+        public static final double kShimmyStickDeadband = 0.08;
+
+        // ---- Protection ----
+        public static final int kMaxPumpsPerMinute = 12;     // rolling budget for the pivot gearboxes
+        public static final double kHotCelsius = 80.0;       // pivot/spindexer motor: stop agitating
+        public static final double kCoolCelsius = 65.0;      // ...until it cools below this
+        public static final double kMinBatteryVolts = 8.5;   // below this, no pump/shimmy (brownout risk)
 
         // Spindexer JAM: commanded forward, pushing hard (amps) but barely turning (motor rot/s),
         // for this long. Ignored right after feeding starts (spin-up looks the same for a moment).
@@ -373,9 +397,12 @@ public final class Constants {
         public static final double kJamIgnoreAfterStart = 0.3;
         public static final double kUnjamVolts = -6.0;
         public static final double kUnjamSeconds = 0.25;
-        // 3 jams within this window: the pile itself is stuck, so pump too.
+        // 3 jams within this window: the pile itself is locked, so pump. Same 3 also pause
+        // further auto-reverses for kUnjamLockout (spares the gearbox; the stator limit still caps it).
         public static final double kJamBurstWindow = 3.0;
         public static final int kJamBurstCount = 3;
+        public static final double kUnjamLockout = 3.0;
+        public static final double kSpindexRampSeconds = 0.08; // softens reversals (0 V to 12 V time)
 
         // Shot detection for agitation (independent of the target RPM, so it also works when the
         // wheel can't reach the target): a ball = speed falls this far below its recent peak.

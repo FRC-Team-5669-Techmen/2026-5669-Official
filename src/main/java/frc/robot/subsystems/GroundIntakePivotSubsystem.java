@@ -234,6 +234,11 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
         leader.getConfigurator().apply(softLimitsOn); // DOWN soft limit back on
     }
 
+    /** Hotter of the two pivot motors, deg C. */
+    public double tempCelsius() {
+        return Math.max(leader.getDeviceTemp().getValueAsDouble(), follower.getDeviceTemp().getValueAsDouble());
+    }
+
     /** True when the intake is deployed (the last A press sent it DOWN). */
     public boolean isDown() {
         return isDown && isDownPositionValid();

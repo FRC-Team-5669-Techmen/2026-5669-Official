@@ -35,6 +35,8 @@ public class IndexSubsystem extends SubsystemBase {
         currentLimits.StatorCurrentLimit = 80.0; // Oct 25: was 160; 80 A at 16:1 still pushes ~250 N at the omni rim, and spares the gearbox in a jam 
         currentLimits.StatorCurrentLimitEnable = true;
         
+        // Soften forward/reverse flips (auto-unjam, shakes) on the MAXPlanetary.
+        config.OpenLoopRamps.VoltageOpenLoopRampPeriod = Constants.Agitation.kSpindexRampSeconds;
         motor.getConfigurator().apply(config);
         // The tuned value is saved on the roboRIO, so Shot Map Day tuning survives reboots.
         edu.wpi.first.wpilibj.Preferences.initDouble("Spindex Forward Volts", Constants.Index.kForwardSpeed);
@@ -52,7 +54,8 @@ public class IndexSubsystem extends SubsystemBase {
     // Automatic unjam (see frc.robot.feeding.JamDetector and Constants.Agitation).
     private final frc.robot.feeding.JamDetector jam = new frc.robot.feeding.JamDetector(
         Constants.Agitation.kJamAmps, Constants.Agitation.kJamSpeed, Constants.Agitation.kJamSeconds,
-        Constants.Agitation.kJamIgnoreAfterStart, Constants.Agitation.kUnjamSeconds);
+        Constants.Agitation.kJamIgnoreAfterStart, Constants.Agitation.kUnjamSeconds,
+        Constants.Agitation.kJamBurstWindow, Constants.Agitation.kJamBurstCount, Constants.Agitation.kUnjamLockout);
     private double lastFeedCall = Double.NEGATIVE_INFINITY;
 
     /**
@@ -79,6 +82,7 @@ public class IndexSubsystem extends SubsystemBase {
     }
 
     public int jamCount() { return jam.jams(); }
+    public double tempCelsius() { return motor.getDeviceTemp().getValueAsDouble(); }
 
     /** Fixed volts (Operator B unjam, intake rewind). Not a shooting feed: no auto-unjam. */
     public void run(double volts) {

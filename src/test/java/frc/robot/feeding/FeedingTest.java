@@ -60,9 +60,30 @@ class FeedingTest {
         assertEquals(0, j.jams());
     }
 
+    // ---------------- JamDetector lockout ----------------
+
+    @Test
+    void threeJamsInARowPauseAutoReverse() {
+        JamDetector j = new JamDetector(45, 8, 0.15, 0.3, 0.25, 3.0, 3, 3.0);
+        double t = 0;
+        for (int i = 0; i < 25; i++, t += DT) j.update(t, 20, 40);
+        for (int k = 0; k < 6; k++) {               // keeps stalling
+            for (int i = 0; i < 40; i++, t += DT) j.update(t, 70, 1);
+        }
+        assertEquals(3, j.jams(), "after 3 quick jams it stops hammering back and forth");
+    }
+
     // ---------------- AgitationPlanner ----------------
 
-    static AgitationPlanner planner() { return new AgitationPlanner(0.8, 0.6, 0.15, 3, 3.0, 3); }
+    static AgitationPlanner planner() { return new AgitationPlanner(new AgitationPlanner.Params()); }
+
+    static AgitationPlanner.Inputs in(int shots, boolean pumpOk, boolean shimmyOk, boolean busy) {
+        AgitationPlanner.Inputs in = new AgitationPlanner.Inputs();
+        in.enabled = true; in.feeding = true; in.shooterUp = true;
+        in.shots = shots; in.jams = 0;
+        in.pumpPossible = pumpOk; in.shimmyPossible = shimmyOk; in.busy = busy;
+        return in;
+    }
 
     @Test
     void steadyFlowNeverAgitates() {
@@ -70,89 +91,107 @@ class FeedingTest {
         double t = 0; int shots = 0;
         for (int i = 0; i < 250; i++, t += DT) {
             if (i % 12 == 0) shots++; // a ball every 0.24 s
-            assertEquals(AgitationPlanner.Action.NONE, p.update(t, true, true, true, shots, 0, true, true, false));
+            assertEquals(AgitationPlanner.Action.NONE, p.update(t, in(shots, true, true, false)));
         }
     }
 
     @Test
-    void bridgedPilePumpsTheIntake() {
+    void gapLadderNudgesThenPumps() {
         AgitationPlanner p = planner();
-        double t = 0; int shots = 0; int pumpsAt = -1;
+        double t = 0; int nudgeAt = -1, pumpAt = -1;
         for (int i = 0; i < 100; i++, t += DT) {
-            if (i < 20 && i % 10 == 0) shots++;         // two balls, then nothing (bridged)
-            AgitationPlanner.Action a = p.update(t, true, true, true, shots, 0, true, true, false);
-            if (a == AgitationPlanner.Action.PUMP) { pumpsAt = i; break; }
+            AgitationPlanner.Action a = p.update(t, in(1, true, false, false));
+            if (a == AgitationPlanner.Action.NUDGE && nudgeAt < 0) nudgeAt = i;
+            if (a == AgitationPlanner.Action.PUMP) { pumpAt = i; break; }
         }
-        assertTrue(pumpsAt > 0, "must pump when starving");
-        // last ball at loop 10 (0.2 s) + 0.8 s starve = about loop 50
-        assertTrue(pumpsAt >= 49 && pumpsAt <= 52, "pumped at loop " + pumpsAt);
+        // ball at loop 0; nudge at ~0.35 s (loop 18), pump at ~0.8 s (loop 41)
+        assertTrue(nudgeAt >= 17 && nudgeAt <= 19, "nudge at " + nudgeAt);
+        assertTrue(pumpAt >= 40 && pumpAt <= 42, "pump at " + pumpAt);
     }
 
     @Test
-    void intakeStowedShakesInstead() {
+    void ballAfterNudgeResetsTheLadder() {
         AgitationPlanner p = planner();
-        double t = 0; AgitationPlanner.Action got = AgitationPlanner.Action.NONE;
-        for (int i = 0; i < 60 && got == AgitationPlanner.Action.NONE; i++, t += DT)
-            got = p.update(t, true, true, true, 0, 0, false, true, false);
-        assertEquals(AgitationPlanner.Action.SHAKE, got);
+        double t = 0; int shots = 0; boolean pumped = false;
+        for (int i = 0; i < 300; i++, t += DT) {
+            AgitationPlanner.Action a = p.update(t, in(shots, true, false, false));
+            if (a == AgitationPlanner.Action.NUDGE) shots++;   // every nudge frees a ball
+            pumped |= a == AgitationPlanner.Action.PUMP;
+        }
+        assertFalse(pumped, "nudges that work never escalate to a pump");
+    }
+
+    @Test
+    void shimmyComesAfterAPumpThatDidNotWork() {
+        AgitationPlanner p = planner();
+        double t = 0; boolean busy = false; double busyEnd = 0;
+        java.util.List<AgitationPlanner.Action> big = new java.util.ArrayList<>();
+        for (int i = 0; i < 1000; i++, t += DT) {
+            if (busy && t >= busyEnd) busy = false;
+            AgitationPlanner.Action a = p.update(t, in(0, true, true, busy));
+            if (a == AgitationPlanner.Action.PUMP || a == AgitationPlanner.Action.SHIMMY) {
+                big.add(a); busy = true; busyEnd = t + (a == AgitationPlanner.Action.PUMP ? 1.0 : 0.4);
+            }
+        }
+        assertEquals(java.util.List.of(AgitationPlanner.Action.PUMP, AgitationPlanner.Action.SHIMMY,
+            AgitationPlanner.Action.SHIMMY), big);
+        assertTrue(p.status().contains("EMPTY"), p.status());
+    }
+
+    @Test
+    void intakeUnavailableShakesInstead() {
+        AgitationPlanner p = planner();
+        double t = 0; AgitationPlanner.Action big = AgitationPlanner.Action.NONE;
+        for (int i = 0; i < 100; i++, t += DT) {
+            AgitationPlanner.Action a = p.update(t, in(0, false, false, false));
+            if (a == AgitationPlanner.Action.SHAKE) { big = a; break; }
+        }
+        assertEquals(AgitationPlanner.Action.SHAKE, big);
     }
 
     @Test
     void emptyHopperStopsAfterThreeTries() {
         AgitationPlanner p = planner();
-        double t = 0; int pumps = 0; boolean pumping = false; double pumpEnd = 0;
-        for (int i = 0; i < 1000; i++, t += DT) {
-            if (pumping && t >= pumpEnd) pumping = false;
-            AgitationPlanner.Action a = p.update(t, true, true, true, 0, 0, true, true, pumping);
-            if (a == AgitationPlanner.Action.PUMP) { pumps++; pumping = true; pumpEnd = t + 1.0; }
+        double t = 0; int big = 0; boolean busy = false; double busyEnd = 0;
+        for (int i = 0; i < 1500; i++, t += DT) {
+            if (busy && t >= busyEnd) busy = false;
+            AgitationPlanner.Action a = p.update(t, in(0, true, false, busy));
+            if (a == AgitationPlanner.Action.PUMP) { big++; busy = true; busyEnd = t + 1.0; }
         }
-        assertEquals(3, pumps);
+        assertEquals(3, big);
         assertTrue(p.status().contains("EMPTY"), p.status());
-    }
-
-    @Test
-    void ballAfterPumpResetsTheCount() {
-        AgitationPlanner p = planner();
-        double t = 0; int pumps = 0; int shots = 0; boolean pumping = false; double pumpEnd = 0;
-        for (int i = 0; i < 2000; i++, t += DT) {
-            if (pumping && t >= pumpEnd) { pumping = false; shots++; } // each pump frees a ball
-            AgitationPlanner.Action a = p.update(t, true, true, true, shots, 0, true, true, pumping);
-            if (a == AgitationPlanner.Action.PUMP) { pumps++; pumping = true; pumpEnd = t + 1.0; }
-        }
-        assertTrue(pumps > 3, "kept helping while pumps keep freeing balls: " + pumps);
     }
 
     @Test
     void repeatedJamsTriggerAPump() {
         AgitationPlanner p = planner();
-        double t = 0; int shots = 0; int jams = 0; AgitationPlanner.Action got = AgitationPlanner.Action.NONE;
-        for (int i = 0; i < 100 && got == AgitationPlanner.Action.NONE; i++, t += DT) {
+        double t = 0; int shots = 0; AgitationPlanner.Action got = AgitationPlanner.Action.NONE;
+        for (int i = 0; i < 100 && got != AgitationPlanner.Action.PUMP; i++, t += DT) {
             if (i % 5 == 0) shots++;           // balls still trickling (not starving)
-            if (i == 10 || i == 30 || i == 50) jams++;
-            got = p.update(t, true, true, true, shots, jams, true, true, false);
+            AgitationPlanner.Inputs x = in(shots, true, false, false);
+            x.jams = i >= 50 ? 3 : i >= 30 ? 2 : i >= 10 ? 1 : 0;
+            got = p.update(t, x);
         }
         assertEquals(AgitationPlanner.Action.PUMP, got);
     }
 
     @Test
-    void offSwitchAndDriverOwnershipAreRespected() {
+    void offSwitchIsRespected() {
         AgitationPlanner p = planner();
         double t = 0;
-        for (int i = 0; i < 100; i++, t += DT)
-            assertEquals(AgitationPlanner.Action.NONE, p.update(t, false, true, true, 0, 0, true, true, false));
-        AgitationPlanner q = planner();
-        AgitationPlanner.Action got = AgitationPlanner.Action.NONE;
-        for (int i = 0; i < 60 && got == AgitationPlanner.Action.NONE; i++, t += DT)
-            got = q.update(t, true, true, true, 0, 0, true, false, false); // driver moving the intake
-        assertEquals(AgitationPlanner.Action.SHAKE, got);
+        for (int i = 0; i < 100; i++, t += DT) {
+            AgitationPlanner.Inputs x = in(0, true, true, false);
+            x.enabled = false;
+            assertEquals(AgitationPlanner.Action.NONE, p.update(t, x));
+        }
     }
 
     @Test
     void volleySummary() {
         AgitationPlanner p = planner();
         double t = 0; int shots = 0;
-        for (int i = 0; i < 100; i++, t += DT) { if (i % 10 == 5) shots++; p.update(t, true, true, true, shots, 0, true, true, false); }
-        for (int i = 0; i < 40; i++, t += DT) p.update(t, true, false, true, shots, 0, true, true, false);
+        for (int i = 0; i < 100; i++, t += DT) { if (i % 10 == 5) shots++; p.update(t, in(shots, true, false, false)); }
+        for (int i = 0; i < 40; i++, t += DT) { AgitationPlanner.Inputs x = in(shots, true, false, false); x.feeding = false; p.update(t, x); }
         assertTrue(p.lastVolley().startsWith("10 balls in 2.0 s"), p.lastVolley());
     }
 }

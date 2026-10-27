@@ -1,7 +1,11 @@
 package frc.robot.subsystems;
 
+import java.util.ArrayDeque;
+
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Preferences;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -13,26 +17,26 @@ import frc.robot.feeding.AgitationPlanner;
 import frc.robot.feeding.ShotDetector;
 
 /**
- * AUTOMATIC AGITATION while shooting (teleop and autos, no buttons). Runs every loop:
+ * AUTOMATIC AGITATION while shooting (teleop and autos, no buttons). Every loop:
  * <ul>
  *   <li>Counts balls leaving from the flywheel's dips (ShotDetector).</li>
- *   <li>Feeding but no ball for a moment = the pile has bridged: PUMP the deployed intake
- *       (lift part way, drop, twice) while the roller blinks out then pulls in. Intake stowed or
- *       busy: SHAKE the spindexer (short reverse) instead.</li>
- *   <li>Spindexer stalls (inlet jam): IndexSubsystem.feed() reverses it for a moment by itself.
- *       Jams that keep coming also trigger a pump.</li>
- *   <li>Several agitations and still no ball: the hopper is probably empty, it stops.</li>
+ *   <li>PREVENT: while balls are fed and the intake is down, the roller turns in gently
+ *       ("Roller Assist Volts") to keep the pile moving toward the spindexer.</li>
+ *   <li>Escalation ladder on a gap (AgitationPlanner): NUDGE (roller blink, or a spindexer shake
+ *       with the intake stowed), then PUMP the intake, then (switch on) SHIMMY the drivetrain,
+ *       then stop if the hopper looks empty.</li>
+ *   <li>Spindexer stalls are reversed by IndexSubsystem.feed() itself.</li>
+ *   <li>PROTECT: no pumps when a pivot motor is hot (over 80 C until under 65 C), over 12 pumps
+ *       a minute, or with the battery under 8.5 V; no shimmy on a low battery.</li>
  * </ul>
- * The driver always wins: any A press or intake jog interrupts a pump, and the roller pulse is
- * skipped while the driver holds a roller trigger.
- *
- * <p>Dashboard: "Auto Agitate" (on/off, saved), "Agitate Lift (rot)" (saved), "Agitator" (what it
- * is doing), "Last Volley" (balls, seconds, rate, longest gap, pumps, shakes, unjams). Has no
- * motors of its own, so nothing ever "requires" it.
+ * The driver always wins: A or the intake jog interrupts a pump, the roller is left alone while
+ * the driver holds a roller trigger, and any stick input cancels a shimmy.
  */
 public class Agitator extends SubsystemBase {
     private static final String kEnabledKey = "Auto Agitate";
     private static final String kLiftKey = "Agitate Lift (rot)";
+    private static final String kAssistKey = "Roller Assist Volts";
+    private static final String kShimmyKey = "Agitate Drive Shimmy";
 
     private final ShooterSubsystem shooter;
     private final IndexSubsystem index;
@@ -41,12 +45,18 @@ public class Agitator extends SubsystemBase {
 
     private final ShotDetector shots = new ShotDetector(
         Agitation.kShotDropRpm, Agitation.kShotRearmRpm, Agitation.kShotMaxDipSeconds, Agitation.kMinShooterRpm);
-    private final AgitationPlanner planner = new AgitationPlanner(
-        Agitation.kStarveSeconds, Agitation.kPumpCooldown, Agitation.kShakeSeconds,
-        Agitation.kMaxPumpsWithoutShot, Agitation.kJamBurstWindow, Agitation.kJamBurstCount);
+    private final AgitationPlanner planner;
+    private final AgitationPlanner.Inputs in = new AgitationPlanner.Inputs();
 
-    private Command pump = null;
-    private int pumps = 0, shakes = 0;
+    private Command pump = null, rollerCmd = null;
+    private final ArrayDeque<Double> pumpTimes = new ArrayDeque<>();
+    private boolean hot = false;
+    private int nudges = 0, pumps = 0, shakes = 0, shimmies = 0;
+
+    // Drivetrain shimmy: read by the drive's default command and by AimSubsystem (lead off).
+    private static volatile double shimmyStart = Double.NEGATIVE_INFINITY;
+    private static volatile double shimmyUntil = Double.NEGATIVE_INFINITY;
+    private static volatile boolean driverHandsOff = true;
 
     public Agitator(ShooterSubsystem shooter, IndexSubsystem index,
                     GroundIntakePivotSubsystem pivot, IntakeRollerSubsystem roller) {
@@ -54,23 +64,65 @@ public class Agitator extends SubsystemBase {
         this.index = index;
         this.pivot = pivot;
         this.roller = roller;
+        AgitationPlanner.Params p = new AgitationPlanner.Params();
+        p.nudgeSeconds = Agitation.kNudgeSeconds;
+        p.pumpSeconds = Agitation.kStarveSeconds;
+        p.cooldown = Agitation.kPumpCooldown;
+        p.shakeSeconds = Agitation.kShakeSeconds;
+        p.maxTries = Agitation.kMaxPumpsWithoutShot;
+        p.burstWindow = Agitation.kJamBurstWindow;
+        p.burstCount = Agitation.kJamBurstCount;
+        planner = new AgitationPlanner(p);
+
         Preferences.initBoolean(kEnabledKey, true);
         Preferences.initDouble(kLiftKey, Agitation.kPumpLift);
+        Preferences.initDouble(kAssistKey, Agitation.kRollerAssistVolts);
+        Preferences.initBoolean(kShimmyKey, false); // untested on the robot: off until the team tries it
         SmartDashboard.putBoolean(kEnabledKey, Preferences.getBoolean(kEnabledKey, true));
         SmartDashboard.putNumber(kLiftKey, Preferences.getDouble(kLiftKey, Agitation.kPumpLift));
+        SmartDashboard.putNumber(kAssistKey, Preferences.getDouble(kAssistKey, Agitation.kRollerAssistVolts));
+        SmartDashboard.putBoolean(kShimmyKey, Preferences.getBoolean(kShimmyKey, false));
         SmartDashboard.putString("Last Volley", "-");
     }
 
-    private boolean switchOn() {
-        boolean on = SmartDashboard.getBoolean(kEnabledKey, true);
-        if (on != Preferences.getBoolean(kEnabledKey, true)) Preferences.setBoolean(kEnabledKey, on);
-        return on;
+    // ---------- shimmy hooks (drive default command, AimSubsystem) ----------
+
+    /** True while the drivetrain shimmy owns the wheels. */
+    public static boolean shimmying() {
+        return Timer.getFPGATimestamp() < shimmyUntil && driverHandsOff;
     }
 
-    private double lift() {
-        double v = edu.wpi.first.math.MathUtil.clamp(SmartDashboard.getNumber(kLiftKey, Agitation.kPumpLift), 0.3, 4.0);
-        if (v != Preferences.getDouble(kLiftKey, Agitation.kPumpLift)) Preferences.setDouble(kLiftKey, v);
+    /** Robot-relative forward speed for the shimmy right now (m/s), 0 when not shimmying. */
+    public static double shimmySpeed() {
+        if (!shimmying()) return 0.0;
+        double t = Timer.getFPGATimestamp() - shimmyStart;
+        return Agitation.kShimmySpeed * Math.sin(Agitation.kShimmyRate * t);
+    }
+
+    /** The drive command reports the driver's sticks every loop; any input cancels a shimmy. */
+    public static void reportDriverSticks(double x, double y, double r) {
+        double db = Agitation.kShimmyStickDeadband;
+        driverHandsOff = Math.abs(x) < db && Math.abs(y) < db && Math.abs(r) < db;
+        if (!driverHandsOff) shimmyUntil = Double.NEGATIVE_INFINITY;
+    }
+
+    // ---------- dashboard settings (saved on the roboRIO) ----------
+
+    private static boolean savedSwitch(String key, boolean dflt) {
+        boolean v = SmartDashboard.getBoolean(key, dflt);
+        if (v != Preferences.getBoolean(key, dflt)) Preferences.setBoolean(key, v);
         return v;
+    }
+
+    private static double savedNumber(String key, double dflt, double lo, double hi) {
+        double v = MathUtil.clamp(SmartDashboard.getNumber(key, dflt), lo, hi);
+        if (v != Preferences.getDouble(key, dflt)) Preferences.setDouble(key, v);
+        return v;
+    }
+
+    private boolean rollerFree() {
+        Command c = CommandScheduler.getInstance().requiring(roller);
+        return c == null || c == rollerCmd;
     }
 
     @Override
@@ -79,46 +131,98 @@ public class Agitator extends SubsystemBase {
         double rpm = shooter.getCurrentRpm();
         shots.update(now, rpm);
 
-        boolean pumping = pump != null && pump.isScheduled();
-        boolean pivotFree = CommandScheduler.getInstance().requiring(pivot) == null;
-        AgitationPlanner.Action action = planner.update(now,
-            switchOn() && DriverStation.isEnabled(),
-            index.isFeeding(),
-            rpm >= Agitation.kMinShooterRpm,
-            shots.shots(), index.jamCount(),
-            pivot.isDown(), pivotFree, pumping);
+        boolean on = savedSwitch(kEnabledKey, true);
+        double lift = savedNumber(kLiftKey, Agitation.kPumpLift, 0.3, 4.0);
+        double assist = savedNumber(kAssistKey, Agitation.kRollerAssistVolts, 0.0, 12.0);
+        boolean shimmyOn = savedSwitch(kShimmyKey, false);
+        boolean enabled = on && DriverStation.isEnabled();
 
-        if (action == AgitationPlanner.Action.PUMP) {
-            pump = pivot.pumpCommand(lift(), Agitation.kPumpCycles, Agitation.kPumpLegTimeout);
-            CommandScheduler.getInstance().schedule(pump);
-            pumps++;
-            // Roller: blink out (frees the pile at the bumper), then pull in until the pump ends.
-            // Skipped while the driver is using the roller.
-            if (CommandScheduler.getInstance().requiring(roller) == null) {
-                Command p = pump;
-                CommandScheduler.getInstance().schedule(Commands.sequence(
-                        Commands.runOnce(() -> roller.setVolts(Agitation.kRollerOutVolts), roller),
-                        Commands.waitSeconds(Agitation.kRollerOutSeconds),
-                        Commands.run(() -> roller.setVolts(Agitation.kRollerInVolts), roller)
-                            .until(() -> !p.isScheduled()))
-                    .withTimeout(3.0)
-                    .finallyDo(roller::stop)
-                    .withName("Agitate: roller pulse"));
+        // ---- protection ----
+        double temp = Math.max(pivot.tempCelsius(), index.tempCelsius());
+        if (temp > Agitation.kHotCelsius) hot = true;
+        if (temp < Agitation.kCoolCelsius) hot = false;
+        while (!pumpTimes.isEmpty() && now - pumpTimes.peekFirst() > 60.0) pumpTimes.removeFirst();
+        boolean batteryOk = RobotController.getBatteryVoltage() > Agitation.kMinBatteryVolts;
+
+        boolean pumping = pump != null && pump.isScheduled();
+        boolean feeding = index.isFeeding();
+        in.enabled = enabled;
+        in.feeding = feeding;
+        in.shooterUp = rpm >= Agitation.kMinShooterRpm;
+        in.shots = shots.shots();
+        in.jams = index.jamCount();
+        in.pumpPossible = pivot.isDown() && CommandScheduler.getInstance().requiring(pivot) == null
+            && !hot && batteryOk && pumpTimes.size() < Agitation.kMaxPumpsPerMinute;
+        in.shimmyPossible = shimmyOn && DriverStation.isTeleopEnabled() && driverHandsOff && batteryOk && !pumping;
+        in.busy = pumping || shimmying();
+        AgitationPlanner.Action action = planner.update(now, in);
+
+        switch (action) {
+            case NUDGE -> {
+                nudges++;
+                if (pivot.isDown() && rollerFree()) startRoller(Agitation.kRollerOutSeconds + 0.25, null);
+                else index.shake(Agitation.kShakeSeconds);
             }
-            dev.doglog.DogLog.log("Feed/Agitation", "PUMP");
-        } else if (action == AgitationPlanner.Action.SHAKE) {
-            index.shake(Agitation.kShakeSeconds);
-            shakes++;
-            dev.doglog.DogLog.log("Feed/Agitation", "SHAKE");
+            case PUMP -> {
+                pumps++;
+                pumpTimes.addLast(now);
+                pump = pivot.pumpCommand(lift, Agitation.kPumpCycles, Agitation.kPumpLegTimeout);
+                CommandScheduler.getInstance().schedule(pump);
+                if (rollerFree()) startRoller(3.0, pump);
+            }
+            case SHAKE -> { shakes++; index.shake(Agitation.kShakeSeconds); }
+            case SHIMMY -> {
+                shimmies++;
+                shimmyStart = now;
+                shimmyUntil = now + Agitation.kShimmySeconds;
+            }
+            default -> { }
+        }
+        if (action != AgitationPlanner.Action.NONE) dev.doglog.DogLog.log("Feed/Agitation", action.name());
+
+        // ---- prevention: gentle roller-in while balls are fed (intake down, roller free) ----
+        boolean blinking = rollerCmd != null && rollerCmd.isScheduled();
+        if (!blinking && rollerFree()) {
+            if (enabled && feeding && assist > 0 && pivot.isDown()) {
+                roller.setVolts(assist);
+                assisting = true;
+            } else if (assisting) {
+                roller.stop();
+                assisting = false;
+            }
         }
 
-        SmartDashboard.putString("Agitator", planner.status());
+        SmartDashboard.putString("Agitator", hot ? "HOT pivot/spindexer motor: no pumps until it cools"
+            : !batteryOk && feeding ? "battery low: no pumps" : planner.status());
         SmartDashboard.putString("Last Volley", planner.lastVolley());
         SmartDashboard.putNumber("Agitator Balls Counted", shots.shots());
+        SmartDashboard.putNumber("Agitator Nudges", nudges);
         SmartDashboard.putNumber("Agitator Pumps", pumps);
         SmartDashboard.putNumber("Agitator Shakes", shakes);
+        SmartDashboard.putNumber("Agitator Shimmies", shimmies);
         SmartDashboard.putNumber("Spindex Unjams", index.jamCount());
+        SmartDashboard.putNumber("Agitator Max Motor Temp (C)", temp);
         dev.doglog.DogLog.log("Feed/Balls", shots.shots());
         dev.doglog.DogLog.log("Feed/Unjams", index.jamCount());
+        dev.doglog.DogLog.log("Feed/MaxTempC", temp);
+    }
+
+    private boolean assisting = false;
+
+    /**
+     * Roller blink: out for a moment, then in. Runs until `until` ends (a pump) or for `seconds`.
+     * Scheduled as its own command so the driver's trigger interrupts only this, never the pump.
+     */
+    private void startRoller(double seconds, Command until) {
+        assisting = false;
+        rollerCmd = Commands.sequence(
+                Commands.runOnce(() -> roller.setVolts(Agitation.kRollerOutVolts), roller),
+                Commands.waitSeconds(Agitation.kRollerOutSeconds),
+                Commands.run(() -> roller.setVolts(Agitation.kRollerInVolts), roller)
+                    .until(() -> until != null && !until.isScheduled()))
+            .withTimeout(seconds)
+            .finallyDo(roller::stop)
+            .withName("Agitate: roller blink");
+        CommandScheduler.getInstance().schedule(rollerCmd);
     }
 }

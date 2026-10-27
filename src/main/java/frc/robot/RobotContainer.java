@@ -211,6 +211,17 @@ public class RobotContainer {
                         -Constants.Aim.kHeadingAssistMax, Constants.Aim.kHeadingAssistMax);
                 }
 
+                // AUTOMATIC AGITATION shimmy (dashboard "Agitate Drive Shimmy", off by default):
+                // a short robot-relative forward/back shuffle to break a stuck pile. Only while the
+                // driver's sticks are centered; touching a stick cancels it at once.
+                Agitator.reportDriverSticks(xInput, yInput, rInput);
+                if (Agitator.shimmying()) {
+                    return robotCentricDrive
+                        .withVelocityX(Agitator.shimmySpeed())
+                        .withVelocityY(0)
+                        .withRotationalRate(rotationRate);
+                }
+
                 // --- SWERVE DRIVE LOGIC ---
                 if ("robot".equals(driveModeChooser.getSelected())) {
                     return robotCentricDrive

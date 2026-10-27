@@ -67,8 +67,11 @@ public class AimSubsystem extends SubsystemBase {
         Pose2d pose = state.Pose;
         // CTRE reports robot-relative speeds: turn them into field speeds.
         ChassisSpeeds field = ChassisSpeeds.fromRobotRelativeSpeeds(state.Speeds, pose.getRotation());
+        // During an agitation shimmy the robot rocks a centimeter or two: aim at the hub itself,
+        // or the shoot-while-moving lead would swing the aim point back and forth.
+        boolean lead = Aim.kShootWhileMoving && !Agitator.shimmying();
         solution = ShotSolver.solve(pose, field.vxMetersPerSecond, field.vyMetersPerSecond, ourHub(),
-            geometry, this::timeOfFlight, Aim.kShootWhileMoving);
+            geometry, this::timeOfFlight, lead);
     }
 
     // ---------- what the commands ask ----------

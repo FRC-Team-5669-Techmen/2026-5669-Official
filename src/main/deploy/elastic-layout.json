@@ -298,30 +298,6 @@
             }
           },
           {
-            "title": "Last Shot Launch RPM",
-            "x": 512.0,
-            "y": 128.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Large Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Last Shot Launch RPM",
-              "period": 0.06
-            }
-          },
-          {
-            "title": "Shooter Actual RPM",
-            "x": 768.0,
-            "y": 128.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Large Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Shooter Actual RPM",
-              "period": 0.06
-            }
-          },
-          {
             "title": "Practice Field: Hub Tags Only",
             "x": 1024.0,
             "y": 128.0,
@@ -448,6 +424,31 @@
             "type": "Text Display",
             "properties": {
               "topic": "/SmartDashboard/Agitate Lift (rot)",
+              "period": 0.06,
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "Agitate Drive Shimmy",
+            "x": 512.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Toggle Switch",
+            "properties": {
+              "topic": "/SmartDashboard/Agitate Drive Shimmy",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Roller Assist Volts",
+            "x": 768.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Roller Assist Volts",
               "period": 0.06,
               "show_submit_button": true
             }
