@@ -87,4 +87,44 @@ public final class HubShiftTracker {
         if (matchTime > 30)  return weWonAuto;  // SHIFT 4
         return true;                            // END GAME: both active
     }
+
+    /** OPEN / CLOSED, or UNKNOWN without FMS game data (practice): never block shots on UNKNOWN. */
+    public enum HubState { OPEN, CLOSED, UNKNOWN }
+
+    /**
+     * Our hub's state when a ball fired NOW will arrive (secondsAhead = flight time + a margin),
+     * so shooting can start just before the hub opens and stop just before it closes
+     * (6328 and 581 did this in 2026).
+     */
+    public static HubState ourHubStateAt(double secondsAhead) {
+        return computeHubStateAt(
+            DriverStation.isAutonomousEnabled(),
+            DriverStation.isTeleopEnabled(),
+            DriverStation.getAlliance().orElse(null),
+            DriverStation.getGameSpecificMessage(),
+            DriverStation.getMatchTime(),
+            secondsAhead);
+    }
+
+    /** Pure version of {@link #ourHubStateAt}, unit tested. */
+    public static HubState computeHubStateAt(boolean autonomousEnabled, boolean teleopEnabled, Alliance alliance,
+                                             String gameData, double matchTime, double secondsAhead) {
+        if (autonomousEnabled) return HubState.OPEN;
+        if (!teleopEnabled || alliance == null || gameData == null || gameData.isEmpty() || matchTime < 0) {
+            return HubState.UNKNOWN;
+        }
+        char c = Character.toUpperCase(gameData.charAt(0));
+        if (c != 'R' && c != 'B') return HubState.UNKNOWN;
+        double t = matchTime - Math.max(0.0, secondsAhead);
+        if (t < 0) t = 0;
+        return computeOurHubOpen(false, true, alliance, gameData, t) ? HubState.OPEN : HubState.CLOSED;
+    }
+
+    /** Seconds until our hub next changes state (teleop, FMS data known), or -1 if unknown. */
+    public static double secondsUntilChange(double matchTime) {
+        if (matchTime < 0) return -1;
+        double[] bounds = {130, 105, 80, 55, 30};
+        for (double b : bounds) if (matchTime > b) return matchTime - b;
+        return -1;
+    }
 }
