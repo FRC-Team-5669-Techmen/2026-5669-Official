@@ -151,9 +151,10 @@ public class Agitator extends SubsystemBase {
         in.shooterUp = rpm >= Agitation.kMinShooterRpm;
         in.shots = shots.shots();
         in.jams = index.jamCount();
-        in.pumpPossible = pivot.isDown() && CommandScheduler.getInstance().requiring(pivot) == null
+        boolean climbing = ElevatorSubsystem.isRaised();
+        in.pumpPossible = !climbing && pivot.isDown() && CommandScheduler.getInstance().requiring(pivot) == null
             && !hot && batteryOk && pumpTimes.size() < Agitation.kMaxPumpsPerMinute;
-        in.shimmyPossible = shimmyOn && DriverStation.isTeleopEnabled() && driverHandsOff && batteryOk && !pumping;
+        in.shimmyPossible = !climbing && shimmyOn && DriverStation.isTeleopEnabled() && driverHandsOff && batteryOk && !pumping;
         in.busy = pumping || shimmying();
         AgitationPlanner.Action action = planner.update(now, in);
 

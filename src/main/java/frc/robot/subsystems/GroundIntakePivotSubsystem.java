@@ -210,6 +210,13 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
         });
     }
 
+    /** Vacuum mode: put the intake DOWN if it isn't already (same move as the A button's DOWN). */
+    public void deployIfUp() {
+        if (!isDownPositionValid() || isDown) return;
+        isDown = true;
+        CommandScheduler.getInstance().schedule(downMove());
+    }
+
     /** Operator D-pad Up: hold to jog up slowly, release to stop. */
     public Command jogUpCommand() {
         return startEnd(() -> startJog(GroundIntakePivot.kJogVolts), this::endJog);

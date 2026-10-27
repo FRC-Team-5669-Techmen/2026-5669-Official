@@ -51,11 +51,12 @@ public final class ShotTable {
      */
     public static ShotTable passDefaults() {
         ShotTable t = new ShotTable();
-        t.put(new Point(4.0, 3300, 2.60, 1.10));
+        // 3.5 to 13 m: driving at 4 m/s shifts a 7.7 m pass to ~4 m (toward home) or ~12.5 m (away).
+        t.put(new Point(3.5, 3200, 2.60, 1.05));
         t.put(new Point(6.0, 3700, 2.80, 1.35));
         t.put(new Point(8.0, 4000, 3.00, 1.55));
         t.put(new Point(10.0, 4250, 3.20, 1.75));
-        t.put(new Point(12.0, 4450, 3.40, 1.95));
+        t.put(new Point(13.0, 4450, 3.40, 2.05));
         return t;
     }
 

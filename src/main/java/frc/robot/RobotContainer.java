@@ -49,6 +49,7 @@ import frc.robot.subsystems.VisionLocalizer;
 
 // Commands
 import frc.robot.commands.AimCommand;
+import frc.robot.commands.VacuumCommand;
 import frc.robot.commands.FeedShooterCommand;
 import frc.robot.commands.ManualGoobaCommand;
 import frc.robot.commands.ManualTurretCommand;
@@ -114,6 +115,8 @@ public class RobotContainer {
     public final ShotMapGuide shotMapGuide = new ShotMapGuide(aim, shooter, gooba);
     // One shared auto-aim command: Operator RB toggles it, the backup-shot buttons turn it on.
     private final AimCommand aimCommand = new AimCommand(aim, goober, gooba, limelight, drivetrain);
+    private final VacuumCommand vacuumCommand = new VacuumCommand(aim, shooter, index, shooterIntake,
+        goober, gooba, groundIntakePivot, intakeRoller, aimCommand);
     public final BackupShots backupShots = new BackupShots(drivetrain, localizer);
 
     // Not created on purpose: MariosEar (the 2 PhotonVision USB cameras), since the
@@ -205,6 +208,7 @@ public class RobotContainer {
                 // turret (its ~90 degree dead zone), turn the robot just enough to bring the hub in
                 // reach. The driver's rotate stick always wins.
                 if (aim.isActive() && aim.poseUsable() && !aim.solution().reachable()
+                        && !ElevatorSubsystem.isRaised()   // climbing: never turn the robot by itself
                         && Math.abs(rInput) < Constants.Aim.kDriverRotateOverride) {
                     rotationRate = MathUtil.clamp(
                         Constants.Aim.kHeadingAssistP * aim.solution().headingErrorRad(),
@@ -287,6 +291,16 @@ public class RobotContainer {
         operatorController.rightTrigger().and(aimOn).whileTrue(
             new ShootCommand(aim, shooter, index, shooterIntake, goober, gooba, false));
         operatorController.rightTrigger().and(aimOn.negate()).whileTrue(new FeedShooterCommand(index, shooterIntake));
+
+        // VACUUM MODE (Back, press to toggle): intake + shoot hands-free. Intake down, roller in,
+        // auto-aim on, fires by itself whenever ready. Scores from inside our alliance zone,
+        // PASSES home from the neutral zone (follows the Start target mode). See VacuumCommand.
+        // Operator RT/B and the jogs take over only while held; vacuum resumes after.
+        operatorController.back().toggleOnTrue(vacuumCommand);
+
+        // SHOT TARGET MODE (Start, press): AUTO -> SCORE only -> PASS only -> AUTO. Dashboard
+        // "Shot Target" shows it. AUTO = score inside our alliance zone, pass from past it.
+        operatorController.start().onTrue(aim.cycleModeCommand());
 
         // LOCKED Left Trigger (hold): shooter windup. Auto-aim ON: to the shot table's speed for
         // the distance (the shooter's default command does it, see configureSystemDefaults).
@@ -413,6 +427,7 @@ public class RobotContainer {
         SmartDashboard.putData("Save Spot: Left Trench", backupShots.saveCommand(BackupShots.Spot.LEFT_TRENCH));
         SmartDashboard.putData("Save Spot: Right Trench", backupShots.saveCommand(BackupShots.Spot.RIGHT_TRENCH));
         SmartDashboard.putData("Clear Recorded Shot Points", aim.clearRecordedCommand());
+        SmartDashboard.putData("Clear Recorded Pass Points", aim.clearRecordedPassCommand());
 
         drivetrain.registerTelemetry(logger::telemeterize);
     }

@@ -61,6 +61,7 @@ public class ShootCommand extends Command {
         // Start when everything is ready; after that keep feeding (each ball dips the RPM, and
         // pausing for every dip is what made balls crawl in).
         firing = firing ? aim.keepFiring(turret) : aim.readyToFire(turret, shooter, hood);
+        aim.setFiring(firing);
         if (firing) {
             index.feed(); // forward with automatic unjam
             uptake.feed();
@@ -74,6 +75,7 @@ public class ShootCommand extends Command {
 
     @Override
     public void end(boolean interrupted) {
+        aim.setFiring(false);
         index.stop();
         uptake.stop();
         if (spinShooter) {

@@ -380,6 +380,8 @@ const BIND = {
     A:{t:"Backup: Midshot",m:"PRESS",fx:"backup",n:"A"},
     X:{t:"Backup: Left trench",m:"PRESS",fx:"backup",n:"X"},
     LB:{t:"Backup: Right trench",m:"PRESS",fx:"backup",n:"LB"},
+    BACK:{t:"Vacuum: intake + auto-shoot",m:"TOGGLE",fx:"vacuum",n:"BACK"},
+    START:{t:"Target: auto / score / pass",m:"PRESS",fx:"target",n:"START"},
   }
 };
 const CALL = {
@@ -406,6 +408,8 @@ const CALL = {
     {keys:["B"],k:"B",t:"Unjam",m:"HOLD",side:"R",y:190,ax:403,ay:142},
     {keys:["A"],k:"A",t:"Backup: Midshot",m:"PRESS",side:"R",y:240,ax:381,ay:164},
     {keys:["X"],k:"X",t:"Backup: L trench",m:"PRESS",side:"R",y:290,ax:359,ay:142},
+    {keys:["BACK"],k:"BACK",t:"Vacuum mode",m:"TOGGLE",side:"T",dx:-75,y:20,ax:280,ay:134},
+    {keys:["START"],k:"START",t:"Target mode",m:"PRESS",side:"T",dx:75,y:20,ax:320,ay:134},
   ]
 };
 const OX=130, OY=47;
@@ -455,7 +459,7 @@ function buildPad(who){
     let x,y=c.y-H/2,path;
     if(c.side==="L"){x=12;path=`M${x+W} ${c.y} H${x+W+12} L${c.ax} ${c.ay}`;}
     else if(c.side==="R"){x=600-6-W;path=`M${x} ${c.y} H${x-12} L${c.ax} ${c.ay}`;}
-    else {x=300-W/2;y=2;path=`M${c.ax} ${y+H} L${c.ax} ${c.ay-6}`;}
+    else {x=300-W/2+(c.dx||0);y=2;path=`M${c.ax} ${y+H} L${c.ax} ${c.ay-6}`;}
     const lead=el("path",{class:"lead",d:path},svg);
     const dot=el("circle",{class:"cdot",cx:c.ax,cy:c.ay,r:3},svg);
     const cg=el("g",{class:"call",transform:`translate(${x} ${y})`},svg);
@@ -508,7 +512,7 @@ const S={};
 function resetModel(){Object.assign(S,{elev:0,pivot:0,pivotT:0,roller:false,rollerA:0,idle:false,rpm:0,wheelA:0,feed:0,spinA:0,ballP:0,aim:false,tur:0,aimT:0,slow:false,hdg:0,gyroFlash:0,wheelsA:0,demo:{drive:0,rotate:0},focus:{}});}
 resetModel();
 const FXPART={gyro:"p-drive",drive:"p-drive",rotate:"p-drive",slow:"p-drive",roller:"p-intake",rollerOut:"p-intake",hood:"p-shooter",hoodJog:"p-shooter",pivot:"p-intake",jogU:"p-intake",jogD:"p-intake",climbUp:"p-elev",climbDown:"p-elev",idle:"p-shooter",spin:"p-shooter",feed:"p-feed",unjam:"p-feed",aim:"p-turret",turL:"p-turret",turR:"p-turret"};
-const FXTELE={gyro:"t-drive",drive:"t-drive",rotate:"t-drive",slow:"t-slow",roller:"t-intake",rollerOut:"t-intake",hood:"t-shooter",hoodJog:"t-shooter",pivot:"t-intake",jogU:"t-intake",jogD:"t-intake",climbUp:"t-climb",climbDown:"t-climb",idle:"t-idle",spin:"t-shooter",feed:"t-shooter",unjam:"t-shooter",aim:"t-aim",turL:"t-turret",turR:"t-turret"};
+const FXTELE={gyro:"t-drive",drive:"t-drive",rotate:"t-drive",slow:"t-slow",roller:"t-intake",rollerOut:"t-intake",hood:"t-shooter",hoodJog:"t-shooter",pivot:"t-intake",jogU:"t-intake",jogD:"t-intake",climbUp:"t-climb",climbDown:"t-climb",idle:"t-idle",spin:"t-shooter",feed:"t-shooter",unjam:"t-shooter",aim:"t-aim",vacuum:"t-aim",target:"t-aim",turL:"t-turret",turR:"t-turret"};
 const $=id=>document.getElementById(id);
 const ra=$("ra"), rs=$("rs");
 function announce(who,k){
@@ -527,10 +531,11 @@ function onPress(who,k){
     case "pivot": S.pivotT = S.pivotT>0.5?0:1; break;
     case "idle": S.idle=!S.idle; break;
     case "aim": S.aim=!S.aim; S.aimT=0; break;
+    case "vacuum": S.vac=!S.vac; if(S.vac){S.aim=true;S.aimT=0;S.pivotT=1;} break;
   }
   if(b.m==="TOGGLE") rs.innerHTML+=` · now <b>${toggleState(who,k)}</b>`;
 }
-function toggleState(who,k){const fx=BIND[who][k].fx;if(fx==="pivot")return S.pivotT>0.5?"DOWN":"UP";if(fx==="idle")return S.idle?"ON":"OFF";if(fx==="aim")return S.aim?"ON":"OFF";return"";}
+function toggleState(who,k){const fx=BIND[who][k].fx;if(fx==="pivot")return S.pivotT>0.5?"DOWN":"UP";if(fx==="idle")return S.idle?"ON":"OFF";if(fx==="aim")return S.aim?"ON":"OFF";if(fx==="vacuum")return S.vac?"ON":"OFF";return"";}
 const held=(who,k)=>!!(mouse[who][k]||padb[who][k]);
 
 // ---------- controller input ----------

@@ -53,6 +53,22 @@ No buttons: whenever a shooting command feeds (Operator RT with or without auto-
 - Dashboard (tab "Feed + Spots"): "Auto Agitate", "Agitate Drive Shimmy", "Roller Assist Volts", "Agitate Lift (rot)" (all saved), "Agitator" (what it's doing), **"Last Volley"** (balls, seconds, balls/s, longest gap, nudges, pumps, shakes, shimmies, unjams: the scorecard). DogLog `Feed/*`.
 - **Tuning on the robot**: same full hopper, compare "Last Volley" with Auto Agitate OFF, ON, and ON + shimmy. Longest gap still over ~0.5 s = raise the lift a little; intake slamming = lower it. Unjams during normal feeding = raise `kJamAmps`. Balls counted far below balls shot = lower `kShotDropRpm`. If gaps keep coming from the same spot, the fix is mechanical (star wheel or narrower inlet where they bridge).
 
+## Passing, vacuum mode, shoot on the move, climb + trench guards (Oct 27)
+
+Research behind all of it (6328, 1678, 581, 5000 public 2026 code, the TU22 game manual): `docs/PASSING-AND-SOTM-RESEARCH.md`. Code: `aiming/TargetPicker` (pure, tests `TargetPickerTest`), `aiming/ShotSolver` (pure, tests `ShotSolverTest`), `subsystems/AimSubsystem`, `commands/VacuumCommand`, `HubShiftTracker.computeHubStateAt`. Numbers in `Constants.Aim`.
+
+- **What to shoot at** (`TargetPicker`, every loop): **SCORE** into our hub while the robot CENTER is within **4.19 m of our wall**, checked now and at the predicted launch spot 0.3 s ahead. Reason: **G407**, launching into our hub is legal only with the bumpers partly inside our alliance zone (4.029 m), MAJOR FOUL otherwise; 4.34 m guarantees it at any heading for our 29.5 x 24.5 in bumpers, minus 0.15 m for pose error. Beyond the line: **PASS** to a landing point in a corner of our alliance zone on the robot's side: 0.94 m from our wall, 1.65 m from the side wall (6328's point). If the straight line crosses either hub (+0.30 m), it tries the backup (1.40 m / 1.00 m, 581's), then the other side's corner and backup; all blocked = hold ("PASS: a hub blocks every lane: move sideways"), since a lob into our hub from outside the zone is also a G407 foul. Mirrored for red. 0.25 m hysteresis; the pass point is frozen for the length of a volley.
+- **Operator Start** cycles the target mode **AUTO -> SCORE only -> PASS only** (dashboard "Shot Target" shows target and mode; chooser "Shot Target Mode" too). Forced SCORE still refuses to shoot outside the zone ("SCORE: outside our alliance zone (G407 foul)").
+- **Operator Back = VACUUM MODE** (toggle): intake down (not while climbing), roller in, auto-aim on, shooter at the table speed, and it **fires by itself whenever ready**: score inside our zone, pass home from the neutral zone. The drive team always wins: Driver RT/LT take the roller, Operator RT/B take the feeders, the jogs/Y take aim, only while held; vacuum picks each piece back up when it's free. Dashboard "Vacuum Mode".
+- **Two tables**: SCORE (`ShotTable.defaults()` + "Shot Table Recorded") and PASS (`ShotTable.passDefaults()`, **starting guesses 3.5-13 m, hood high, RPM rising**, + "Pass Table Recorded"). "Record Shot Point" records into the table of the CURRENT target, so to tune passes: Start until "PASS only", Shot Tuning Mode ON, tune RPM (hood near the top, 6328's method) until the balls land on the corner point, Record. "Clear Recorded Pass Points" resets the pass table. Record passes on a real field (the shop ceiling is too low).
+- **Shoot on the move** (`ShotSolver.solve`, the 2026 elite method): pose projected ahead by `kReleaseLatency` (0.10 s); the ball inherits the **turret pivot's** velocity (robot velocity + spin x the 0.16 m pivot offset); **virtual target** = target - pivot velocity x effective flight time, iterated until it moves < 1 cm (max 10); **drag**: lead by (1 - e^(-k t))/k with `kDragK` 0.42 (581 0.465, 6328 0.375; raw time over-leads ~20%); RPM/hood read at the virtual distance; **turret rate feedforward** (target sliding past + robot spin) through `Goober.aimAtAngleWithRate`. Dashboard "Aim Turret Rate (deg per s)", "Robot Speed (m per s)", Field widget objects Target and Aim Point.
+- **Ready to fire** (per target): turret within atan(margin / distance) (0.15 m scoring, 0.50 m passing, never under 2 deg) AND turning at the target's rate within 30 deg/s (`Goober.aimTracking`; the old "slower than 30 deg/s" blocked real moving shots); robot speed under **1.5 m/s scoring / 4.0 m/s passing** (581's numbers); shooter within max(150 RPM, 4%) scoring / 400 RPM passing; hood within 0.12 / 0.25 rot. "Shot Ready" says what it's waiting for.
+- **Hub shifts**: with FMS game data, a SCORING shot is held when the ball would land in our hub while it's CLOSED ("HUB CLOSED: opens in N s"): arrival = flight time + 0.3 s, and a ball still counts if it lands up to 2.5 s after the hub closes (rule: 3 s). Shooting starts early so the first balls land as it opens. **Passes are never held.** No game data (practice) = never held. Dashboard switch "Hold Fire: Hub Closed" (saved), "Our Hub".
+- **Climb while shooting** (manual, no automation): while the elevator is above `Elevator.kRaisedThreshold` (5 rot), nothing automatic moves the robot or the intake: no heading assist, no agitation pumps or shimmy, vacuum won't deploy the intake. Shooting still works (legal: the tower is in our alliance zone, 3.4-4.0 m from the hub: record a shot point there). Dashboard "Climbing (elevator up)".
+- **Trench guard**: the trench bar clears 22.25 in; the Limelight rides on the hood at 20.75 in (down) to 22.35 in (fully up). Near a trench (hub band +0.45 m + 0.4 s of travel, y within the opening +0.3 m) the hood target is capped at `kTrenchHoodMax` 3.0 rot. Dashboard "Near Trench (hood capped)". Manual hood jogs are not capped: keep the hood down through a trench.
+- Elastic: new **Match** tab (Shot Target, Shot Ready, Our Hub, Vacuum Mode, Climbing, Near Trench, Pit Check, Field, distance, speed, RPMs, Agitator).
+- **To tune on the robot**: `kReleaseLatency` (film a moving shot; balls land behind the motion = raise it), `kDragK` (balls land AHEAD in the direction of travel = lead too small = LOWER k), the pass table, and real flight times (film: release to landing; the recorded SCORE points all carry the 0.9 s placeholder "Tune TOF").
+
 ## Drive Team Controller Map
 
 `tools/controller-map/`: double-click **Start Controller Map.bat** on any Windows driver station laptop for a live map of both Xbox controllers under the docked Driver Station (reads the controllers in the background, so it follows presses while Driver Station has focus). See its README. **When a controller binding changes, update the `BIND` / `CALL` tables in `tools/controller-map/index.html` too.**
@@ -116,6 +132,7 @@ src/main/java/frc/robot/
 │   ├── AutoGooba               # Hood follows the Limelight ty through the ty shot map (only the autoAimGooba named command now)
 │   ├── AimCommand              # Shoot from anywhere: turret + hood from field position (tag fallback)
 │   ├── ShootCommand            # Shoot from anywhere: table RPM, feeds only when ready
+│   ├── VacuumCommand           # Operator Back: intake + auto-aim + fire-when-ready (score or pass)
 │   ├── GooberAlign             # Old tag-only turret align w/ search sweep (not bound anymore: RB = AimCommand)
 │   ├── MariosEarCommand        # Multi-phase turret aim (Limelight → USB cams) (RETIRED: no USB cams)
 │   ├── ManualGoobaCommand      # Operator D-pad Up/Down jog of the hood
@@ -135,8 +152,9 @@ src/main/java/frc/robot/
 │   ├── ElevatorSubsystem       # Climber, TalonFX 19: hold-to-move up/down
 │   └── IntakeRollerSubsystem   # Ground intake roller, TalonFX 22: hold Driver RT to spin
 ├── aiming/
-│   ├── ShotSolver              # Pure aiming math (turret angle, dead zone, lead for motion, camera pose)
-│   └── ShotTable               # Distance -> RPM / hood / time of flight, recorded points
+│   ├── ShotSolver              # Pure aiming math (turret angle, dead zone, shoot on the move, camera pose)
+│   ├── ShotTable               # Distance -> RPM / hood / time of flight (SCORE and PASS tables), recorded points
+│   └── TargetPicker            # SCORE vs PASS by position (G407), pass corners, hub line-of-sight, trench zones
 ├── feeding/
 │   ├── ShotDetector            # Counts balls from flywheel dips
 │   ├── JamDetector             # Spindexer stall -> short reverse
@@ -297,6 +315,8 @@ This matches the drive team's official map. **LOCKED** = practiced, must stay ex
 | A (press) | **Backup shot: Midshot** (between hub and climb): seeds the pose there, auto-aim on, then RT | added Oct 25 |
 | X (press) | **Backup shot: Left trench** (as seen from our DS) | added Oct 25 |
 | Left Bumper (press) | **Backup shot: Right trench** | added Oct 25 (was unbound) |
+| Back (press) | **VACUUM MODE** toggle: intake down + roller + auto-aim, fires by itself when ready (score in our zone, pass from the neutral zone) | added Oct 27 |
+| Start (press) | **Shot target mode**: AUTO -> SCORE only -> PASS only | added Oct 27 |
 
 Removed because they weren't on the map: Driver D-pad Right (tank-drive toggle, and tank mode itself) and the old Operator Left Bumper "aim while held" (LB is now the right-trench backup shot).
 

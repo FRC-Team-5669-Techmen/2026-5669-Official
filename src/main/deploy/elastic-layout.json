@@ -3,6 +3,170 @@
   "grid_size": 128,
   "tabs": [
     {
+      "name": "Match",
+      "grid_layout": {
+        "layouts": [],
+        "containers": [
+          {
+            "title": "Shot Target",
+            "x": 0.0,
+            "y": 0.0,
+            "width": 768.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Shot Target",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Shot Ready",
+            "x": 768.0,
+            "y": 0.0,
+            "width": 512.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Shot Ready",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Our Hub",
+            "x": 0.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Our Hub",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Vacuum Mode",
+            "x": 256.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Vacuum Mode",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Climbing (elevator up)",
+            "x": 512.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Climbing (elevator up)",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Near Trench (hood capped)",
+            "x": 768.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Near Trench (hood capped)",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Field",
+            "x": 0.0,
+            "y": 256.0,
+            "width": 768.0,
+            "height": 384.0,
+            "type": "Field",
+            "properties": {
+              "topic": "/SmartDashboard/Field",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Aim Distance (m)",
+            "x": 768.0,
+            "y": 256.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Aim Distance (m)",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Robot Speed (m per s)",
+            "x": 1024.0,
+            "y": 256.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Robot Speed (m per s)",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Shooter Actual RPM",
+            "x": 768.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Shooter Actual RPM",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Aim Shooter RPM",
+            "x": 1024.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Aim Shooter RPM",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Agitator",
+            "x": 768.0,
+            "y": 512.0,
+            "width": 512.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Agitator",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Pit Check",
+            "x": 1024.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Pit Check",
+              "period": 0.06
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "Shot Map",
       "grid_layout": {
         "layouts": [],

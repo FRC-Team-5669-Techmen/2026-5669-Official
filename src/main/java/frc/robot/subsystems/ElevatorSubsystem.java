@@ -119,8 +119,17 @@ public class ElevatorSubsystem extends SubsystemBase {
         return "OK";
     }
 
+    // CLIMB WHILE SHOOTING: other code checks this so nothing automatic moves the robot or the
+    // intake while it is climbing (heading assist, agitation shimmy, intake pumps, vacuum deploy).
+    private static volatile boolean raised = false;
+
+    /** The elevator is up off the bottom (climbing, or about to). */
+    public static boolean isRaised() { return raised; }
+
     @Override
     public void periodic() {
+        raised = motor.getPosition().getValueAsDouble() > Elevator.kRaisedThreshold;
+        SmartDashboard.putBoolean("Climbing (elevator up)", raised);
         SmartDashboard.putString("Elevator Status", status());
         SmartDashboard.putNumber("Elevator Position (rot)", motor.getPosition().getValueAsDouble());
         SmartDashboard.putNumber("Elevator Amps", motor.getStatorCurrent().getValueAsDouble());

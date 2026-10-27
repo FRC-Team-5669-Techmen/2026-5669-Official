@@ -127,4 +127,16 @@ public final class TargetPicker {
         }
         return true;
     }
+
+    /**
+     * Robot (center) is in, or heading into, a trench (under the low bar beside either hub):
+     * x within a hub band widened by `approach` meters, y within the trench opening widened by 0.3 m.
+     */
+    public boolean nearTrench(Translation2d robot, double trenchOpeningY, double approach) {
+        double[] hubs = {f.hubDepth(), f.length() - f.hubDepth()};
+        boolean inBand = false;
+        for (double hx : hubs) inBand |= Math.abs(robot.getX() - hx) <= f.hubHalfSize() + approach;
+        double y = robot.getY();
+        return inBand && (y <= trenchOpeningY + 0.3 || y >= f.width() - trenchOpeningY - 0.3);
+    }
 }

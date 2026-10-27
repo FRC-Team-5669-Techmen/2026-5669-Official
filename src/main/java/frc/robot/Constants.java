@@ -306,6 +306,10 @@ public final class Constants {
      */
     public static final class Elevator {
         public static final int kMotorId = 19;  // Tuner X name: "Elevator"
+        // Above this (rotations) the robot counts as CLIMBING: no heading assist, shimmy, intake
+        // pumps or vacuum deploy (they could twist or bang the robot on the tower). Shooting is
+        // still allowed (no rule against it; the tower is in our alliance zone).
+        public static final double kRaisedThreshold = 5.0;
 
         // In the code, positive = UP. If D-pad Up makes it go DOWN, flip this.
         public static final boolean kElevatorInverted = false;
@@ -563,6 +567,9 @@ public final class Constants {
         // guaranteed at any heading while the robot CENTER is within 4.34 m; minus 0.15 m for pose
         // error. Past it the robot will not score (AUTO switches to PASS; forced SCORE holds fire).
         public static final double kScoreMaxRobotDepth = 4.19;
+        // G407 is judged at LAUNCH: check where the robot will be when the ball leaves (581
+        // measured 0.25 s feeder travel; at 1.5 m/s that is ~0.4 m, more than the 0.15 m margin).
+        public static final double kLaunchLookahead = 0.30; // s
         public static final double kTargetHysteresis = 0.25;
         // Pass landing point: from our wall / from the side wall on the robot's side (6328: 37 in, 65 in).
         public static final double kPassDepth = 0.94;
@@ -572,6 +579,10 @@ public final class Constants {
         public static final double kPassBackupSide = 1.00;
         public static final double kPassObstaclePad = 0.30;    // 581: 12 in around each hub
         // Passing ready check is looser (a floor zone, not a hub opening).
+        // TRENCH: 22.25 in clearance. The Limelight rides on the hood: 20.75 in hood down, 22.35 in
+        // hood fully up, so near a trench the hood is capped here (lens ~22.0 in).
+        public static final double kTrenchHoodMax = 3.0;
+        public static final double kTrenchOpeningY = 1.283;    // trench opening runs y 0 to 1.283 (and mirrored)
         public static final double kPassRpmTolerance = 400.0;
         public static final double kPassHoodTolerance = 0.25;
 

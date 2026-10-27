@@ -61,7 +61,9 @@ public class AimSubsystem extends SubsystemBase {
     private TargetPicker.Mode mode = TargetPicker.Mode.AUTO;
     private double robotSpeed = 0;
     private boolean legalToScore = true;
+    private boolean nearTrench = false;
     private boolean active = false; // auto-aim (Operator RB / vacuum mode) or an auto is aiming
+    private boolean firing = false; // ShootCommand is feeding balls right now
     private final Field2d field = new Field2d();
     private final SendableChooser<TargetPicker.Mode> modeChooser = new SendableChooser<>();
 
@@ -139,10 +141,23 @@ public class AimSubsystem extends SubsystemBase {
         robotSpeed = Math.hypot(fs.vxMetersPerSecond, fs.vyMetersPerSecond);
         Translation2d pivot = pose.getTranslation().plus(geometry.turretPivot().rotateBy(pose.getRotation()));
         mode = currentMode();
-        legalToScore = !poseUsable() || picker.legalToScore(pose.getTranslation(), red());
+        // G407 is judged where the robot is when the ball LEAVES: check now and the predicted spot.
+        Translation2d atLaunch = pose.getTranslation().plus(new Translation2d(
+            fs.vxMetersPerSecond * Aim.kLaunchLookahead, fs.vyMetersPerSecond * Aim.kLaunchLookahead));
+        legalToScore = !poseUsable() || (picker.legalToScore(pose.getTranslation(), red())
+            && picker.legalToScore(atLaunch, red()));
+        // Heading toward or under a trench: approach margin grows with speed (0.4 s look-ahead).
+        nearTrench = poseUsable() && picker.nearTrench(pose.getTranslation(), Aim.kTrenchOpeningY,
+            0.45 + 0.4 * robotSpeed);
         // No position: passing is impossible, aim falls back to our hub tag (scoring).
-        target = poseUsable() ? picker.pick(pose.getTranslation(), pivot, red(), mode)
-            : new TargetPicker.Target(TargetPicker.Kind.SCORE, ourHub(), "HUB (tag only)");
+        if (!poseUsable()) {
+            target = new TargetPicker.Target(TargetPicker.Kind.SCORE, ourHub(), "HUB (tag only)");
+        } else if (!(firing && target != null && target.kind() == TargetPicker.Kind.PASS
+                && mode != TargetPicker.Mode.SCORE)) {
+            // Re-pick every loop, EXCEPT mid-volley while passing: keep the same landing point so
+            // the burst doesn't jump corners (1678 froze its target while firing).
+            target = picker.pick(pose.getTranslation(), pivot, red(), mode);
+        }
         // During an agitation shimmy the robot rocks a centimeter or two: no motion lead then.
         boolean lead = Aim.kShootWhileMoving && !Agitator.shimmying();
         solution = ShotSolver.solve(pose, fs.vxMetersPerSecond, fs.vyMetersPerSecond,
@@ -170,13 +185,19 @@ public class AimSubsystem extends SubsystemBase {
     }
 
     public double targetHood() {
-        return tuningMode() ? SmartDashboard.getNumber("Tune Hood (rot)", 1.0) : activeTable().hood(solution.distanceMeters());
+        double h = tuningMode() ? SmartDashboard.getNumber("Tune Hood (rot)", 1.0) : activeTable().hood(solution.distanceMeters());
+        // Trench clearance: the Limelight on the hood would be too tall with the hood near the top.
+        return nearTrench ? Math.min(h, Aim.kTrenchHoodMax) : h;
     }
+
+    public boolean nearTrench() { return nearTrench; }
 
     /** Turret feedforward rate (deg/s clockwise) for the current target, 0 without position. */
     public double turretRate() { return poseUsable() ? solution.turretRateDegPerSec() : 0.0; }
 
     public boolean isActive() { return active; }
+    /** ShootCommand reports whether it is feeding (freezes the pass target for the volley). */
+    public void setFiring(boolean on) { firing = on; }
     public void setActive(boolean on) { active = on; }
 
     /** Aim tolerance (deg) for the current target and distance. */
@@ -367,6 +388,7 @@ public class AimSubsystem extends SubsystemBase {
         SmartDashboard.putNumber("Aim Hood (rot)", targetHood());
         SmartDashboard.putNumber("Aim Tolerance (deg)", aimToleranceDegrees());
         SmartDashboard.putNumber("Robot Speed (m per s)", robotSpeed);
+        SmartDashboard.putBoolean("Near Trench (hood capped)", nearTrench);
         SmartDashboard.putBoolean("Aim Active", active);
         HubShiftTracker.HubState hub = HubShiftTracker.ourHubStateAt(0);
         SmartDashboard.putString("Our Hub", hub == HubShiftTracker.HubState.UNKNOWN ? "unknown (no FMS)" : hub.name());
