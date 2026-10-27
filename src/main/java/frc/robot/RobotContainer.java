@@ -29,6 +29,7 @@ import frc.robot.controls.HotasX56;
 import frc.robot.generated.TunerConstants;
 
 // Subsystems
+import frc.robot.subsystems.Agitator;
 import frc.robot.subsystems.AimSubsystem;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.ElevatorSubsystem;
@@ -98,6 +99,8 @@ public class RobotContainer {
     public final ElevatorSubsystem elevator = new ElevatorSubsystem();  // climber, CAN 19
     public final IntakeRollerSubsystem intakeRoller = new IntakeRollerSubsystem(); // ground intake roller, CAN 22
     public final GoobaSubsystem gooba = new GoobaSubsystem(); // hood, CAN 18 ("Shooter Top")
+    // Automatic agitation while shooting (pump the intake / shake + unjam the spindexer). No buttons.
+    public final Agitator agitator = new Agitator(shooter, index, groundIntakePivot, intakeRoller);
 
     // Shoot from anywhere: field position from the Limelight (camera on the turret), and the
     // shot brain that turns position into turret angle, hood and shooter speed.

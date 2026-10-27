@@ -49,11 +49,45 @@ public class IndexSubsystem extends SubsystemBase {
         return edu.wpi.first.math.MathUtil.clamp(SmartDashboard.getNumber("Spindex Forward Volts", Constants.Index.kForwardSpeed), 0.0, 12.0);
     }
 
+    // Automatic unjam (see frc.robot.feeding.JamDetector and Constants.Agitation).
+    private final frc.robot.feeding.JamDetector jam = new frc.robot.feeding.JamDetector(
+        Constants.Agitation.kJamAmps, Constants.Agitation.kJamSpeed, Constants.Agitation.kJamSeconds,
+        Constants.Agitation.kJamIgnoreAfterStart, Constants.Agitation.kUnjamSeconds);
+    private double lastFeedCall = Double.NEGATIVE_INFINITY;
+
+    /**
+     * SHOOTING feed: forward at "Spindex Forward Volts", with automatic unjam. If the spindexer
+     * stalls (two balls fighting for the uptake) it reverses for a moment by itself, then feeds
+     * again. Every shooting command calls this every loop.
+     */
+    public void feed() {
+        double now = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
+        lastFeedCall = now;
+        boolean reverse = jam.update(now, motor.getStatorCurrent().getValueAsDouble(),
+            motor.getVelocity().getValueAsDouble());
+        motor.setControl(request.withOutput(reverse ? Constants.Agitation.kUnjamVolts : forwardVolts()));
+    }
+
+    /** True while a shooting command is feeding (including its short unjam/shake reversals). */
+    public boolean isFeeding() {
+        return edu.wpi.first.wpilibj.Timer.getFPGATimestamp() - lastFeedCall < 0.1;
+    }
+
+    /** Agitator: reverse for a blink (shakes a bridged pile when the intake can't pump). */
+    public void shake(double seconds) {
+        jam.shake(edu.wpi.first.wpilibj.Timer.getFPGATimestamp(), seconds);
+    }
+
+    public int jamCount() { return jam.jams(); }
+
+    /** Fixed volts (Operator B unjam, intake rewind). Not a shooting feed: no auto-unjam. */
     public void run(double volts) {
+        jam.stopped();
         motor.setControl(request.withOutput(volts));
     }
 
     public void stop() {
+        jam.stopped();
         motor.stopMotor();
     }
 

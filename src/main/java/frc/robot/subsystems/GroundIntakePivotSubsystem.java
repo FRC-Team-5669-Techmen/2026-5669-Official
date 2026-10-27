@@ -234,6 +234,36 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
         leader.getConfigurator().apply(softLimitsOn); // DOWN soft limit back on
     }
 
+    /** True when the intake is deployed (the last A press sent it DOWN). */
+    public boolean isDown() {
+        return isDown && isDownPositionValid();
+    }
+
+    /**
+     * AGITATION PUMP (Agitator, while shooting): lift the deployed intake part way and drop it
+     * back, `cycles` times, to tap a bridged pile loose. Ends resting DOWN like the A button
+     * (brake, no pushing). Any A press or jog interrupts it (the driver always wins).
+     */
+    public Command pumpCommand(double lift, int cycles, double legTimeout) {
+        double top = Math.min(downTarget() + lift, upTarget());
+        Command all = pumpCycle(top, legTimeout);
+        for (int i = 1; i < cycles; i++) {
+            all = all.andThen(pumpCycle(top, legTimeout));
+        }
+        return all.finallyDo(this::stop).withName("Agitate: pump intake");
+    }
+
+    /** One pump: up to `top` (or as far as it gets), then back down to resting DOWN. */
+    private Command pumpCycle(double top, double legTimeout) {
+        return Commands.sequence(
+            runOnce(() -> goTo(top)),
+            Commands.waitUntil(() -> isNear(top) || stalled).withTimeout(legTimeout),
+            runOnce(() -> goTo(downTarget())),
+            Commands.waitUntil(() -> stalled
+                    || (isNear(downTarget()) && Math.abs(leaderSpeed) < GroundIntakePivot.kStallSpeed))
+                .withTimeout(legTimeout));
+    }
+
     /** Runs when the robot disables, so re-enabling can never move the intake by itself. */
     public Command stopCommand() {
         return runOnce(this::stop).ignoringDisable(true);

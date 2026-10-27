@@ -286,18 +286,6 @@
             }
           },
           {
-            "title": "Spindex Speed (rot/s)",
-            "x": 0.0,
-            "y": 128.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Large Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Spindex Speed (rot/s)",
-              "period": 0.06
-            }
-          },
-          {
             "title": "Spindex Amps",
             "x": 256.0,
             "y": 128.0,
@@ -401,32 +389,6 @@
             }
           },
           {
-            "title": "Pit Check",
-            "x": 0.0,
-            "y": 384.0,
-            "width": 768.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Pit Check",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
-            "title": "Localization Step",
-            "x": 768.0,
-            "y": 384.0,
-            "width": 512.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Localization Step",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
             "title": "Shot Table Code",
             "x": 0.0,
             "y": 512.0,
@@ -437,6 +399,57 @@
               "topic": "/SmartDashboard/Shot Table Code",
               "period": 0.06,
               "show_submit_button": false
+            }
+          },
+          {
+            "title": "Auto Agitate",
+            "x": 0.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Toggle Switch",
+            "properties": {
+              "topic": "/SmartDashboard/Auto Agitate",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Agitator",
+            "x": 0.0,
+            "y": 384.0,
+            "width": 512.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Agitator",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Last Volley",
+            "x": 512.0,
+            "y": 384.0,
+            "width": 512.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Last Volley",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Agitate Lift (rot)",
+            "x": 1024.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Agitate Lift (rot)",
+              "period": 0.06,
+              "show_submit_button": true
             }
           }
         ]

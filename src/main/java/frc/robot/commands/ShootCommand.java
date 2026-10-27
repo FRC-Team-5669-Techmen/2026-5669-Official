@@ -62,7 +62,7 @@ public class ShootCommand extends Command {
         // pausing for every dip is what made balls crawl in).
         firing = firing ? aim.keepFiring(turret) : aim.readyToFire(turret, shooter, hood);
         if (firing) {
-            index.run(frc.robot.subsystems.IndexSubsystem.forwardVolts());
+            index.feed(); // forward with automatic unjam
             uptake.feed();
             SmartDashboard.putString("Shot Ready", "FIRING");
         } else {

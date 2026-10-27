@@ -47,8 +47,12 @@ public class FuelHandlingCommand extends Command {
             shooterRPM = Constants.Shooter.kReverseRPM; // -1000 RPM
         }
 
-        // Run all motors in unison
-        index.run(indexSpeed);
+        // Run all motors in unison (forward = shooting feed with automatic unjam)
+        if (isForward) {
+            index.feed();
+        } else {
+            index.run(indexSpeed);
+        }
         if (isForward) {
             shooterIntake.feed(); // same battery-proof volts as teleop shooting
         } else {

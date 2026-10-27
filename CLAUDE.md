@@ -35,6 +35,18 @@
 - **Backup shots** (`subsystems/BackupShots`, camera-proof): park on the spot, press **Operator A = Midshot** (between our hub and our climb), **Operator X = Left trench**, **Operator LB = Right trench** (left/right as seen from our driver station). It resets the pose to that spot (keeps the gyro heading; if the heading is unknown it assumes the robot faces straight away from our DS), turns auto-aim on (shared `aimCommand` with Operator RB), then RT fires as usual. Spots are stored relative to our hub (forward toward our DS wall, left = driver's left) so they mirror for red/blue; defaults are estimates (Midshot 2.30 m forward; trenches 1.05 m forward, 3.39 m left/right); **"Save Spot: ..." dashboard buttons store the real spot** (Preferences "Backup Spot Midshot" etc., needs Pose Trusted).
 - Driver Station keys: **Enter = Disable, Space = Emergency Stop** (needs a roboRIO reboot after).
 
+## Automatic agitation (Oct 26)
+
+No buttons: whenever a shooting command feeds (Operator RT with or without auto-aim, autos `score`/`shoot`), the robot keeps the hopper flowing by itself. Code: `frc.robot.feeding` (pure logic, tests in `src/test/java/frc/robot/feeding/FeedingTest.java`), `subsystems/Agitator` (runs every loop, no motors of its own), `IndexSubsystem.feed()`, `GroundIntakePivotSubsystem.pumpCommand()`. Numbers in `Constants.Agitation`.
+
+- **Two failure modes** (REBUILT teams on Chief Delphi call them this): **bridging** = balls wedge above the spindexer, it spins empty, no ball reaches the shooter; **inlet jam** = two balls fight for the uptake and the spindexer stalls.
+- **Inlet jam -> unjam**: `IndexSubsystem.feed()` (all shooting feeds use it; Operator B and rewinds still use `run()`) watches the spindexer: over 45 A while turning under 8 motor rot/s for 0.15 s (ignored the first 0.3 s of feeding) = jam, reverse at -6 V for 0.25 s, then forward again. Dashboard "Spindex Unjams".
+- **Bridging -> pump**: balls are counted from flywheel dips (`ShotDetector`: speed falls 120 RPM below its recent peak, so it works even when the wheel can't reach its target). Feeding with the wheel up and no ball for 0.8 s = starving: if the intake is DOWN and nothing else is moving it, **pump** it (lift "Agitate Lift (rot)" = 2.0 of the ~5.7 rot travel, drop, twice; ends resting DOWN) while the roller blinks out 0.15 s then pulls in (the drive team's "X-take" trick). Intake stowed or busy: **shake** the spindexer (0.15 s reverse). 3 jams within 3 s also trigger a pump. 0.6 s cooldown after each.
+- **Empty**: 3 agitations in a row with no ball = hopper probably empty, it stops until a ball leaves or feeding restarts.
+- **Driver always wins**: Driver A or the intake jog interrupts a pump; the roller pulse is skipped while the driver holds a roller trigger.
+- Dashboard (tab "Feed + Spots"): **"Auto Agitate"** (on/off, saved in roboRIO Preferences), **"Agitate Lift (rot)"** (saved), **"Agitator"** (what it's doing: feeding OK / STARVING: pump intake / hopper EMPTY? ...), **"Last Volley"** (balls, seconds, balls per second, longest gap, pumps, shakes, unjams: the scorecard). DogLog `Feed/*`.
+- **Tuning on the robot**: shoot a full hopper and read "Last Volley". Longest gap over ~1 s or many pumps = raise the lift a little (or lower `kStarveSeconds`); intake slamming = lower the lift. Unjams firing during normal feeding = raise `kJamAmps`; real jams not caught = lower it. Compare volleys with "Auto Agitate" off vs on.
+
 ## Drive Team Controller Map
 
 `tools/controller-map/`: double-click **Start Controller Map.bat** on any Windows driver station laptop for a live map of both Xbox controllers under the docked Driver Station (reads the controllers in the background, so it follows presses while Driver Station has focus). See its README. **When a controller binding changes, update the `BIND` / `CALL` tables in `tools/controller-map/index.html` too.**
@@ -119,6 +131,10 @@ src/main/java/frc/robot/
 ├── aiming/
 │   ├── ShotSolver              # Pure aiming math (turret angle, dead zone, lead for motion, camera pose)
 │   └── ShotTable               # Distance -> RPM / hood / time of flight, recorded points
+├── feeding/
+│   ├── ShotDetector            # Counts balls from flywheel dips
+│   ├── JamDetector             # Spindexer stall -> short reverse
+│   └── AgitationPlanner        # When to pump the intake / shake the spindexer, volley stats
 ├── generated/
 │   └── TunerConstants.java     # Tuner X generated swerve config (module IDs, offsets, gains)
 └── sim/
@@ -143,7 +159,7 @@ This is a 2026 FRC robot with the following mechanical systems:
   The code drives both at the same speed with opposite inversion, which is correct for a mirrored pair.
 - **Top roller**: belted to the bottom roller, so it spins whenever the bottom roller does. **Nothing to code.** The Kraken X44 on CAN 18 (Tuner X name "Shooter Top") drives the **hood**, not this roller (programming lead, Oct 25).
 - Velocity control (VelocityVoltage): fast 5400 RPM (`kMaxRPM` = 5800, the motor's free speed; was capped at 3100 until Oct 25), 0.25 s spin-up ramp, 60 A supply / 120 A stator per motor, slow 2500, idle 2000 (Driver D-pad Left), reverse -1000
-- PID: kP=0.25, kS=0.20, kV=0.12 (Oct 25 audit: kP 0.11 with no kS left it a few hundred RPM short, so "ready to fire" never came true). Dashboard "Shooter RPM Error"
+- PID: **kP=0.6, kS=0.20, kV=0.15** (Oct 26 Shot Map Day: with kP 0.25 / kV 0.12 the wheel settled at ~82% of any target, so auto-aim never fired; measured LT at 11.1 V holding ~4450 RPM = ~0.15 V per rot/s; 0.18 overshot ~230 RPM). Dashboard "Shooter RPM Error"
 - **Shot consistency meter** (`ShooterSubsystem.meterShots`): each ball dips the wheel; the speed just before the dip is the launch speed. Dashboard "Shots At Speed" (X of Y launched within 100 RPM of target), "Last Shot Launch RPM", "Last Shot Dip (RPM)", "Last Shot Recovery (s)", button "Reset Shot Stats"; DogLog Shooter/*. If later balls in a burst launch slow, the spindexer is feeding faster than the wheel recovers: lower "Spindex Forward Volts"
 
 ### Index / Feeder

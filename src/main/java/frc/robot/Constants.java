@@ -336,6 +336,55 @@ public final class Constants {
      * creates the motor (so no CAN errors) and Driver Right Trigger does nothing.
      * When it's on CAN: set kMotorId to its ID in Tuner X, then set the flag to true.
      */
+    /**
+     * AUTOMATIC AGITATION (Oct 26). Two problems, two fixes (see frc.robot.feeding):
+     * BRIDGING = balls wedge above the spindexer, it spins empty, no ball reaches the shooter.
+     *   Fix: "pump" the deployed intake up and back down (taps the pile loose) while the roller
+     *   pulses out then in (pushes balls back over the bumper into the feed).
+     * INLET JAM = two balls fight for the uptake and the spindexer STALLS (high amps, no speed).
+     *   Fix: reverse the spindexer for a moment, then feed again.
+     * Dashboard: "Auto Agitate" (on/off, saved), "Agitate Lift (rot)" (saved), "Agitator" (what it
+     * is doing), "Last Volley" (balls, seconds, longest gap, pumps, unjams).
+     */
+    public static final class Agitation {
+        // Starving: feeding, shooter spun up, but no ball has left for this long.
+        public static final double kStarveSeconds = 0.8;
+        // Pump the intake: lift this far above DOWN (rotations; DOWN to UP is about 5.7), then back.
+        public static final double kPumpLift = 2.0;
+        public static final int kPumpCycles = 2;
+        public static final double kPumpLegTimeout = 0.45;   // seconds per up or down leg, max
+        // Roller during a pump: out for a blink (frees the pile at the bumper), then in.
+        public static final double kRollerOutVolts = -6.0;
+        public static final double kRollerOutSeconds = 0.15;
+        public static final double kRollerInVolts = 12.0;
+        // After a pump, give balls this long to arrive before pumping again.
+        public static final double kPumpCooldown = 0.6;
+        // This many pumps in a row with no ball out = the hopper is probably empty: stop pumping
+        // until a ball leaves or feeding restarts.
+        public static final int kMaxPumpsWithoutShot = 3;
+        // Intake is UP (stowed): it can't pump, so shake the spindexer instead (short reverse).
+        public static final double kShakeSeconds = 0.15;
+
+        // Spindexer JAM: commanded forward, pushing hard (amps) but barely turning (motor rot/s),
+        // for this long. Ignored right after feeding starts (spin-up looks the same for a moment).
+        public static final double kJamAmps = 45.0;
+        public static final double kJamSpeed = 8.0;          // motor rotations per second
+        public static final double kJamSeconds = 0.15;
+        public static final double kJamIgnoreAfterStart = 0.3;
+        public static final double kUnjamVolts = -6.0;
+        public static final double kUnjamSeconds = 0.25;
+        // 3 jams within this window: the pile itself is stuck, so pump too.
+        public static final double kJamBurstWindow = 3.0;
+        public static final int kJamBurstCount = 3;
+
+        // Shot detection for agitation (independent of the target RPM, so it also works when the
+        // wheel can't reach the target): a ball = speed falls this far below its recent peak.
+        public static final double kShotDropRpm = 120.0;
+        public static final double kShotRearmRpm = 60.0;     // back within this of the pre-dip speed
+        public static final double kShotMaxDipSeconds = 0.6;
+        public static final double kMinShooterRpm = 1000.0;  // below this the shooter isn't shooting
+    }
+
     public static final class IntakeRoller {
         public static final boolean kIntakeRollerEnabled = true;  // on CAN now (Oct 2026)
         public static final int kMotorId = 22;  // Tuner X name: "Intake motor(22)"

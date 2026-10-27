@@ -19,7 +19,7 @@ public class FeedShooterCommand extends Command {
 
     @Override
     public void execute() {
-        index.run(frc.robot.subsystems.IndexSubsystem.forwardVolts());
+        index.feed(); // forward with automatic unjam
         shooterIntake.feed();
     }
 
