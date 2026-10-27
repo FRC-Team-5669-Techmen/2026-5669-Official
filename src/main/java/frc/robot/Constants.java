@@ -553,8 +553,9 @@ public final class Constants {
         public static final double kTurretRateTolerance = 30.0; // deg/s
 
         // ---- Hub shifts: hold scoring shots that would land in our CLOSED hub ----
-        // Uses FMS game data (no data = never holds). A ball fired now arrives after its flight
-        // time; start this much early so the first balls land just as the hub opens.
+        // Uses FMS game data (no data = never holds). A ball fired now lands after its flight time;
+        // the hub is judged this much BEFORE that, so the first balls never land while it's still
+        // closed (the match clock is approximate).
         public static final double kHubArrivalMargin = 0.3; // s
 
         // ---- PASSING (TargetPicker): from past our hub, lob into a corner of our alliance zone ----

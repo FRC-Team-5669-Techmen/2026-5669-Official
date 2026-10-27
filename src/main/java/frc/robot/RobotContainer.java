@@ -18,6 +18,7 @@ import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
@@ -297,6 +298,9 @@ public class RobotContainer {
         // PASSES home from the neutral zone (follows the Start target mode). See VacuumCommand.
         // Operator RT/B and the jogs take over only while held; vacuum resumes after.
         operatorController.back().toggleOnTrue(vacuumCommand);
+        // RB (aim off) and Y (manual hood) mean "I'm taking over": vacuum mode turns off.
+        operatorController.rightBumper().or(operatorController.y())
+            .onTrue(Commands.runOnce(vacuumCommand::cancel));
 
         // SHOT TARGET MODE (Start, press): AUTO -> SCORE only -> PASS only -> AUTO. Dashboard
         // "Shot Target" shows it. AUTO = score inside our alliance zone, pass from past it.
@@ -408,7 +412,8 @@ public class RobotContainer {
 
         shooter.setDefaultCommand(new RunCommand(() -> {
             boolean wantsShot = operatorController.getHID().getRightTriggerAxis() > 0.5
-                || operatorController.getHID().getLeftTriggerAxis() > 0.5;
+                || operatorController.getHID().getLeftTriggerAxis() > 0.5
+                || aim.vacuum();   // vacuum mode: keep the wheel up even while an unjam has the feeders
             if (aim.isActive() && wantsShot) {
                 shooter.runAtRPM(aim.targetRpm()); // auto-aim: table speed while LT or RT is held
             } else if (m_isShooterIdle) {

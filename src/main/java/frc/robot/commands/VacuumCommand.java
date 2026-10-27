@@ -25,6 +25,8 @@ import frc.robot.subsystems.ShooterSubsystem;
  * </ul>
  * The drive team always wins: Driver RT/LT take the roller, Operator RT/B take the feeders, the
  * hood/turret jogs take aim, each only while held; vacuum picks every piece back up afterwards.
+ * Operator RB (aim off) or Y (manual hood) turn vacuum mode OFF. It never fires without a known
+ * position (it can't check the G407 zone line without one), and stops the roller while climbing.
  */
 public class VacuumCommand extends Command {
     private final AimSubsystem aim;
@@ -42,7 +44,7 @@ public class VacuumCommand extends Command {
         this.pivot = pivot;
         this.roller = roller;
         this.aimCommand = aimCommand;
-        this.shoot = new ShootCommand(aim, shooter, index, uptake, turret, hood, true).withName("Vacuum: shoot");
+        this.shoot = new ShootCommand(aim, shooter, index, uptake, turret, hood, true, false).withName("Vacuum: shoot");
         this.rollerIn = roller.runCommand().withName("Vacuum: roller in");
         // No requirements of its own: it runs the pieces as separate commands, so the driver's
         // roller triggers interrupt only the roller, never the whole mode.
@@ -50,6 +52,7 @@ public class VacuumCommand extends Command {
 
     @Override
     public void initialize() {
+        aim.setVacuum(true);
         if (!ElevatorSubsystem.isRaised()) pivot.deployIfUp();
         startedAim = !aimCommand.isScheduled();
         if (startedAim) CommandScheduler.getInstance().schedule(aimCommand);
@@ -62,7 +65,9 @@ public class VacuumCommand extends Command {
     public void execute() {
         // Never fight the drive team: each piece only comes back once nobody else is using its
         // mechanisms (Driver RT/LT on the roller; Operator RT/B on the feeders; hood/turret jogs).
-        if (!rollerIn.isScheduled() && free(rollerIn)) CommandScheduler.getInstance().schedule(rollerIn);
+        boolean climbing = ElevatorSubsystem.isRaised();
+        if (climbing && rollerIn.isScheduled()) rollerIn.cancel();      // climbing: no roller
+        if (!climbing && !rollerIn.isScheduled() && free(rollerIn)) CommandScheduler.getInstance().schedule(rollerIn);
         if (!aimCommand.isScheduled() && free(aimCommand)) CommandScheduler.getInstance().schedule(aimCommand);
         if (!shoot.isScheduled() && free(shoot)) CommandScheduler.getInstance().schedule(shoot);
     }
@@ -82,6 +87,7 @@ public class VacuumCommand extends Command {
 
     @Override
     public void end(boolean interrupted) {
+        aim.setVacuum(false);
         shoot.cancel();
         rollerIn.cancel();
         if (startedAim) aimCommand.cancel();

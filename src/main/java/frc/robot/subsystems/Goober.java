@@ -150,15 +150,12 @@ public class Goober extends SubsystemBase {
         aimAtAngleWithRate(targetDegrees, Math.toDegrees(robotSpinRadPerSec));
     }
 
-    private double rateTarget = 0.0; // deg/s the turret target is moving (feedforward)
-
     /**
      * Turn to an angle while its target moves at rateDegPerSec (clockwise +): shoot on the move.
      * The rate comes from ShotSolver (robot sliding past the target + robot spin), so the turret
      * keeps up instead of lagging behind.
      */
     public void aimAtAngleWithRate(double targetDegrees, double rateDegPerSec) {
-        rateTarget = rateDegPerSec;
         if (!endMeasured()) {
             stop();
             aimStatus = "OFF: far end not set";

@@ -152,6 +152,10 @@ public class Agitator extends SubsystemBase {
         in.shots = shots.shots();
         in.jams = index.jamCount();
         boolean climbing = ElevatorSubsystem.isRaised();
+        if (climbing) {                       // stop anything already moving the intake or robot
+            if (pump != null && pump.isScheduled()) pump.cancel();
+            shimmyUntil = Double.NEGATIVE_INFINITY;
+        }
         in.pumpPossible = !climbing && pivot.isDown() && CommandScheduler.getInstance().requiring(pivot) == null
             && !hot && batteryOk && pumpTimes.size() < Agitation.kMaxPumpsPerMinute;
         in.shimmyPossible = !climbing && shimmyOn && DriverStation.isTeleopEnabled() && driverHandsOff && batteryOk && !pumping;

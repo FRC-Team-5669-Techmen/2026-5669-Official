@@ -64,6 +64,7 @@ public class AimSubsystem extends SubsystemBase {
     private boolean nearTrench = false;
     private boolean active = false; // auto-aim (Operator RB / vacuum mode) or an auto is aiming
     private boolean firing = false; // ShootCommand is feeding balls right now
+    private boolean vacuum = false; // vacuum mode: fires by itself, so it must know where it is
     private final Field2d field = new Field2d();
     private final SendableChooser<TargetPicker.Mode> modeChooser = new SendableChooser<>();
 
@@ -109,10 +110,13 @@ public class AimSubsystem extends SubsystemBase {
         System.out.println("AIM | Shot target mode: " + buttonMode);
     }
 
+    private TargetPicker.Mode lastChooser = TargetPicker.Mode.AUTO;
+
     public TargetPicker.Mode currentMode() {
-        if (buttonMode != null) return buttonMode;
         TargetPicker.Mode m = modeChooser.getSelected();
-        return m == null ? TargetPicker.Mode.AUTO : m;
+        if (m == null) m = TargetPicker.Mode.AUTO;
+        if (m != lastChooser) { lastChooser = m; buttonMode = null; } // dashboard pick wins when changed
+        return buttonMode != null ? buttonMode : m;
     }
 
     /** SCORE or PASS right now. */
@@ -152,10 +156,14 @@ public class AimSubsystem extends SubsystemBase {
         // No position: passing is impossible, aim falls back to our hub tag (scoring).
         if (!poseUsable()) {
             target = new TargetPicker.Target(TargetPicker.Kind.SCORE, ourHub(), "HUB (tag only)");
-        } else if (!(firing && target != null && target.kind() == TargetPicker.Kind.PASS
-                && mode != TargetPicker.Mode.SCORE)) {
-            // Re-pick every loop, EXCEPT mid-volley while passing: keep the same landing point so
-            // the burst doesn't jump corners (1678 froze its target while firing).
+        } else if (firing && target != null && target.kind() == TargetPicker.Kind.PASS
+                && mode != TargetPicker.Mode.SCORE) {
+            // Mid-volley while passing: keep the same landing point so the burst doesn't jump
+            // corners (1678 froze its target while firing), but re-check the lane every loop: a
+            // lob that drops into our hub from outside the zone is a G407 foul.
+            target = new TargetPicker.Target(target.kind(), target.point(), target.name(),
+                !picker.blocked(pivot, target.point(), red()));
+        } else {
             target = picker.pick(pose.getTranslation(), pivot, red(), mode);
         }
         // During an agitation shimmy the robot rocks a centimeter or two: no motion lead then.
@@ -196,6 +204,10 @@ public class AimSubsystem extends SubsystemBase {
     public double turretRate() { return poseUsable() ? solution.turretRateDegPerSec() : 0.0; }
 
     public boolean isActive() { return active; }
+    /** Vacuum mode on/off (it auto-fires, so it never uses the tag-only fallback). */
+    public void setVacuum(boolean on) { vacuum = on; }
+    public boolean vacuum() { return vacuum; }
+
     /** ShootCommand reports whether it is feeding (freezes the pass target for the volley). */
     public void setFiring(boolean on) { firing = on; }
     public void setActive(boolean on) { active = on; }
@@ -218,8 +230,11 @@ public class AimSubsystem extends SubsystemBase {
     /** A scoring shot fired now would land in our hub while it's CLOSED (FMS data needed). */
     public boolean hubClosedForShot() {
         if (passing() || !SmartDashboard.getBoolean(kHoldKey, true)) return false;
-        double arrive = rawTof(solution.distanceMeters()) + Aim.kHubArrivalMargin;
-        return HubShiftTracker.ourHubStateAt(arrive) == HubShiftTracker.HubState.CLOSED;
+        // Judge the hub a little BEFORE the ball lands (tof - margin): if it's open by then it is
+        // open when the ball lands (the match clock is approximate). Closing is covered by the
+        // tracker's grace (the hub counts FUEL 3 s after it deactivates).
+        double ahead = Math.max(0.0, rawTof(solution.distanceMeters()) - Aim.kHubArrivalMargin);
+        return HubShiftTracker.ourHubStateAt(ahead) == HubShiftTracker.HubState.CLOSED;
     }
 
     /**
@@ -230,6 +245,8 @@ public class AimSubsystem extends SubsystemBase {
     public boolean readyToFire(Goober turret, ShooterSubsystem shooter, GoobaSubsystem hood) {
         if (!active) return false;
         if (!poseUsable()) {
+            // Vacuum fires by itself: without a position it can't check the G407 zone line.
+            if (vacuum) return false;
             // Tag-only fallback: turret locked on the hub tag, shooter at speed (hood follows ty).
             return turret.targetLocked() && rpmReady(shooter);
         }
@@ -249,7 +266,7 @@ public class AimSubsystem extends SubsystemBase {
      */
     public boolean keepFiring(Goober turret) {
         if (!active) return false;
-        if (!poseUsable()) return true;
+        if (!poseUsable()) return !vacuum;
         double keep = Math.max(Aim.kKeepFiringDegrees, aimToleranceDegrees() * 1.5);
         return solution.reachable() && Math.abs(turret.aimErrorDegrees()) <= keep
             && speedOk() && !hubClosedForShot() && (passing() ? target.laneClear() : legalToScore);
@@ -266,7 +283,10 @@ public class AimSubsystem extends SubsystemBase {
     /** Why it isn't ready (dashboard "Shot Ready" text). */
     public String readyText(Goober turret, ShooterSubsystem shooter, GoobaSubsystem hood) {
         if (!active) return "aim off (Operator RB)";
-        if (!poseUsable()) return turret.targetLocked() ? "tag-only: shooter spinning up" : "tag-only: turret not on hub tag";
+        if (!poseUsable()) {
+            if (vacuum) return "VACUUM holds: position unknown (face the hub until Vision Status says OK)";
+            return turret.targetLocked() ? "tag-only: shooter spinning up" : "tag-only: turret not on hub tag";
+        }
         String what = passing() ? "PASS" : "SCORE";
         if (!passing() && !legalToScore) return "SCORE: outside our alliance zone (G407 foul): drive in or PASS";
         if (passing() && !target.laneClear()) return "PASS: a hub blocks every lane: move sideways";
@@ -391,7 +411,8 @@ public class AimSubsystem extends SubsystemBase {
         SmartDashboard.putBoolean("Near Trench (hood capped)", nearTrench);
         SmartDashboard.putBoolean("Aim Active", active);
         HubShiftTracker.HubState hub = HubShiftTracker.ourHubStateAt(0);
-        SmartDashboard.putString("Our Hub", hub == HubShiftTracker.HubState.UNKNOWN ? "unknown (no FMS)" : hub.name());
+        SmartDashboard.putString("Our Hub", hub == HubShiftTracker.HubState.UNKNOWN ? "unknown (no FMS)"
+            : HubShiftTracker.isOurHubOpen() ? "OPEN" : "CLOSED");
         SmartDashboard.putString("Aim Geometry", Aim.kGeometryMeasured ? "measured" : "AIM GEOMETRY NOT MEASURED");
         SmartDashboard.putString("Shot Table", table.describe());
         SmartDashboard.putString("Pass Table", passTable.describe());

@@ -24,6 +24,7 @@ public class ShootCommand extends Command {
     private final Goober turret;
     private final GoobaSubsystem hood;
     private final boolean spinShooter;
+    private final boolean stopShooterOnEnd;
     private boolean firing = false;
 
     /**
@@ -33,6 +34,14 @@ public class ShootCommand extends Command {
      */
     public ShootCommand(AimSubsystem aim, ShooterSubsystem shooter, IndexSubsystem index,
                         ShooterIntakeSubsystem uptake, Goober turret, GoobaSubsystem hood, boolean spinShooter) {
+        this(aim, shooter, index, uptake, turret, hood, spinShooter, true);
+    }
+
+    /** @param stopShooterOnEnd false for vacuum mode: an unjam (B) interrupting it must not spin the wheel down */
+    public ShootCommand(AimSubsystem aim, ShooterSubsystem shooter, IndexSubsystem index,
+                        ShooterIntakeSubsystem uptake, Goober turret, GoobaSubsystem hood, boolean spinShooter,
+                        boolean stopShooterOnEnd) {
+        this.stopShooterOnEnd = stopShooterOnEnd;
         this.aim = aim;
         this.shooter = shooter;
         this.index = index;
@@ -78,7 +87,7 @@ public class ShootCommand extends Command {
         aim.setFiring(false);
         index.stop();
         uptake.stop();
-        if (spinShooter) {
+        if (spinShooter && stopShooterOnEnd) {
             shooter.stop();
         }
         SmartDashboard.putString("Shot Ready", "-");
