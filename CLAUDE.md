@@ -123,7 +123,7 @@ From a code audit for match-losing failures plus the reliability code of 6328, 5
 
 ## Easier driving for a low-practice drive team (Oct 28)
 
-Research (6328, 581, 5000, 1678, 2910 2026 code; FIRST drive-team guides; Chief Delphi; workload audit of this repo): `reports/Low practice drive team support.md`, notes in `/home/claude/research_notes/Low practice drive team support/`.
+Research (6328, 581, 5000, 1678, 2910 2026 code; FIRST drive-team guides; Chief Delphi; workload audit of this repo): `docs/LOW-PRACTICE-DRIVE-TEAM.md`, notes in `/home/claude/research_notes/Low practice drive team support/`.
 - **Auto-aim turns ON by itself at teleop start** (and when Driver Y turns defense OFF). Switch "Auto-Aim On At Teleop Start" (saved, ON). With aim on but **no shot wanted** (`AimSubsystem.shotWanted()`: Operator RT/LT held, vacuum/dump, firing, or any auto) only the turret tracks (camera stays on the hub tags); the **hood stays DOWN** (trench-safe) and the robot never turns itself (heading assist only when a shot is wanted).
 - **Stick feel**: dead zone on the STICK (8%, rescaled) before the cubic curve; the CTRE request deadband is now tiny (0.02). Before, a 5%-of-top-speed OUTPUT deadband after the cube meant nothing moved until ~37% stick (46% in slow mode).
 - **Slow mode also on Driver RB** (hold), so the right thumb stays on the turn stick. Start still works.
