@@ -51,7 +51,7 @@ public class ManualGoobaCommand extends Command {
         // Stay inside the travel, unless the limits are switched off to measure
         if (!m_gooba.limitsOff()) {
             m_targetPosition = Math.max(Constants.Gooba.kBottomPosition,
-                Math.min(Constants.Gooba.kTopPosition, m_targetPosition));
+                Math.min(frc.robot.subsystems.GoobaSubsystem.top(), m_targetPosition));
         }
         m_gooba.setPosition(m_targetPosition);
 

@@ -67,6 +67,9 @@ public class PracticeMatch extends SubsystemBase {
     /** A line for the current match's timeline (command interrupts, auto end...). Any thread. */
     public static void note(String text) { if (notes.size() < 200) notes.add(text); }
 
+    private PowerMonitor power = null;
+    public void setPowerMonitor(PowerMonitor p) { power = p; }
+
     /** Extra sources for the match telemetry (RobotContainer calls this once). */
     public void setSources(CommandSwerveDrivetrain drivetrain, java.util.function.BooleanSupplier operatorRt,
                            Supplier<String> autoName) {
@@ -258,6 +261,7 @@ public class PracticeMatch extends SubsystemBase {
             meta.put(k.equals("Battery") ? "batteryLabel" : k.toLowerCase(Locale.US), v);
         }
         telemetry = new frc.robot.practice.MatchTelemetry(meta);
+        if (power != null) power.matchStarted();
         matchNumber++;
         inMatch = true;
         autoBalls = openBalls = closedBalls = passBalls = 0;
@@ -300,6 +304,7 @@ public class PracticeMatch extends SubsystemBase {
         summary.put("autoWinner", g == null || g.isEmpty() ? null : Character.toUpperCase(g.charAt(0)) == 'R' ? "red" : "blue");
         summary.put("autoWinnerRandom", randomized);
         summary.put("batteryEndAtRest", RobotController.getBatteryVoltage());
+        if (power != null) summary.put("power", power.matchFinished(kind, String.valueOf(summary.getOrDefault("batteryLabel", ""))));
         summary.put("logDir", logDir());
         String stamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
         String name = stamp + "_" + kind + "_" + matchNumber + ".json";

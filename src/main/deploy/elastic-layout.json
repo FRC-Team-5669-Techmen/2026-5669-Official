@@ -638,6 +638,240 @@
       }
     },
     {
+      "name": "Battery + Hood",
+      "grid_layout": {
+        "layouts": [],
+        "containers": [
+          {
+            "title": "Battery Verdict",
+            "x": 0.0,
+            "y": 0.0,
+            "width": 1280.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Battery Verdict",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Battery R (mOhm)",
+            "x": 0.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Battery R (mOhm)",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Battery Rest (V)",
+            "x": 256.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Battery Rest (V)",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Robot Current (A)",
+            "x": 512.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Robot Current (A)",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Test: Battery Load (shooter 2 s)",
+            "x": 768.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Test: Battery Load (shooter 2 s)",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Power Budget",
+            "x": 1024.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Power Budget",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Battery Load Test",
+            "x": 0.0,
+            "y": 256.0,
+            "width": 1280.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Battery Load Test",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Hood Limits OFF (measure)",
+            "x": 0.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Hood Limits OFF (measure)",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Set Hood Top (hood at top)",
+            "x": 256.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Set Hood Top (hood at top)",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Zero Hood (hood is DOWN)",
+            "x": 512.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Zero Hood (hood is DOWN)",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Clear Hood Top",
+            "x": 768.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Clear Hood Top",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Hood Status",
+            "x": 1024.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Hood Status",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Hood Position (rot)",
+            "x": 0.0,
+            "y": 512.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Hood Position (rot)",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Hood Top Limit (rot)",
+            "x": 256.0,
+            "y": 512.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Hood Top Limit (rot)",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Hood Target (rot)",
+            "x": 512.0,
+            "y": 512.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Hood Target (rot)",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Hood Amps",
+            "x": 768.0,
+            "y": 512.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Hood Amps",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Code Version",
+            "x": 1024.0,
+            "y": 512.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Code Version",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "Shot Map",
       "grid_layout": {
         "layouts": [],

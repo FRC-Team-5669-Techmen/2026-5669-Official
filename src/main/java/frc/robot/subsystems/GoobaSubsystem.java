@@ -99,10 +99,47 @@ public class GoobaSubsystem extends SubsystemBase {
         SoftwareLimitSwitchConfigs limits = new SoftwareLimitSwitchConfigs();
         limits.ReverseSoftLimitThreshold = Gooba.kBottomPosition;
         limits.ReverseSoftLimitEnable = on;
-        limits.ForwardSoftLimitThreshold = Gooba.kTopPosition;
+        limits.ForwardSoftLimitThreshold = top();
         limits.ForwardSoftLimitEnable = on;
         return limits;
     }
+
+    // HOOD TOP SET ON THE ROBOT (Oct 28): jog to the top with the limits off, press "Set Hood Top
+    // (hood at top)". Saved in roboRIO Preferences, so no code edit or redeploy; Constants
+    // Gooba.kTopPosition is only the fallback when nothing is saved. "Clear Hood Top" forgets it.
+    private static final String kTopKey = "Hood Top Limit (rot)";
+    private static final double kTopMargin = 0.03; // stop a hair below the hard stop
+
+    /** Soft-limit top in rotations: the saved one, else Constants.Gooba.kTopPosition. */
+    public static double top() {
+        double t = edu.wpi.first.wpilibj.Preferences.getDouble(kTopKey, -1);
+        return t > 1.0 ? t : Gooba.kTopPosition;
+    }
+
+    /** "Set Hood Top (hood at top)": saves the current spot (minus a hair) and turns the limits back on. */
+    public Command setTopCommand() {
+        return Commands.runOnce(() -> {
+            double p = getPosition();
+            if (m_motor == null || p < 1.5) {
+                System.out.println("HOOD | Set Hood Top refused: hood at " + p + " rot (jog it to the top first)");
+                SmartDashboard.putString("Hood Top", "REFUSED: hood is at " + String.format("%.2f", p) + ", jog it to the top first");
+                return;
+            }
+            edu.wpi.first.wpilibj.Preferences.setDouble(kTopKey, p - kTopMargin);
+            System.out.println("HOOD | top set to " + (p - kTopMargin) + " rot");
+            if (m_limitsOffCmd != null && m_limitsOffCmd.isScheduled()) m_limitsOffCmd.cancel(); // limits back ON
+            else setLimits(true);
+        }).ignoringDisable(true).withName("Set Hood Top");
+    }
+
+    public Command clearTopCommand() {
+        return Commands.runOnce(() -> {
+            edu.wpi.first.wpilibj.Preferences.remove(kTopKey);
+            if (!m_limitsOff) setLimits(true);
+        }).ignoringDisable(true).withName("Clear Hood Top");
+    }
+
+    private Command m_limitsOffCmd = null;
 
     /** True while the "Hood Limits OFF (measure)" switch is on. */
     public boolean limitsOff() {
@@ -126,7 +163,7 @@ public class GoobaSubsystem extends SubsystemBase {
             return;
         }
         if (trenchForceDown) rotations = Gooba.kBottomPosition;
-        m_target = m_limitsOff ? rotations : MathUtil.clamp(rotations, Gooba.kBottomPosition, Gooba.kTopPosition);
+        m_target = m_limitsOff ? rotations : MathUtil.clamp(rotations, Gooba.kBottomPosition, top());
         m_motor.setControl(m_positionControl.withPosition(m_target));
     }
 
@@ -180,8 +217,11 @@ public class GoobaSubsystem extends SubsystemBase {
      */
     public Command limitsOffCommand() {
         // No subsystem requirement on purpose, so jogging doesn't turn the limits back on.
-        return Commands.startEnd(() -> setLimits(false), () -> setLimits(true))
-            .ignoringDisable(true).withName("Hood Limits OFF");
+        if (m_limitsOffCmd == null) {
+            m_limitsOffCmd = Commands.startEnd(() -> setLimits(false), () -> setLimits(true))
+                .ignoringDisable(true).withName("Hood Limits OFF");
+        }
+        return m_limitsOffCmd;
     }
 
     private void setLimits(boolean on) {
@@ -199,7 +239,7 @@ public class GoobaSubsystem extends SubsystemBase {
         if (position <= Gooba.kBottomPosition + 0.05) {
             return "At BOTTOM";
         }
-        if (position >= Gooba.kTopPosition - 0.05) {
+        if (position >= top() - 0.05) {
             return "At TOP";
         }
         return "OK";
@@ -227,6 +267,7 @@ public class GoobaSubsystem extends SubsystemBase {
             SmartDashboard.putString("Hood Status", status());
             SmartDashboard.putNumber("Hood Position (rot)", getPosition());
             SmartDashboard.putNumber("Hood Target (rot)", m_target);
+            SmartDashboard.putNumber("Hood Top Limit (rot)", top());
             SmartDashboard.putNumber("Hood Amps", m_motor.getStatorCurrent().getValueAsDouble());
         }
     }

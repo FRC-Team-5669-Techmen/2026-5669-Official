@@ -25,7 +25,7 @@ foreach ($n in $names) {
     if (-not (Test-Path $dest)) { Invoke-WebRequest "http://$($robot):5805/matches/$n" -OutFile $dest -UseBasicParsing; $new++ }
 }
 Write-Host "Match files: $($names.Count) on the robot, $new new"
-foreach ($f in @("matches.csv", "shot-log.csv", "robot-settings.json")) {
+foreach ($f in @("matches.csv", "shot-log.csv", "robot-settings.json", "battery-history.csv")) {
     try { Invoke-WebRequest "http://$($robot):5805/$f" -OutFile (Join-Path $out $f) -UseBasicParsing } catch {}
 }
 # Full logs (.wpilog) for AdvantageScope: port 5807, only ones not copied yet.
@@ -75,7 +75,7 @@ for ($try = 1; $ok -and $try -le 2 -and -not $pushed; $try++) {
     $dm = Join-Path $data "match-data"
     New-Item -ItemType Directory -Force (Join-Path $dm "matches") | Out-Null
     Copy-Item (Join-Path $out "matches\*") (Join-Path $dm "matches") -Force -ErrorAction SilentlyContinue
-    foreach ($f in @("matches.csv", "shot-log.csv", "robot-settings.json")) {
+    foreach ($f in @("matches.csv", "shot-log.csv", "robot-settings.json", "battery-history.csv")) {
         if (Test-Path (Join-Path $out $f)) { Copy-Item (Join-Path $out $f) $dm -Force }
     }
     Git-Data add -A -- match-data | Out-Null

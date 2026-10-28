@@ -43,7 +43,7 @@ public class Robot extends TimedRobot {
                 .withCaptureDs(true)
                 .withNtPublish(true)
                 .withCaptureNt(true));
-        DogLog.setPdh(new PowerDistribution());
+        DogLog.setPdh(frc.robot.subsystems.PowerMonitor.pdh());
 
         // roboRIO 2 cuts the motors at 6.75 V by default; 581 and 1678 run 5.5 V, 5000 6.0 V. 6.0 V
         // keeps the robot driving through a hard push or climb sag instead of going limp.

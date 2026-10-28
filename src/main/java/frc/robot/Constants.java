@@ -445,6 +445,15 @@ public final class Constants {
         public static final double kSagDriveSupplyAmps = 18.0;    // ...and the battery still sagged
         public static final double kSagVolts = 8.0;               // under this for 0.1 s = SAG
         public static final double kRecoverVolts = 9.5;           // over this for 1 s = back to HEAVY
+        // BROWNOUT GUARD (Oct 28): in ANY enabled mode, battery under kGuardVolts for 0.05 s =
+        // drive supply drops to kGuardDriveSupplyAmps until it's back over kRecoverVolts for 1 s.
+        // The drive is where the big current spikes come from (4 motors accelerating or pushing).
+        public static final double kGuardVolts = 7.5;
+        public static final double kGuardDriveSupplyAmps = 25.0;
+        // Battery + main wiring resistance (PowerMonitor): above this = high. A healthy FRC battery
+        // is ~11-15 mOhm on a Battery Beak; the robot's leads, breaker and connectors add a few.
+        public static final double kResistanceHighOhms = 0.030;
+        public static final double kRestVoltsLow = 12.4;          // rested battery under this = not charged
     }
 
     public static final class IntakeRoller {

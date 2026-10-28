@@ -43,7 +43,8 @@ public class PowerBudget extends SubsystemBase {
     private final BooleanSupplier driverOverride;
     private double applied = Double.NaN;
     private double lastSend = 0, lowSince = -1, highSince = -1;
-    private boolean sag = false;
+    private boolean sag = false, guard = false;
+    private double guardLowSince = -1;
 
     private final AimSubsystem aim;
 
@@ -84,12 +85,25 @@ public class PowerBudget extends SubsystemBase {
         if (volts > Power.kRecoverVolts) { if (highSince < 0) highSince = now; } else highSince = -1;
         if (lowSince >= 0 && now - lowSince > 0.1) sag = true;
         if (!heavy || (highSince >= 0 && now - highSince > 1.0)) sag = false;
+        // BROWNOUT GUARD (any enabled mode): a dip under kGuardVolts for 0.05 s = softer drive
+        // until the battery is back over kRecoverVolts for 1 s.
+        boolean enabled = DriverStation.isEnabled();
+        if (on && enabled && volts < Power.kGuardVolts) { if (guardLowSince < 0) guardLowSince = now; } else guardLowSince = -1;
+        if (guardLowSince >= 0 && now - guardLowSince > 0.05) {
+            if (!guard) System.out.printf("POWER | brownout guard ON at %.2f V%n", volts);
+            guard = true;
+        }
+        if (!enabled || !on || (highSince >= 0 && now - highSince > 1.0)) guard = false;
 
         double amps = Power.kNormalDriveSupplyAmps;
         String text = on ? "NORMAL" : "OFF (switch)";
         if (heavy && override) text = "OVERRIDE: full drive power (Driver left stick click)";
         else if (heavy && sag) { amps = Power.kSagDriveSupplyAmps; text = String.format("SAG %.1f V: drive %.0f A", volts, amps); }
         else if (heavy) { amps = Power.kHeavyDriveSupplyAmps; text = String.format("HEAVY: drive %.0f A per motor", amps); }
+        if (guard && !override && amps > Power.kGuardDriveSupplyAmps) {
+            amps = Power.kGuardDriveSupplyAmps;
+            text = String.format("GUARD: battery dipped under %.1f V, drive %.0f A per motor", Power.kGuardVolts, amps);
+        }
 
         // Send on a change, and again once a second while limited (sent without waiting for a reply,
         // so the loop never stalls; the repeat covers a dropped frame).
@@ -107,5 +121,6 @@ public class PowerBudget extends SubsystemBase {
         SmartDashboard.putString("Power Budget", text);
         DogLog.log("Power/DriveSupplyAmps", amps);
         DogLog.log("Power/Sag", sag);
+        DogLog.log("Power/Guard", guard);
     }
 }

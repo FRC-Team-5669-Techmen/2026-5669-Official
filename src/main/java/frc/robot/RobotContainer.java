@@ -141,6 +141,8 @@ public class RobotContainer {
     public final DefenseMode defense = new DefenseMode(drivetrain, aim);
     // PRACTICE MATCH: random auto winner without an FMS + the match screen at http://10.56.69.2:5806
     public final PracticeMatch practiceMatch = new PracticeMatch(shooter, aim, () -> this.autoWinnerChooser.getSelected());
+    // Battery vs robot: resistance, worst moment, brownout snapshots, per-battery history (Oct 28)
+    public final frc.robot.subsystems.PowerMonitor powerMonitor = new frc.robot.subsystems.PowerMonitor(drivetrain);
 
     // Not created on purpose: MariosEar (the 2 PhotonVision USB cameras), since the
     // Limelight is the only camera.
@@ -175,6 +177,7 @@ public class RobotContainer {
         SmartDashboard.putData("Auto Mode", autoChooser);
         drivetrain.setKeepHeadingAtAutoStart(localizer::headingFromCamera, localizer::markHeadingFromPath);
         pitCheck.setMatchSetup(this::matchSetupProblems);
+        practiceMatch.setPowerMonitor(powerMonitor);
         practiceMatch.setSources(drivetrain, () -> operatorController.getHID().getRightTriggerAxis() > 0.5,
             this::selectedAutoName);
 
@@ -603,6 +606,8 @@ public class RobotContainer {
         SmartDashboard.putData("Zero Hood (hood is DOWN)", gooba.zeroCommand());
         // Hood measuring switch: click = limits off, click again = back on.
         SmartDashboard.putData("Hood Limits OFF (measure)", gooba.limitsOffCommand());
+        SmartDashboard.putData("Set Hood Top (hood at top)", gooba.setTopCommand());
+        SmartDashboard.putData("Clear Hood Top", gooba.clearTopCommand());
 
         // AUTO LOCALIZATION: during autos the turret (which carries the Limelight) keeps pointing at
         // our hub while the robot drives, so the camera sees hub tags the whole time and keeps
@@ -694,6 +699,7 @@ public class RobotContainer {
         SmartDashboard.putData("Test: Wheel Radius", driveTests.wheelRadiusCommand());
         SmartDashboard.putData("Test: Drive Feedforward", driveTests.feedforwardCommand());
         SmartDashboard.putData("Test: Slip Current", driveTests.slipCurrentCommand());
+        SmartDashboard.putData("Test: Battery Load (shooter 2 s)", powerMonitor.loadTestCommand(shooter));
 
         drivetrain.registerTelemetry(logger::telemeterize);
     }
@@ -736,6 +742,9 @@ public class RobotContainer {
             p.add("Auto Winner is not FMS: set it back");
         if (aim.currentMode() != frc.robot.aiming.TargetPicker.Mode.AUTO) p.add("Shot Target mode is " + aim.currentMode() + ", not AUTO");
         if (aim.tuningMode()) p.add("Shot Tuning Mode is ON: turn it off");
+        String bw = powerMonitor.batteryWarning(SmartDashboard.getString("Match Battery", ""));
+        if (bw != null) p.add(bw);
+        if (SmartDashboard.getString("Match Battery", "").isBlank()) p.add("type the battery's name on the Match tab (Match Battery)");
         if (!SmartDashboard.getBoolean("Vision Pose ON", true)) p.add("Vision Pose ON is off: turn it on");
         if (gooba.limitsOff()) p.add("Hood limits are OFF (measure switch)");
         if (elevator.limitsOff()) p.add("Elevator limits are OFF (recovery switch)");
