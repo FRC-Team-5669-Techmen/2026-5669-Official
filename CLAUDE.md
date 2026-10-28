@@ -73,7 +73,7 @@ Research behind all of it (6328, 1678, 581, 5000 public 2026 code, the TU22 game
 
 - **Shuttle** (`TargetPicker.passTarget`, automatic in AUTO/PASS, vacuum too): a pass corner further than **"Pass Max Range (m)"** (dashboard, saved, default 12 m = 393 in; measure on a real field) is skipped. Deep in the OPPONENT's alliance zone no corner is in range, so it lobs to a **relay point in the neutral zone on our half**: 6.0 m (236 in) from our wall, 1.65 m (65 in) from the side wall, robot's side first (1678 did this). A partner or our own vacuum mode then passes it home. Dashboard "Shot Target" says SHUTTLE and "[in THEIR zone]". Behind their hub every lane is blocked: it holds ("move sideways").
 - **Pass lane look-ahead**: a lane must miss both hubs (+0.30 m / 12 in) from the turret pivot NOW and from where it will be in `kLaneLookahead` 0.40 s (balls already in the uptake still leave), so feeding stops BEFORE a hub slides into the line and stays stopped while it's there; mid-volley it re-picks another clear lane if one exists. Covers both hubs (ours = G407 foul, theirs = points for them). Dashboard "Pass Lane Clear".
-- **Defense mode** (`subsystems/DefenseMode`, **Driver Y** toggle): auto-aim and vacuum off, intake UP (`raiseIfDown`), hood stowed, stick slew 6/s (normal 3/s), sticks centered + robot under 0.3 m/s = wheels in an **X** (`SwerveDriveBrake`). Ends when the operator turns aim or vacuum on. Warnings (driver rumble + dashboard "Defense"): **G418 pin clock** (`defense/PinClock`: stick over 0.5, robot under 0.25 m/s, drive motors over 50 A average for 0.5 s; strong pulses from 2 s, rule is 3 s; resets after 3 s apart), and always in the last 30 s **G420** near THEIR tower (`defense/TowerGuard`, steady rumble). Numbers in `Constants.Defense`. The drive is already at its traction limit (120 A slip current x 4 ~ 1290 N vs ~800 N of grip), so more current would only spin the wheels.
+- **Defense mode** (`subsystems/DefenseMode`, **Driver Y** toggle): auto-aim and vacuum off, intake UP (`stowIfDown`), hood stowed, stick slew 6/s (normal 3/s), sticks centered + robot under 0.3 m/s = wheels in an **X** (`SwerveDriveBrake`). Ends when the operator turns aim or vacuum on. Warnings (driver rumble + dashboard "Defense"): **G418 pin clock** (`defense/PinClock`: stick over 0.5, robot under 0.25 m/s, drive motors over 50 A average for 0.5 s; strong pulses from 2 s, rule is 3 s; resets after 3 s apart), and always in the last 30 s **G420** near THEIR tower (`defense/TowerGuard`, steady rumble). Numbers in `Constants.Defense`. The drive is already at its traction limit (120 A slip current x 4 ~ 1290 N vs ~800 N of grip), so more current would only spin the wheels.
 - Rules checked (manual TU22): nothing forbids launching from the opponent's zone; G404 (not at robots), G405 (keep FUEL in the field), G415 (bumpers outside our zone: no damaging contact inside their frame), G418 (3 s pins), G420 (last 30 s, their tower).
 
 ## Drive Team Controller Map
@@ -348,14 +348,15 @@ ignores an Xbox controller that lands in its slot. See `docs/X56-HOTAS-SETUP.md`
 - Holonomic mode, robot size 0.9m x 0.9m
 - Default max velocity: 3.0 m/s, max acceleration: 3.0 m/s^2
 - Default max angular velocity: 540 deg/s, max angular acceleration: 720 deg/s^2
-- Robot mass: 74.088 kg, MOI: 6.883
+- Robot mass: **47.63 kg in `settings.json`** (MOI 6.883). The path follower uses it (wheel force feedforwards from `RobotConfig.fromGUISettings()`): weigh the robot WITH bumpers and battery and set it in the PathPlanner GUI Settings
 - Drive motor: Kraken X60, wheel COF: 1.1
 
 ### AutoBuilder
 - Configured in `CommandSwerveDrivetrain.configureAutoBuilder()`
 - Translation PID: (10, 0, 0), Rotation PID: (7, 0, 0)
 - Alliance-aware path flipping (Red vs Blue)
-- Auto chooser defaults to "Tests"
+- Auto chooser defaults to "Tests", which doesn't exist (= do nothing): **pick an auto before every match**
+- **Auto is 20 s** in REBUILT. PathPlanner's "Simulated Driving Time" counts only driving, so add each `score` (up to 3.5 s). The 3-piece autos are ~16.2 s of driving + 2 x 3.5 s = ~23 s: the last volley gets cut off until the paths are faster or `prepareShot` zones save the spin-up time
 
 ### Named Commands (registered in `Marcos.java`)
 The registered strings are referenced by the deployed `.auto`/`.path` files — do not
@@ -366,16 +367,21 @@ rename them without updating the autos in `src/main/deploy/pathplanner/`.
 | `spinUpShooter` | RunShooterCommand (fast RPM) | 1.5s |
 | `spinUpShooterSlow` | RunShooterCommand (slow RPM) | 1.5s |
 | `score` | AimCommand + ShootCommand: aim from position, fire every ball the moment it's ready | 3.5s |
-| `scorePreload` | Spin up → FuelHandling forward → stop (no vision) | staged |
+| `scorePreload` | Same as `score` (Oct 27; it used to fire at a fixed 5400 RPM with the turret wherever it was, which faced our own wall in Center Preload) | 3.5s |
+| `prepareShot` | AimCommand + shooter at the table speed, no feeding. Event marker ZONE on the end of a path into a shooting spot, so the `score` after it fires at once | zone |
 | `visionScore` | Same as `score` | 3.5s |
 | `shoot` | FuelHandlingCommand (forward) | 2.0s |
 | `stopShooter` | InstantCommand → shooter.stop() | - |
-| `intake` | FuelHandlingCommand (reverse) | 2.0s |
+| `intake` | Ground intake down + roller in (Oct 27; used to run the feeders and shooter backwards) | 2.0s |
+| `reverseFeed` | FuelHandlingCommand (reverse): spindexer, uptake and shooter backwards (the old `intake`) | 2.0s |
 | `aimTurret` | AimCommand (turret + hood from position) | 2.0s |
 | `alignTurret` | AimCommand | 2.0s |
 | `deployGooba` / `stowGooba` | Hood to deployed / stowed preset | instant |
 | `autoAimGooba` | AutoGooba (hood follows ty) | 2.0s |
-| `lowerIntake`, `togglePiston1`, `togglePiston2`, `runGroundIntake` | No-ops (pneumatics removed; kept so old autos load cleanly) | - |
+| `lowerIntake` / `intakeDown` | Ground intake DOWN + roller in **for the rest of auto** (scheduled on its own, stops when auto ends). Were no-ops until Oct 27, so the 3-piece autos picked nothing up | instant |
+| `raiseIntake` | Roller off + intake UP | instant |
+| `runGroundIntake` | Roller in for the rest of auto. The trigger-only `runGroundIntake` event markers in the pickup paths fire it too (`EventTrigger`) | instant |
+| `togglePiston1`, `togglePiston2` | No-ops (pneumatics removed; kept so old autos load cleanly) | - |
 
 ### Paths & Autos
 - **Autos**: `Center Preload - Dumb`, `Center Preload - Vision`, `Left 3-Piece Auto`, `Right 3-Piece Auto`

@@ -146,7 +146,8 @@ public class RobotContainer {
         DriverStation.silenceJoystickConnectionWarning(true);
 
         Marcos.registerNamedCommands(
-            shooter, index, shooterIntake, goober, limelight, gooba, aim, drivetrain
+            shooter, index, shooterIntake, goober, limelight, gooba, aim, drivetrain,
+            groundIntakePivot, intakeRoller
         );
 
         autoChooser = AutoBuilder.buildAutoChooser("Tests");
@@ -309,7 +310,7 @@ public class RobotContainer {
         driverController.y().onTrue(defense.toggleCommand(() -> {
             vacuumCommand.cancel();
             aimCommand.cancel();
-            groundIntakePivot.raiseIfDown();
+            groundIntakePivot.stowIfDown();
             CommandScheduler.getInstance().schedule(gooba.stowCommand());
         }));
 

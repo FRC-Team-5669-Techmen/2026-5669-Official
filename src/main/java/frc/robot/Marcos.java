@@ -1,10 +1,13 @@
 package frc.robot;
 
 import com.pathplanner.lib.auto.NamedCommands;
+import com.pathplanner.lib.events.EventTrigger;
 
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import frc.robot.commands.*;
 import frc.robot.subsystems.*;
 
@@ -24,7 +27,9 @@ public class Marcos {
         LimelightSubsystem limelight,
         GoobaSubsystem gooba,
         AimSubsystem aim,
-        CommandSwerveDrivetrain drivetrain
+        CommandSwerveDrivetrain drivetrain,
+        GroundIntakePivotSubsystem groundIntakePivot,
+        IntakeRollerSubsystem intakeRoller
     ) {
         NamedCommands.registerCommand("spinUpShooter",
             new RunShooterCommand(shooter, Constants.Shooter.kFastTargetRPM)
@@ -43,12 +48,23 @@ public class Marcos {
                 .deadlineFor(new AimCommand(aim, goober, gooba, limelight, drivetrain))
         );
 
-        // Score preloaded balls without any vision/limelight tracking
+        // Same as "score" (Oct 27). It used to spin to a fixed 5400 RPM and feed with the turret
+        // wherever it was: with the turret at HOME (shooter facing the robot front) the Center
+        // Preload auto faced our own wall. Aiming from the field position needs no camera: the
+        // auto's starting pose is enough.
         NamedCommands.registerCommand("scorePreload",
-            new SequentialCommandGroup(
-                new RunShooterCommand(shooter, Constants.Shooter.kFastTargetRPM).withTimeout(5.5),
-                new FuelHandlingCommand(index, shooterIntake, shooter, true).withTimeout(2.5),
-                new InstantCommand(shooter::stop, shooter)
+            new ShootCommand(aim, shooter, index, shooterIntake, goober, gooba, true).withTimeout(3.5)
+                .deadlineFor(new AimCommand(aim, goober, gooba, limelight, drivetrain))
+        );
+
+        // GET READY TO SHOOT while still driving (Oct 27): turret + hood on the hub and the
+        // shooter at the table speed, no feeding. Put it on the last part of a path that ends at
+        // a shooting spot (event marker zone in PathPlanner), so the "score" right after it fires
+        // at once instead of spending its first second spinning up and turning the turret.
+        NamedCommands.registerCommand("prepareShot",
+            Commands.parallel(
+                new AimCommand(aim, goober, gooba, limelight, drivetrain),
+                Commands.run(() -> shooter.runAtRPM(aim.targetRpm()), shooter)
             )
         );
 
@@ -61,7 +77,9 @@ public class Marcos {
             new InstantCommand(shooter::stop, shooter)
         );
 
-        NamedCommands.registerCommand("intake",
+        // Old "intake": runs the spindexer, uptake AND SHOOTER BACKWARDS (last season's intake went
+        // through the shooter). Kept under an honest name; no auto uses it.
+        NamedCommands.registerCommand("reverseFeed",
             new FuelHandlingCommand(index, shooterIntake, shooter, false).withTimeout(2.0)
         );
 
@@ -80,22 +98,51 @@ public class Marcos {
         );
 
         // ==========================================
-        // PNEUMATICS REMOVED (2026 offseason).
-        // These names are still referenced by the deployed 3-piece autos, so they
-        // stay registered as no-ops until the autos are rebuilt in PathPlanner.
+        // GROUND INTAKE (Oct 27): pivot 20/21 + roller 22. These were no-ops since the
+        // pneumatics came off, so the 3-piece autos drove through the balls without picking
+        // any up.
         // ==========================================
-        NamedCommands.registerCommand("lowerIntake", Commands.none());
+        // Roller in for the REST OF AUTO: scheduled on its own (not part of the auto's sequence),
+        // so it keeps spinning through the paths and shots, and stops by itself when auto ends.
+        // One shared instance: scheduling it again while it runs does nothing.
+        Command rollerForAuto = intakeRoller.runCommand()
+            .onlyWhile(DriverStation::isAutonomousEnabled)
+            .withName("Auto: intake roller");
+        // A command can only be used in one place, so each use below makes its own runOnce.
+        Runnable startRoller = () -> CommandScheduler.getInstance().schedule(rollerForAuto);
+
+        // Intake DOWN + roller on (for the rest of auto). Instant: the path starts right away
+        // while the intake goes down. First step of both 3-piece autos.
+        NamedCommands.registerCommand("lowerIntake",
+            Commands.runOnce(() -> {
+                groundIntakePivot.deployIfUp();
+                startRoller.run();
+            }));
+        // Same thing under a clearer name, for new autos.
+        NamedCommands.registerCommand("intakeDown",
+            Commands.runOnce(() -> {
+                groundIntakePivot.deployIfUp();
+                startRoller.run();
+            }));
+        // Intake UP + roller off.
+        NamedCommands.registerCommand("raiseIntake",
+            Commands.runOnce(() -> {
+                rollerForAuto.cancel();
+                groundIntakePivot.stowIfDown();
+            }));
+        // Intake down + roller for 2 s (stays down after).
+        NamedCommands.registerCommand("intake",
+            Commands.runOnce(groundIntakePivot::deployIfUp)
+                .andThen(intakeRoller.runCommand().withTimeout(2.0)));
+
+        // The "runGroundIntake" event markers in the pickup paths have no command attached, so
+        // they fire this trigger: roller on for the rest of auto (in case lowerIntake was removed).
+        NamedCommands.registerCommand("runGroundIntake", Commands.runOnce(startRoller));
+        new EventTrigger("runGroundIntake").onTrue(Commands.runOnce(startRoller));
+
+        // Pneumatics are gone: still no-ops so old autos load cleanly.
         NamedCommands.registerCommand("togglePiston1", Commands.none());
         NamedCommands.registerCommand("togglePiston2", Commands.none());
-
-        // ==========================================
-        // GROUND INTAKE RETIRED (2026 offseason).
-        // The "runGroundIntake" event markers in 5 .path files are trigger-only, so
-        // with no EventTrigger bound they simply do nothing. The named command stays
-        // registered as a no-op so nothing logs a missing-command warning.
-        // (The roller motor is gone; CAN 20 is now the intake pivot leader.)
-        // ==========================================
-        NamedCommands.registerCommand("runGroundIntake", Commands.none());
 
         // ==========================================
         // HOOD (back on Talon FX 18, Oct 2026)
