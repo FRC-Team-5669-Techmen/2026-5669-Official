@@ -290,17 +290,42 @@ public class RobotContainer {
                         .withRotationalRate(rotationRate);
                 }
 
+                // SHOOTING ASSISTS (Oct 28, from 581/5000/1678/6328), while SCORING with RT held or the
+                // robot firing (vacuum), teleop, Driver left stick click NOT held (full-power override):
+                //  - speed capped just under the 1.5 m/s fire limit, so the robot keeps firing while
+                //    the driver creeps instead of silently stopping (581 1.5 m/s, 5000 2.5, 1678 1/5);
+                //  - sticks centered + nearly stopped + hub in reach = wheels lock in an X (581, 6328),
+                //    so a bump from a defender doesn't knock the shot off.
+                // Passing keeps full speed (it's allowed up to 4 m/s). Switch "Slow Down While Shooting".
+                double vx = scaledX * currentMaxSpeed, vy = scaledY * currentMaxSpeed;
+                var opHid = operatorController.getHID();
+                boolean scoringNow = DriverStation.isTeleopEnabled() && aim.isActive() && !aim.passing()
+                    && (opHid.getRightTriggerAxis() > 0.5 || aim.isFiring())
+                    && !driverController.getHID().getLeftStickButton()
+                    && SmartDashboard.getBoolean(kSlowShootKey, true);
+                if (scoringNow) {
+                    double v = Math.hypot(vx, vy), cap = Constants.Aim.kMaxScoreSpeed * 0.9;
+                    if (v > cap) { vx *= cap / v; vy *= cap / v; }
+                    var st = drivetrain.getState().Speeds;
+                    boolean centered = Math.hypot(xInput, yInput) < 1e-6 && Math.abs(rInput) < 1e-6;
+                    if (centered && aim.poseUsable() && aim.solution().reachable()
+                            && Math.hypot(st.vxMetersPerSecond, st.vyMetersPerSecond) < 0.3
+                            && Math.abs(st.omegaRadiansPerSecond) < 0.3) {
+                        return xLock;
+                    }
+                }
+
                 // --- SWERVE DRIVE LOGIC ---
                 if ("robot".equals(driveModeChooser.getSelected())) {
                     return robotCentricDrive
-                        .withVelocityX(scaledX * currentMaxSpeed)
-                        .withVelocityY(scaledY * currentMaxSpeed)
+                        .withVelocityX(vx)
+                        .withVelocityY(vy)
                         .withRotationalRate(rotationRate);
                 }
 
                 return fieldCentricDrive
-                    .withVelocityX(scaledX * currentMaxSpeed)
-                    .withVelocityY(scaledY * currentMaxSpeed)
+                    .withVelocityX(vx)
+                    .withVelocityY(vy)
                     .withRotationalRate(rotationRate);
             })
         );
@@ -322,6 +347,7 @@ public class RobotContainer {
     private Trigger tele(Trigger t) { return t.and(teleop); }
 
     private static final String kAimAtTeleopKey = "Auto-Aim On At Teleop Start";
+    private static final String kSlowShootKey = "Slow Down While Shooting";
 
     /**
      * AUTO-AIM ON BY DEFAULT (Oct 28): at teleop start (and when defense is turned off with Y) the
@@ -572,6 +598,11 @@ public class RobotContainer {
             }
         }, goober).withName("Turret: watch hub in auto"));
 
+        Preferences.initBoolean(kSlowShootKey, true);
+        SmartDashboard.putBoolean(kSlowShootKey, Preferences.getBoolean(kSlowShootKey, true));
+        new Trigger(() -> SmartDashboard.getBoolean(kSlowShootKey, true) != Preferences.getBoolean(kSlowShootKey, true))
+            .onTrue(Commands.runOnce(() -> Preferences.setBoolean(kSlowShootKey, SmartDashboard.getBoolean(kSlowShootKey, true)))
+                .ignoringDisable(true));
         Preferences.initBoolean(kAimAtTeleopKey, true);
         SmartDashboard.putBoolean(kAimAtTeleopKey, Preferences.getBoolean(kAimAtTeleopKey, true));
         RobotModeTriggers.teleop().onTrue(Commands.runOnce(this::autoAimOnIfWanted).withName("Teleop start: auto-aim on"));
@@ -679,7 +710,7 @@ public class RobotContainer {
         // Saved switches left off their match settings after practice/tuning.
         String[][] saved = {{"Hold Fire: Hub Closed", "true"}, {"Auto Agitate", "true"}, {"Agitate Drive Shimmy", "false"},
             {"Power Budget ON", "true"}, {"Vision Fixes Heading", "true"}, {"Climb Shot Table", "true"},
-            {"Auto: Turret Watches Hub", "true"}, {kAimAtTeleopKey, "true"}};
+            {"Auto: Turret Watches Hub", "true"}, {kAimAtTeleopKey, "true"}, {kSlowShootKey, "true"}};
         for (String[] k : saved) {
             boolean want = Boolean.parseBoolean(k[1]);
             if (Preferences.containsKey(k[0]) && Preferences.getBoolean(k[0], want) != want)

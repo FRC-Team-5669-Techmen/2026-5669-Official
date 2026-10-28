@@ -355,7 +355,8 @@ svg.bot{position:absolute;left:14px;right:14px;top:94px;width:calc(100% - 28px);
 // ---------- bindings (RobotContainer.java, main) ----------
 const BIND = {
   driver: {
-    LB:{t:"Reset gyro (face away from DS)",m:"PRESS",fx:"gyro",n:"LB"},
+    LB:{t:"Reset gyro (hold ½ s, face away from DS)",m:"HOLD",fx:"gyro",n:"LB"},
+    RB:{t:"Slow mode",m:"HOLD",fx:"slow",n:"RB"},
     LS:{t:"Drive",m:"STICK",fx:"drive",n:"LEFT STICK"},
     RS:{t:"Rotate",m:"STICK",fx:"rotate",n:"RIGHT STICK"},
     START:{t:"Slow mode",m:"HOLD",fx:"slow",n:"START"},
@@ -371,7 +372,7 @@ const BIND = {
   operator: {
     LT:{t:"Spin up shooter",m:"HOLD",fx:"spin",n:"LT"},
     RT:{t:"Shoot (aim on: fires when ready)",m:"HOLD",fx:"feed",n:"RT"},
-    RB:{t:"Auto-aim from anywhere",m:"TOGGLE",fx:"aim",n:"RB"},
+    RB:{t:"Auto-aim on/off (on at teleop start)",m:"TOGGLE",fx:"aim",n:"RB"},
     Y:{t:"Hood up / down",m:"TOGGLE",fx:"hood",n:"Y"},
     LS:{t:"Intake jog",m:"STICK",fx:"jogU",n:"LEFT STICK"},
     DL:{t:"Turret left",m:"HOLD",fx:"turL",n:"D-PAD LEFT"},
@@ -379,9 +380,9 @@ const BIND = {
     DU:{t:"Hood jog up",m:"HOLD",fx:"hoodJog",n:"D-PAD UP"},
     DD:{t:"Hood jog down",m:"HOLD",fx:"hoodJog",n:"D-PAD DOWN"},
     B:{t:"Unjam",m:"HOLD",fx:"unjam",n:"B"},
-    A:{t:"Backup: Midshot",m:"PRESS",fx:"backup",n:"A"},
-    X:{t:"Backup: Left trench",m:"PRESS",fx:"backup",n:"X"},
-    LB:{t:"Backup: Right trench",m:"PRESS",fx:"backup",n:"LB"},
+    A:{t:"Backup: Midshot (hold ½ s)",m:"HOLD",fx:"backup",n:"A"},
+    X:{t:"Backup: Left trench (hold ½ s)",m:"HOLD",fx:"backup",n:"X"},
+    LB:{t:"Backup: Right trench (hold ½ s)",m:"HOLD",fx:"backup",n:"LB"},
     BACK:{t:"Vacuum: intake + auto-shoot",m:"TOGGLE",fx:"vacuum",n:"BACK"},
     START:{t:"Target: auto / score / pass",m:"PRESS",fx:"target",n:"START"},
     LSB:{t:"Dump: X-take + auto-pass",m:"TOGGLE",fx:"dump",n:"LEFT STICK CLICK"},
@@ -391,20 +392,21 @@ const BIND = {
 const CALL = {
   driver: [
     {keys:["LT"],k:"LT",t:"Intake out",m:"HOLD",side:"L",y:26,ax:192,ay:63},
-    {keys:["LB"],k:"LB",t:"Reset gyro",m:"PRESS",side:"L",y:84,ax:188,ay:84},
+    {keys:["LB"],k:"LB",t:"Reset gyro (½ s)",m:"HOLD",side:"L",y:84,ax:188,ay:84},
     {keys:["LS"],k:"L STICK",t:"Drive",m:"STICK",side:"L",y:142,ax:206,ay:142},
     {keys:["DU","DD"],k:"D-PAD ▲ ▼",t:"Climb up / down",m:"HOLD",side:"L",y:200,ax:250,ay:182},
     {keys:["DL"],k:"D-PAD ◀",t:"Shooter idle",m:"TOGGLE",side:"L",y:258,ax:238,ay:203},
     {keys:["START"],k:"START",t:"Slow mode",m:"HOLD",side:"T",y:20,ax:328,ay:134},
-    {keys:["RT"],k:"RT",t:"Intake roller",m:"HOLD",side:"R",y:63,ax:408,ay:63},
-    {keys:["Y"],k:"Y",t:"Defense mode",m:"TOGGLE",side:"R",y:113,ax:381,ay:120},
-    {keys:["A"],k:"A",t:"Intake down / up",m:"TOGGLE",side:"R",y:164,ax:381,ay:164},
+    {keys:["RT"],k:"RT",t:"Intake roller",m:"HOLD",side:"R",y:40,ax:408,ay:63},
+    {keys:["RB"],k:"RB",t:"Slow mode",m:"HOLD",side:"R",y:88,ax:412,ay:84},
+    {keys:["Y"],k:"Y",t:"Defense mode",m:"TOGGLE",side:"R",y:136,ax:381,ay:120},
+    {keys:["A"],k:"A",t:"Intake down / up",m:"TOGGLE",side:"R",y:184,ax:381,ay:164},
     {keys:["RS"],k:"R STICK",t:"Rotate",m:"STICK",side:"R",y:236,ax:366,ay:198},
     {keys:["LSB"],k:"L3 (CLICK)",t:"Full drive power",m:"HOLD",side:"L",y:312,ax:224,ay:150},
   ],
   operator: [
     {keys:["LT"],k:"LT",t:"Spin up shooter",m:"HOLD",side:"L",y:40,ax:192,ay:63},
-    {keys:["LB"],k:"LB",t:"Backup: R trench",m:"PRESS",side:"L",y:92,ax:188,ay:84},
+    {keys:["LB"],k:"LB",t:"Backup: R trench",m:"HOLD",side:"L",y:92,ax:188,ay:84},
     {keys:["LS"],k:"L STICK",t:"Intake jog",m:"STICK",side:"L",y:144,ax:206,ay:142},
     {keys:["DU","DD"],k:"D-PAD ▲ ▼",t:"Hood jog",m:"HOLD",side:"L",y:196,ax:250,ay:182},
     {keys:["DL","DR"],k:"D-PAD ◀ ▶",t:"Turret jog",m:"HOLD",side:"L",y:248,ax:238,ay:203},
@@ -413,8 +415,8 @@ const CALL = {
     {keys:["RB"],k:"RB",t:"Auto-aim anywhere",m:"TOGGLE",side:"R",y:77,ax:412,ay:84},
     {keys:["Y"],k:"Y",t:"Hood up / down",m:"TOGGLE",side:"R",y:124,ax:381,ay:120},
     {keys:["B"],k:"B",t:"Unjam",m:"HOLD",side:"R",y:171,ax:403,ay:142},
-    {keys:["A"],k:"A",t:"Backup: Midshot",m:"PRESS",side:"R",y:218,ax:381,ay:164},
-    {keys:["X"],k:"X",t:"Backup: L trench",m:"PRESS",side:"R",y:265,ax:359,ay:142},
+    {keys:["A"],k:"A",t:"Backup: Midshot",m:"HOLD",side:"R",y:218,ax:381,ay:164},
+    {keys:["X"],k:"X",t:"Backup: L trench",m:"HOLD",side:"R",y:265,ax:359,ay:142},
     {keys:["RSB"],k:"R3 (CLICK)",t:"Trench shot",m:"PRESS",side:"R",y:312,ax:342,ay:203},
     {keys:["BACK"],k:"BACK",t:"Vacuum mode",m:"TOGGLE",side:"T",dx:-75,y:20,ax:280,ay:134},
     {keys:["START"],k:"START",t:"Target mode",m:"PRESS",side:"T",dx:75,y:20,ax:320,ay:134},
@@ -652,7 +654,7 @@ function step(now){
   if(S.feed){S.spinA+=S.feed*dt*300;S.ballP+=S.feed*dt*0.9;S.focus["p-feed"]=1;}
   if(held(O,"DL")||held(O,"DR")){S.aim=false;S.tur=Math.max(-180,Math.min(180,S.tur+(held(O,"DR")?1:-1)*dt*90));S.focus["p-turret"]=S.focus["t-turret"]=1;}
   else if(S.aim){S.aimT+=dt;S.tur+= (Math.sin(S.aimT*1.4)*70-S.tur)*Math.min(1,dt*3);}
-  S.slow=held(D,"START");
+  S.slow=held(D,"START")||held(D,"RB");
   const ls=axisOf(D,"LS"),rsx=axisOf(D,"RS");
   let vx=ls.x,vy=ls.y,w=rsx.x;
   if(S.demo.drive>0){S.demo.drive-=dt;vy=-0.85*Math.sin(Math.PI*Math.max(0,S.demo.drive)/0.9);}

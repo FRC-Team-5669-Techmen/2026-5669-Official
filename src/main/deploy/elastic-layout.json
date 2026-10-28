@@ -3,6 +3,138 @@
   "grid_size": 128,
   "tabs": [
     {
+      "name": "Drive Team",
+      "grid_layout": {
+        "layouts": [],
+        "containers": [
+          {
+            "title": "Ready To Fire",
+            "x": 0.0,
+            "y": 0.0,
+            "width": 640.0,
+            "height": 384.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Ready To Fire",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Aim Active",
+            "x": 640.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 192.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Aim Active",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Pose Trusted",
+            "x": 960.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 192.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Pose Trusted",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Our Hub",
+            "x": 640.0,
+            "y": 192.0,
+            "width": 640.0,
+            "height": 192.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Our Hub",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Shot Ready",
+            "x": 0.0,
+            "y": 384.0,
+            "width": 1280.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Shot Ready",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Shot Target",
+            "x": 0.0,
+            "y": 512.0,
+            "width": 1280.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Shot Target",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Vacuum Mode",
+            "x": 0.0,
+            "y": 640.0,
+            "width": 320.0,
+            "height": 192.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Vacuum Mode",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Dump Mode",
+            "x": 320.0,
+            "y": 640.0,
+            "width": 320.0,
+            "height": 192.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Dump Mode",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Defense Mode",
+            "x": 640.0,
+            "y": 640.0,
+            "width": 320.0,
+            "height": 192.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Defense Mode",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Pit Check",
+            "x": 960.0,
+            "y": 640.0,
+            "width": 320.0,
+            "height": 192.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Pit Check",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "Match",
       "grid_layout": {
         "layouts": [],
@@ -324,6 +456,105 @@
               "topic": "/SmartDashboard/Power Budget",
               "period": 0.06,
               "show_submit_button": false
+            }
+          },
+          {
+            "title": "Vision Status",
+            "x": 0.0,
+            "y": 1152.0,
+            "width": 512.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Vision Status",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Pose Trusted",
+            "x": 512.0,
+            "y": 1152.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Pose Trusted",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Seconds Since Vision Fix",
+            "x": 768.0,
+            "y": 1152.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Seconds Since Vision Fix",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Intake Next A Press",
+            "x": 1024.0,
+            "y": 1152.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Intake Next A Press",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Shot Target Mode",
+            "x": 0.0,
+            "y": 1280.0,
+            "width": 512.0,
+            "height": 128.0,
+            "type": "ComboBox Chooser",
+            "properties": {
+              "topic": "/SmartDashboard/Shot Target Mode",
+              "period": 0.06,
+              "sort_options": false
+            }
+          },
+          {
+            "title": "Shooter Idle Active",
+            "x": 512.0,
+            "y": 1280.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Shooter Idle Active",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Auto-Aim On At Teleop Start",
+            "x": 768.0,
+            "y": 1280.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Toggle Switch",
+            "properties": {
+              "topic": "/SmartDashboard/Auto-Aim On At Teleop Start",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Slow Down While Shooting",
+            "x": 1024.0,
+            "y": 1280.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Toggle Switch",
+            "properties": {
+              "topic": "/SmartDashboard/Slow Down While Shooting",
+              "period": 0.06
             }
           }
         ]

@@ -121,6 +121,21 @@ From a code audit for match-losing failures plus the reliability code of 6328, 5
 - **DUMP MODE** (Operator **left stick CLICK** toggle; `VacuumCommand` with `dump = true`): the team's trench X-take with a full hopper, plus shooting at the same time. Roller BACKWARDS (`kReverseVolts`), auto-aim on, fires by itself when ready with the usual rules: from the neutral zone it PASSES home (pass feed volts, no recovery boost: volume over consistency); near/in the trench the trench guard holds the hood DOWN and firing pauses while the roller keeps dumping; inside our zone it scores only into an open hub (closed = holds). It never moves the intake: **lower it first with Driver A** (dashboard "Dump" warns if it's up). No agitation pumps or shimmy while dumping. Vacuum and dump end each other (Back / L3); Operator RB or Y, Driver Y (defense) end it. Driver LT/RT still take the roller while held. Dashboard "Dump Mode", "Dump".
 - **POWER BUDGET** (`subsystems/PowerBudget`, `Constants.Power`): while vacuum or dump mode is on (teleop), the drive motors' SUPPLY limit drops 40 -> **25 A** each (same top speed, softer acceleration and pushing, which is where the current goes); if the battery still sags under **8.0 V** for 0.1 s it drops to **18 A** until it's back over 9.5 V for 1 s. Stator (slip) limit untouched. Sent without waiting (no loop stall), repeated once a second. **Override: Driver LEFT STICK CLICK held = full drive power.** Dashboard switch "Power Budget ON" (saved) turns it all off; "Power Budget" says the level. 6328 runs a full version (battery + breaker model).
 
+## Easier driving for a low-practice drive team (Oct 28)
+
+Research (6328, 581, 5000, 1678, 2910 2026 code; FIRST drive-team guides; Chief Delphi; workload audit of this repo): `reports/Low practice drive team support.md`, notes in `/home/claude/research_notes/Low practice drive team support/`.
+- **Auto-aim turns ON by itself at teleop start** (and when Driver Y turns defense OFF). Switch "Auto-Aim On At Teleop Start" (saved, ON). With aim on but **no shot wanted** (`AimSubsystem.shotWanted()`: Operator RT/LT held, vacuum/dump, firing, or any auto) only the turret tracks (camera stays on the hub tags); the **hood stays DOWN** (trench-safe) and the robot never turns itself (heading assist only when a shot is wanted).
+- **Stick feel**: dead zone on the STICK (8%, rescaled) before the cubic curve; the CTRE request deadband is now tiny (0.02). Before, a 5%-of-top-speed OUTPUT deadband after the cube meant nothing moved until ~37% stick (46% in slow mode).
+- **Slow mode also on Driver RB** (hold), so the right thumb stays on the turn stick. Start still works.
+- **Hold 1/2 s**: Driver LB (gyro reset) and Operator A/X/LB (backup shots), so a habit tap can't wreck the heading or teleport the pose. One short buzz = done.
+- **Shooting assists** (teleop, auto-aim on, SCORING with RT held or firing, Driver left stick click NOT held): translation capped at 0.9 x 1.5 m/s so it keeps firing while creeping; sticks centered + slow + hub in reach = wheels X-lock. Passing keeps full speed. Switch "Slow Down While Shooting" (saved, ON).
+- **RT with aim OFF** spins the wheel to the fast preset and feeds once it's at 90% (it used to feed into a stopped wheel). **RT resumes by itself after B** (unjam) is let go.
+- **Haptics** (`controls/Haptics`, legend on the cheat sheet page 2): 1 short = on, 2 short = off, 1 long (both) = vacuum/dump on, 1/2/3 short = target AUTO/SCORE/PASS, 3 long (operator) = hopper looks empty. Patterns win over the steady ready buzz.
+- **Fixes**: dump mode lowers the intake itself; no agitation pumps in vacuum; the intake jog keeps Driver A in sync; Operator Y goes to the hood preset farther from where the hood is; shooter idle resets at match start.
+- **Pit Check also flags**: Robot Centric, speed limit under 100%, idle on, and saved switches off their match settings.
+- **Elastic**: new **Drive Team** tab (big Ready To Fire, Aim Active, Pose Trusted, Our Hub, Shot Ready, Shot Target, modes, Pit Check); Match tab adds Vision Status, Pose Trusted, Seconds Since Vision Fix, Intake Next A Press, Shot Target Mode, Shooter Idle, and the two new switches.
+- Not done (next): trench lock (5000: Y centered in the trench + heading snap, 1-2 days, needs the trench vs bumper dimensions), climb heading snap / prep-climb macro.
+
 ## Drive Team Controller Map
 
 `tools/controller-map/`: double-click **Start Controller Map.bat** on any Windows driver station laptop for a live map of both Xbox controllers under the docked Driver Station (reads the controllers in the background, so it follows presses while Driver Station has focus). See its README. **When a controller binding changes, update the `BIND` / `CALL` tables in `tools/controller-map/index.html` too.**
@@ -343,7 +358,8 @@ This matches the drive team's official map. **LOCKED** = practiced, must stay ex
 |-------|--------|-----|
 | Left Stick | Swerve translate (cubic scaling) | LOCKED |
 | Right Stick | Swerve rotate | LOCKED |
-| Left Bumper | Reset gyro / seed field centric. **Robot pointing straight away from your driver station** (it also tells shoot-from-anywhere the heading) | LOCKED |
+| Left Bumper (hold 1/2 s) | Reset gyro / seed field centric. **Robot pointing straight away from your driver station** (it also tells shoot-from-anywhere the heading). Buzz = done | LOCKED (hold added Oct 28) |
+| Right Bumper (hold) | Slow mode (same as Start, keeps the thumb on the turn stick) | added Oct 28 |
 | Right Trigger (hold) | Ground intake roller (Talon FX 22) | LOCKED |
 | Left Trigger (hold) | Ground intake roller **backwards** (spit balls out) | added Oct 25 |
 | A (press) | Toggle ground intake DOWN / UP (does nothing until `kDownPosition` is set) | LOCKED |
@@ -366,9 +382,9 @@ This matches the drive team's official map. **LOCKED** = practiced, must stay ex
 | Left Stick up/down (hold) | Jog ground intake up/down slowly (manual backup; was the D-pad) | OPEN |
 | D-Pad Left/Right (hold) | Manual turret jog (Right = turn right, away from HOME; diagonals count, so it doesn't stutter) | OPEN |
 | B (hold) | Spindex backwards to clear a jam | not on map, kept on purpose |
-| A (press) | **Backup shot: Midshot** (between hub and climb): seeds the pose there, auto-aim on, then RT | added Oct 25 |
-| X (press) | **Backup shot: Left trench** (as seen from our DS) | added Oct 25 |
-| Left Bumper (press) | **Backup shot: Right trench** | added Oct 25 (was unbound) |
+| A (hold 1/2 s) | **Backup shot: Midshot** (between hub and climb): seeds the pose there, auto-aim on, then RT | added Oct 25 |
+| X (hold 1/2 s) | **Backup shot: Left trench** (as seen from our DS) | added Oct 25 |
+| Left Bumper (hold 1/2 s) | **Backup shot: Right trench** | added Oct 25 (was unbound) |
 | Back (press) | **VACUUM MODE** toggle: intake down + roller + auto-aim, fires by itself when ready (score in our zone, pass from the neutral zone) | added Oct 27 |
 | Start (press) | **Shot target mode**: AUTO -> SCORE only -> PASS only | added Oct 27 |
 | Left Stick click (press) | **DUMP MODE** toggle: roller OUT (X-take) + auto-aim, fires by itself (passes home) | added Oct 27 |
