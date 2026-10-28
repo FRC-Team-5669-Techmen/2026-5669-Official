@@ -430,6 +430,15 @@ public final class Constants {
         public static final double kMinShooterRpm = 1000.0;  // below this the shooter isn't shooting
     }
 
+    /** POWER BUDGET (subsystems/PowerBudget): drive supply current while vacuum/dump mode run. */
+    public static final class Power {
+        public static final double kNormalDriveSupplyAmps = 40.0; // = TunerConstants driveInitialConfigs
+        public static final double kHeavyDriveSupplyAmps = 25.0;  // vacuum / dump mode on
+        public static final double kSagDriveSupplyAmps = 18.0;    // ...and the battery still sagged
+        public static final double kSagVolts = 8.0;               // under this for 0.1 s = SAG
+        public static final double kRecoverVolts = 9.5;           // over this for 1 s = back to HEAVY
+    }
+
     public static final class IntakeRoller {
         public static final boolean kIntakeRollerEnabled = true;  // on CAN now (Oct 2026)
         public static final int kMotorId = 22;  // Tuner X name: "Intake motor(22)"

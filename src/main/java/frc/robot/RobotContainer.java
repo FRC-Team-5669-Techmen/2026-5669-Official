@@ -33,6 +33,7 @@ import frc.robot.generated.TunerConstants;
 
 // Subsystems
 import frc.robot.characterization.DriveTests;
+import frc.robot.subsystems.PowerBudget;
 import frc.robot.subsystems.Agitator;
 import frc.robot.subsystems.AimSubsystem;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
@@ -128,6 +129,11 @@ public class RobotContainer {
     private final AimCommand aimCommand = new AimCommand(aim, goober, gooba, limelight, drivetrain);
     private final VacuumCommand vacuumCommand = new VacuumCommand(aim, shooter, index, shooterIntake,
         goober, gooba, groundIntakePivot, intakeRoller, aimCommand);
+    // DUMP MODE (Operator left stick click): vacuum with the roller BACKWARDS (X-take + auto-pass).
+    private final VacuumCommand dumpCommand = new VacuumCommand(aim, shooter, index, shooterIntake,
+        goober, gooba, groundIntakePivot, intakeRoller, aimCommand, true);
+    public final PowerBudget powerBudget = new PowerBudget(drivetrain, aim,
+        () -> driverController.getHID().getLeftStickButton());
     public final BackupShots backupShots = new BackupShots(drivetrain, localizer);
     // Defense mode (Driver Y): intake up, hood down, quick drive, X-lock, pin + tower warnings.
     public final DefenseMode defense = new DefenseMode(drivetrain, aim);
@@ -330,6 +336,7 @@ public class RobotContainer {
         // pin (G418) and tower (G420) warnings. See subsystems/DefenseMode.
         tele(driverController.y()).onTrue(defense.toggleCommand(() -> {
             vacuumCommand.cancel();
+            dumpCommand.cancel();
             aimCommand.cancel();
             groundIntakePivot.stowIfDown();
             CommandScheduler.getInstance().schedule(gooba.stowCommand());
@@ -360,9 +367,22 @@ public class RobotContainer {
         // auto-aim on, fires by itself whenever ready. Scores from inside our alliance zone,
         // PASSES home from the neutral zone (follows the Start target mode). See VacuumCommand.
         // Operator RT/B and the jogs take over only while held; vacuum resumes after.
-        tele(operatorController.back()).toggleOnTrue(vacuumCommand);
+        // Vacuum and dump are two flavors of one hands-free mode: turning one on ends the other.
+        tele(operatorController.back()).onTrue(Commands.runOnce(() -> {
+            if (vacuumCommand.isScheduled()) vacuumCommand.cancel();
+            else { dumpCommand.cancel(); CommandScheduler.getInstance().schedule(vacuumCommand); }
+        }).withName("Operator Back: vacuum toggle"));
+        // DUMP MODE (left stick CLICK, press to toggle): the trench X-take with a full hopper, plus
+        // auto-passing. Roller BACKWARDS (balls out the front), auto-aim on, fires by itself when
+        // ready (passes from the neutral zone; pauses in the trench, hood down; in our zone scores
+        // only into an open hub). Lower the intake first (Driver A). Ends like vacuum: Operator RB,
+        // Y, Back (switches to vacuum), Driver Y (defense). Driver LT/RT still take the roller.
+        tele(operatorController.leftStick()).onTrue(Commands.runOnce(() -> {
+            if (dumpCommand.isScheduled()) dumpCommand.cancel();
+            else { vacuumCommand.cancel(); CommandScheduler.getInstance().schedule(dumpCommand); }
+        }).withName("Operator L3: dump toggle"));
         // Y (manual hood) means "I'm taking over": vacuum mode turns off. RB does too (below).
-        tele(operatorController.y()).onTrue(Commands.runOnce(vacuumCommand::cancel));
+        tele(operatorController.y()).onTrue(Commands.runOnce(() -> { vacuumCommand.cancel(); dumpCommand.cancel(); }));
 
         // SHOT TARGET MODE (Start, press): AUTO -> SCORE only -> PASS only -> AUTO. Dashboard
         // "Shot Target" shows it. AUTO = score inside our alliance zone, pass from past it.
@@ -385,8 +405,9 @@ public class RobotContainer {
         // One press handler (audit Oct 27): with vacuum on, RB ends vacuum AND auto-aim (before, the
         // vacuum cancel ran first, then the toggle saw aim off and turned it right back on).
         tele(operatorController.rightBumper()).onTrue(Commands.runOnce(() -> {
-            if (vacuumCommand.isScheduled()) {
+            if (vacuumCommand.isScheduled() || dumpCommand.isScheduled()) {
                 vacuumCommand.cancel();
+                dumpCommand.cancel();
                 aimCommand.cancel();
             } else if (aimCommand.isScheduled()) {
                 aimCommand.cancel();

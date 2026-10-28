@@ -116,6 +116,11 @@ From a code audit for match-losing failures plus the reliability code of 6328, 5
 - **Brownout** threshold 6.0 V (`setBrownoutVoltage`, roboRIO 2 default 6.75; 581/1678 run 5.5, 5000 6.0).
 - **Loop time**: the shot log writes on its own thread; long dashboard strings 2-5 times a second; the intake jog no longer waits on a config reply.
 
+## Dump mode and power budget (Oct 27 night)
+
+- **DUMP MODE** (Operator **left stick CLICK** toggle; `VacuumCommand` with `dump = true`): the team's trench X-take with a full hopper, plus shooting at the same time. Roller BACKWARDS (`kReverseVolts`), auto-aim on, fires by itself when ready with the usual rules: from the neutral zone it PASSES home (pass feed volts, no recovery boost: volume over consistency); near/in the trench the trench guard holds the hood DOWN and firing pauses while the roller keeps dumping; inside our zone it scores only into an open hub (closed = holds). It never moves the intake: **lower it first with Driver A** (dashboard "Dump" warns if it's up). No agitation pumps or shimmy while dumping. Vacuum and dump end each other (Back / L3); Operator RB or Y, Driver Y (defense) end it. Driver LT/RT still take the roller while held. Dashboard "Dump Mode", "Dump".
+- **POWER BUDGET** (`subsystems/PowerBudget`, `Constants.Power`): while vacuum or dump mode is on (teleop), the drive motors' SUPPLY limit drops 40 -> **25 A** each (same top speed, softer acceleration and pushing, which is where the current goes); if the battery still sags under **8.0 V** for 0.1 s it drops to **18 A** until it's back over 9.5 V for 1 s. Stator (slip) limit untouched. Sent without waiting (no loop stall), repeated once a second. **Override: Driver LEFT STICK CLICK held = full drive power.** Dashboard switch "Power Budget ON" (saved) turns it all off; "Power Budget" says the level. 6328 runs a full version (battery + breaker model).
+
 ## Drive Team Controller Map
 
 `tools/controller-map/`: double-click **Start Controller Map.bat** on any Windows driver station laptop for a live map of both Xbox controllers under the docked Driver Station (reads the controllers in the background, so it follows presses while Driver Station has focus). See its README. **When a controller binding changes, update the `BIND` / `CALL` tables in `tools/controller-map/index.html` too.**
@@ -344,6 +349,7 @@ This matches the drive team's official map. **LOCKED** = practiced, must stay ex
 | A (press) | Toggle ground intake DOWN / UP (does nothing until `kDownPosition` is set) | LOCKED |
 | X | Reserved, bound to nothing (was the climb piston) | LOCKED |
 | Y (press) | **DEFENSE MODE** toggle: intake up, hood down, quicker drive, X-lock when the sticks are centered, pin/tower warnings | added Oct 27 |
+| Left Stick click (hold) | Full drive power while vacuum/dump mode is on (power budget override) | added Oct 27 |
 | D-Pad Up (hold) | Climb up (elevator 19) | LOCKED |
 | D-Pad Down (hold) | Climb down (elevator 19) | LOCKED |
 | D-Pad Left (press) | Toggle shooter idle at 2000 RPM (press again = off) | LOCKED |
@@ -365,6 +371,8 @@ This matches the drive team's official map. **LOCKED** = practiced, must stay ex
 | Left Bumper (press) | **Backup shot: Right trench** | added Oct 25 (was unbound) |
 | Back (press) | **VACUUM MODE** toggle: intake down + roller + auto-aim, fires by itself when ready (score in our zone, pass from the neutral zone) | added Oct 27 |
 | Start (press) | **Shot target mode**: AUTO -> SCORE only -> PASS only | added Oct 27 |
+| Left Stick click (press) | **DUMP MODE** toggle: roller OUT (X-take) + auto-aim, fires by itself (passes home) | added Oct 27 |
+| Right Stick click (press) | Trench shot override: hood may go up next to a trench while the robot stays put | added Oct 27 |
 
 Removed because they weren't on the map: Driver D-pad Right (tank-drive toggle, and tank mode itself) and the old Operator Left Bumper "aim while held" (LB is now the right-trench backup shot).
 

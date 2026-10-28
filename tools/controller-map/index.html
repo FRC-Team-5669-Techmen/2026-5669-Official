@@ -366,6 +366,7 @@ const BIND = {
     DD:{t:"Climb down",m:"HOLD",fx:"climbDown",n:"D-PAD DOWN"},
     DL:{t:"Shooter idle 2000",m:"TOGGLE",fx:"idle",n:"D-PAD LEFT"},
     Y:{t:"Defense mode",m:"TOGGLE",fx:"defense",n:"Y"},
+    LSB:{t:"Full drive power (vacuum/dump)",m:"HOLD",fx:"boost",n:"LEFT STICK CLICK"},
   },
   operator: {
     LT:{t:"Spin up shooter",m:"HOLD",fx:"spin",n:"LT"},
@@ -383,6 +384,8 @@ const BIND = {
     LB:{t:"Backup: Right trench",m:"PRESS",fx:"backup",n:"LB"},
     BACK:{t:"Vacuum: intake + auto-shoot",m:"TOGGLE",fx:"vacuum",n:"BACK"},
     START:{t:"Target: auto / score / pass",m:"PRESS",fx:"target",n:"START"},
+    LSB:{t:"Dump: X-take + auto-pass",m:"TOGGLE",fx:"dump",n:"LEFT STICK CLICK"},
+    RSB:{t:"Trench shot (hood free, stay put)",m:"PRESS",fx:"trench",n:"RIGHT STICK CLICK"},
   }
 };
 const CALL = {
@@ -397,6 +400,7 @@ const CALL = {
     {keys:["Y"],k:"Y",t:"Defense mode",m:"TOGGLE",side:"R",y:113,ax:381,ay:120},
     {keys:["A"],k:"A",t:"Intake down / up",m:"TOGGLE",side:"R",y:164,ax:381,ay:164},
     {keys:["RS"],k:"R STICK",t:"Rotate",m:"STICK",side:"R",y:236,ax:366,ay:198},
+    {keys:["LSB"],k:"L3 (CLICK)",t:"Full drive power",m:"HOLD",side:"L",y:312,ax:224,ay:150},
   ],
   operator: [
     {keys:["LT"],k:"LT",t:"Spin up shooter",m:"HOLD",side:"L",y:40,ax:192,ay:63},
@@ -404,12 +408,14 @@ const CALL = {
     {keys:["LS"],k:"L STICK",t:"Intake jog",m:"STICK",side:"L",y:144,ax:206,ay:142},
     {keys:["DU","DD"],k:"D-PAD ▲ ▼",t:"Hood jog",m:"HOLD",side:"L",y:196,ax:250,ay:182},
     {keys:["DL","DR"],k:"D-PAD ◀ ▶",t:"Turret jog",m:"HOLD",side:"L",y:248,ax:238,ay:203},
-    {keys:["RT"],k:"RT",t:"Shoot when ready",m:"HOLD",side:"R",y:40,ax:408,ay:63},
-    {keys:["RB"],k:"RB",t:"Auto-aim anywhere",m:"TOGGLE",side:"R",y:90,ax:412,ay:84},
-    {keys:["Y"],k:"Y",t:"Hood up / down",m:"TOGGLE",side:"R",y:140,ax:381,ay:120},
-    {keys:["B"],k:"B",t:"Unjam",m:"HOLD",side:"R",y:190,ax:403,ay:142},
-    {keys:["A"],k:"A",t:"Backup: Midshot",m:"PRESS",side:"R",y:240,ax:381,ay:164},
-    {keys:["X"],k:"X",t:"Backup: L trench",m:"PRESS",side:"R",y:290,ax:359,ay:142},
+    {keys:["LSB"],k:"L3 (CLICK)",t:"Dump mode",m:"TOGGLE",side:"L",y:300,ax:224,ay:150},
+    {keys:["RT"],k:"RT",t:"Shoot when ready",m:"HOLD",side:"R",y:30,ax:408,ay:63},
+    {keys:["RB"],k:"RB",t:"Auto-aim anywhere",m:"TOGGLE",side:"R",y:77,ax:412,ay:84},
+    {keys:["Y"],k:"Y",t:"Hood up / down",m:"TOGGLE",side:"R",y:124,ax:381,ay:120},
+    {keys:["B"],k:"B",t:"Unjam",m:"HOLD",side:"R",y:171,ax:403,ay:142},
+    {keys:["A"],k:"A",t:"Backup: Midshot",m:"PRESS",side:"R",y:218,ax:381,ay:164},
+    {keys:["X"],k:"X",t:"Backup: L trench",m:"PRESS",side:"R",y:265,ax:359,ay:142},
+    {keys:["RSB"],k:"R3 (CLICK)",t:"Trench shot",m:"PRESS",side:"R",y:312,ax:342,ay:203},
     {keys:["BACK"],k:"BACK",t:"Vacuum mode",m:"TOGGLE",side:"T",dx:-75,y:20,ax:280,ay:134},
     {keys:["START"],k:"START",t:"Target mode",m:"PRESS",side:"T",dx:75,y:20,ax:320,ay:134},
   ]
@@ -423,6 +429,7 @@ const G = {
   DL:{r:[104,140,18,16,3],l:"◀"}, DR:{r:[134,140,18,16,3],l:"▶"},
   Y:{c:[240,73,11],l:"Y"}, X:{c:[218,95,11],l:"X"}, B:{c:[262,95,11],l:"B"}, A:{c:[240,117,11],l:"A"},
   BACK:{r:[142,87,16,10,5],l:""}, START:{r:[182,87,16,10,5],l:""},
+  LSB:{c:[100,95,6],l:""}, RSB:{c:[212,148,6],l:""},
 };
 const NS="http://www.w3.org/2000/svg";
 const el=(t,a={},p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;};
@@ -513,8 +520,8 @@ function tapStick(who,k){if(!BIND[who][k])return;announce(who,k);if(who==="drive
 const S={};
 function resetModel(){Object.assign(S,{elev:0,pivot:0,pivotT:0,roller:false,rollerA:0,idle:false,rpm:0,wheelA:0,feed:0,spinA:0,ballP:0,aim:false,tur:0,aimT:0,slow:false,hdg:0,gyroFlash:0,wheelsA:0,demo:{drive:0,rotate:0},focus:{}});}
 resetModel();
-const FXPART={gyro:"p-drive",drive:"p-drive",rotate:"p-drive",slow:"p-drive",roller:"p-intake",rollerOut:"p-intake",hood:"p-shooter",hoodJog:"p-shooter",pivot:"p-intake",jogU:"p-intake",jogD:"p-intake",climbUp:"p-elev",climbDown:"p-elev",idle:"p-shooter",spin:"p-shooter",feed:"p-feed",unjam:"p-feed",aim:"p-turret",turL:"p-turret",turR:"p-turret"};
-const FXTELE={gyro:"t-drive",drive:"t-drive",rotate:"t-drive",slow:"t-slow",roller:"t-intake",rollerOut:"t-intake",hood:"t-shooter",hoodJog:"t-shooter",pivot:"t-intake",jogU:"t-intake",jogD:"t-intake",climbUp:"t-climb",climbDown:"t-climb",idle:"t-idle",spin:"t-shooter",feed:"t-shooter",unjam:"t-shooter",aim:"t-aim",vacuum:"t-aim",defense:"t-drive",target:"t-aim",turL:"t-turret",turR:"t-turret"};
+const FXPART={gyro:"p-drive",drive:"p-drive",rotate:"p-drive",slow:"p-drive",roller:"p-intake",rollerOut:"p-intake",hood:"p-shooter",hoodJog:"p-shooter",pivot:"p-intake",jogU:"p-intake",jogD:"p-intake",climbUp:"p-elev",climbDown:"p-elev",idle:"p-shooter",spin:"p-shooter",feed:"p-feed",unjam:"p-feed",aim:"p-turret",turL:"p-turret",turR:"p-turret",dump:"p-intake",boost:"p-drive",trench:"p-shooter",vacuum:"p-intake",defense:"p-drive",target:"p-turret"};
+const FXTELE={gyro:"t-drive",drive:"t-drive",rotate:"t-drive",slow:"t-slow",roller:"t-intake",rollerOut:"t-intake",hood:"t-shooter",hoodJog:"t-shooter",pivot:"t-intake",jogU:"t-intake",jogD:"t-intake",climbUp:"t-climb",climbDown:"t-climb",idle:"t-idle",spin:"t-shooter",feed:"t-shooter",unjam:"t-shooter",aim:"t-aim",vacuum:"t-aim",defense:"t-drive",target:"t-aim",turL:"t-turret",turR:"t-turret",dump:"t-aim",boost:"t-drive",trench:"t-aim"};
 const $=id=>document.getElementById(id);
 const ra=$("ra"), rs=$("rs");
 function announce(who,k){
@@ -533,12 +540,13 @@ function onPress(who,k){
     case "pivot": S.pivotT = S.pivotT>0.5?0:1; break;
     case "idle": S.idle=!S.idle; break;
     case "aim": S.aim=!S.aim; S.aimT=0; break;
-    case "defense": S.def=!S.def; if(S.def){S.aim=false;S.vac=false;S.pivotT=0;} break;
-    case "vacuum": S.vac=!S.vac; if(S.vac){S.aim=true;S.aimT=0;S.pivotT=1;} break;
+    case "defense": S.def=!S.def; if(S.def){S.aim=false;S.vac=false;S.dump=false;S.pivotT=0;} break;
+    case "vacuum": S.vac=!S.vac; if(S.vac){S.dump=false;S.aim=true;S.aimT=0;S.pivotT=1;} break;
+    case "dump": S.dump=!S.dump; if(S.dump){S.vac=false;S.aim=true;S.aimT=0;} break;
   }
   if(b.m==="TOGGLE") rs.innerHTML+=` · now <b>${toggleState(who,k)}</b>`;
 }
-function toggleState(who,k){const fx=BIND[who][k].fx;if(fx==="pivot")return S.pivotT>0.5?"DOWN":"UP";if(fx==="idle")return S.idle?"ON":"OFF";if(fx==="aim")return S.aim?"ON":"OFF";if(fx==="vacuum")return S.vac?"ON":"OFF";if(fx==="defense")return S.def?"ON":"OFF";return"";}
+function toggleState(who,k){const fx=BIND[who][k].fx;if(fx==="pivot")return S.pivotT>0.5?"DOWN":"UP";if(fx==="idle")return S.idle?"ON":"OFF";if(fx==="aim")return S.aim?"ON":"OFF";if(fx==="vacuum")return S.vac?"ON":"OFF";if(fx==="defense")return S.def?"ON":"OFF";if(fx==="dump")return S.dump?"ON":"OFF";return"";}
 const held=(who,k)=>!!(mouse[who][k]||padb[who][k]);
 
 // ---------- controller input ----------

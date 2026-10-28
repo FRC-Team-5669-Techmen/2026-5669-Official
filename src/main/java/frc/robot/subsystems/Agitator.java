@@ -156,9 +156,11 @@ public class Agitator extends SubsystemBase {
             if (pump != null && pump.isScheduled()) pump.cancel();
             shimmyUntil = Double.NEGATIVE_INFINITY;
         }
-        in.pumpPossible = !climbing && pivot.isDown() && CommandScheduler.getInstance().requiring(pivot) == null
+        // Dump mode: never pump the intake (it's X-taking, maybe under the trench) or shimmy the drive.
+        boolean dumping = frc.robot.commands.VacuumCommand.dumping();
+        in.pumpPossible = !climbing && !dumping && pivot.isDown() && CommandScheduler.getInstance().requiring(pivot) == null
             && !hot && batteryOk && pumpTimes.size() < Agitation.kMaxPumpsPerMinute;
-        in.shimmyPossible = !climbing && shimmyOn && DriverStation.isTeleopEnabled() && driverHandsOff && batteryOk && !pumping;
+        in.shimmyPossible = !climbing && !dumping && shimmyOn && DriverStation.isTeleopEnabled() && driverHandsOff && batteryOk && !pumping;
         in.busy = pumping || shimmying();
         AgitationPlanner.Action action = planner.update(now, in);
 

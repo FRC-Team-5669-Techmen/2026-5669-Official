@@ -211,6 +211,9 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
     }
 
     /** Vacuum mode: put the intake DOWN if it isn't already (same move as the A button's DOWN). */
+    /** The intake is up (or going up): the last toggle/command sent it UP. */
+    public boolean isUpish() { return !isDown; }
+
     public void deployIfUp() {
         if (!isDownPositionValid() || isDown) return;
         isDown = true;

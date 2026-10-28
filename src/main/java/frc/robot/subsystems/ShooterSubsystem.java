@@ -187,7 +187,8 @@ public class ShooterSubsystem extends SubsystemBase {
         // so the wheel is back at speed before the next ball. Off once within kBoostBelowRpm.
         double boost = 0.0;
         double measured = getCurrentRpm();
-        if (m_rampedSetpointRpm > 500.0 && measured < m_rampedSetpointRpm - Constants.Shooter.kBoostBelowRpm) {
+        if (m_rampedSetpointRpm > 500.0 && measured < m_rampedSetpointRpm - Constants.Shooter.kBoostBelowRpm
+                && !frc.robot.commands.VacuumCommand.dumping()) { // dump mode: battery over consistency
             boost = boostVolts();
         }
         SmartDashboard.putBoolean("Shooter Boosting", boost > 0);

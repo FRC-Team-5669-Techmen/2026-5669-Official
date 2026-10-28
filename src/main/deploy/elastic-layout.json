@@ -287,6 +287,44 @@
               "period": 0.06,
               "sort_options": false
             }
+          },
+          {
+            "title": "Dump Mode",
+            "x": 0.0,
+            "y": 1024.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Dump Mode",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Dump",
+            "x": 256.0,
+            "y": 1024.0,
+            "width": 512.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Dump",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Power Budget",
+            "x": 768.0,
+            "y": 1024.0,
+            "width": 512.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Power Budget",
+              "period": 0.06,
+              "show_submit_button": false
+            }
           }
         ]
       }
@@ -1055,6 +1093,18 @@
             "type": "Large Text Display",
             "properties": {
               "topic": "/SmartDashboard/Heading Off By (deg)",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Power Budget ON",
+            "x": 768.0,
+            "y": 640.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Toggle Switch",
+            "properties": {
+              "topic": "/SmartDashboard/Power Budget ON",
               "period": 0.06
             }
           }

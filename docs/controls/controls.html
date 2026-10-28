@@ -18,7 +18,7 @@
   h1 { font-size: 20pt; margin: 0; letter-spacing: 0.5px; }
   h1 .num { color: #b08a00; }
   .sub { font-size: 9pt; color: #555; }
-  img.map { width: 90%; border-radius: 6px; display: block; margin: 0 auto 6px; }
+  img.map { width: 72%; border-radius: 6px; display: block; margin: 0 auto 6px; }
   .cols { display: flex; gap: 14px; }
   .col { flex: 1; }
   h2 { font-size: 12.5pt; margin: 2px 0 4px; }
@@ -43,7 +43,7 @@
 <div class="page">
   <header>
     <h1>TECHMEN <span class="num">5669</span> · Driver &amp; Operator Controls</h1>
-    <span class="sub">Robot code: main, Oct 26 2026 · Driver = Port 0 · Operator = Port 1</span>
+    <span class="sub">Robot code: main, Oct 27 2026 · Driver = Port 0 · Operator = Port 1</span>
   </header>
 
   <img class="map" src="controller-map.png" alt="Controller map: driver on the left, operator on the right">
@@ -62,15 +62,16 @@
         <tr><td class="btn">D-pad Up / Down</td><td class="how">hold</td><td>Climber up / down (stops by itself at the ends)</td></tr>
         <tr><td class="btn">D-pad Left</td><td class="how">press</td><td>Shooter idle at 2000 RPM on / off</td></tr>
         <tr><td class="btn">Y</td><td class="how">press</td><td><b>Defense mode</b> on / off: intake up, hood down, quicker drive, wheels lock in an X when you let go</td></tr>
+        <tr><td class="btn">Left Stick click</td><td class="how">hold</td><td>Full drive power in vacuum / dump mode</td></tr>
         <tr><td class="btn">X</td><td class="how">·</td><td>Nothing</td></tr>
       </table>
     </div>
     <div class="col">
       <h2>Operator <span class="port">· Port 1 · aiming and shooting</span></h2>
       <table>
-        <tr><td class="btn">RB</td><td class="how">press</td><td><b>Auto-aim on / off</b> (turret, hood and shooter speed aim at our hub from anywhere)</td></tr>
-        <tr><td class="btn">RT</td><td class="how">hold</td><td>Shoot. Auto-aim ON: fires only when ready (controller buzzes). OFF: feeds right away</td></tr>
-        <tr><td class="btn">LT</td><td class="how">hold</td><td>Spin up the shooter (with auto-aim ON it spins up by itself while you hold RT)</td></tr>
+        <tr><td class="btn">RB</td><td class="how">press</td><td><b>Auto-aim on / off</b> (turret, hood, shooter speed, from anywhere)</td></tr>
+        <tr><td class="btn">RT</td><td class="how">hold</td><td>Shoot. Aim ON: fires when ready (buzzes). OFF: feeds at once</td></tr>
+        <tr><td class="btn">LT</td><td class="how">hold</td><td>Spin up the shooter (aim ON: RT does it itself)</td></tr>
         <tr><td class="btn">Y</td><td class="how">press</td><td>Hood up / down</td></tr>
         <tr><td class="btn">D-pad Up / Down</td><td class="how">hold</td><td>Move the hood up / down slowly</td></tr>
         <tr><td class="btn">D-pad Left / Right</td><td class="how">hold</td><td>Turn the turret left / right</td></tr>
@@ -78,6 +79,8 @@
         <tr><td class="btn">B</td><td class="how">hold</td><td>Spindex backwards (unjam)</td></tr>
         <tr><td class="btn">A / X / LB</td><td class="how">press</td><td>Backup shots: A = Midshot, X = Left trench, LB = Right trench</td></tr>
         <tr><td class="btn">Back</td><td class="how">press</td><td><b>Vacuum mode</b> on / off: intake + auto-aim, fires by itself (scores in our zone, passes from the neutral zone)</td></tr>
+        <tr><td class="btn">Left Stick click</td><td class="how">press</td><td><b>Dump mode</b> on / off: roller OUT (X-take) + auto-pass. Intake down first</td></tr>
+        <tr><td class="btn">Right Stick click</td><td class="how">press</td><td>Trench shot (hood up, robot stays put)</td></tr>
         <tr><td class="btn">Start</td><td class="how">press</td><td>Target: AUTO &rarr; SCORE &rarr; PASS</td></tr>
       </table>
       <div class="note">Turret jog, hood jog or Y turns auto-aim OFF. Press RB to turn it back on.</div>
