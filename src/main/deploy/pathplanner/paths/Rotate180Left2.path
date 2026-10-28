@@ -3,32 +3,37 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 6.844487632508834,
-        "y": 5.576722614840988
+        "x": 7.776324503311258,
+        "y": 6.851054304635763
       },
       "prevControl": null,
       "nextControl": {
-        "x": 6.87547703180212,
-        "y": 4.461104240282685
+        "x": 7.705392913395103,
+        "y": 4.958466235394376
       },
       "isLocked": false,
       "linkedName": "LeftPickupEnd2"
     },
     {
       "anchor": {
-        "x": 5.821837455830389,
-        "y": 5.576722614840988
+        "x": 6.099279801324503,
+        "y": 5.711244701986756
       },
       "prevControl": {
-        "x": 5.816373265392086,
-        "y": 4.50186761402195
+        "x": 6.295298013245033,
+        "y": 4.8908721854304655
       },
       "nextControl": null,
       "isLocked": false,
       "linkedName": "LeftRotatedPickUpEnd2"
     }
   ],
-  "rotationTargets": [],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.7318918918918916,
+      "rotationDegrees": 136.03
+    }
+  ],
   "constraintZones": [],
   "pointTowardsZones": [],
   "eventMarkers": [],
@@ -42,13 +47,13 @@
   },
   "goalEndState": {
     "velocity": 2.0,
-    "rotation": 90.63875924776468
+    "rotation": 88.66778014613048
   },
   "reversed": false,
   "folder": "Left",
   "idealStartingState": {
     "velocity": 2.0,
-    "rotation": -91.974934010882
+    "rotation": -91.16913932790762
   },
   "useDefaultConstraints": true
 }
