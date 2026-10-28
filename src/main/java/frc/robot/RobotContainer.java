@@ -35,6 +35,7 @@ import frc.robot.generated.TunerConstants;
 // Subsystems
 import frc.robot.characterization.DriveTests;
 import frc.robot.subsystems.PowerBudget;
+import frc.robot.subsystems.PracticeMatch;
 import frc.robot.subsystems.Agitator;
 import frc.robot.subsystems.AimSubsystem;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
@@ -138,6 +139,8 @@ public class RobotContainer {
     public final BackupShots backupShots = new BackupShots(drivetrain, localizer);
     // Defense mode (Driver Y): intake up, hood down, quick drive, X-lock, pin + tower warnings.
     public final DefenseMode defense = new DefenseMode(drivetrain, aim);
+    // PRACTICE MATCH: random auto winner without an FMS + the match screen at http://10.56.69.2:5806
+    public final PracticeMatch practiceMatch = new PracticeMatch(shooter, aim, () -> this.autoWinnerChooser.getSelected());
 
     // Not created on purpose: MariosEar (the 2 PhotonVision USB cameras), since the
     // Limelight is the only camera.
