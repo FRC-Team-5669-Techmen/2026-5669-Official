@@ -206,8 +206,12 @@ public final class Constants {
         // 0.2 = just above the hard stop, so the motor never grinds into it.
         public static final double kBottomPosition = 0.2;
         // TOP, measured Oct 25 (Elastic): pushed all the way up = 3.89 (last season's hood
-        // went to 10.7, so the gearing is different now). 3.8 = a hair below the top stop.
-        public static final double kTopPosition = 3.8;
+        // went to 10.7, so the gearing is different now). Oct 27: raised 3.8 -> 3.87 (team asked
+        // for more hood for long shots and passes): 0.02 below the measured top stop. More than
+        // this needs the hood to physically go higher: re-measure with "Hood Limits OFF (measure)".
+        public static final double kTopPosition = 3.87;
+        // Where the hood's top stop really is (the Limelight height 22.35 in was measured there).
+        public static final double kTopStop = 3.89;
 
         public static final double kP = 2.4;
         public static final double kI = 0.0;

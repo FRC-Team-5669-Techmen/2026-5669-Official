@@ -110,7 +110,7 @@ public class VisionLocalizer extends SubsystemBase {
         lastHoodPos = hoodPos;
         double f = Constants.Gooba.kHoodEnabled
             ? MathUtil.clamp((hoodPos - Constants.Gooba.kBottomPosition)
-                / (Constants.Gooba.kTopPosition - Constants.Gooba.kBottomPosition), 0.0, 1.0)
+                / (Constants.Gooba.kTopStop - Constants.Gooba.kBottomPosition), 0.0, 1.0)
             : 0.0;
         double height = MathUtil.interpolate(Aim.kCameraHeightHoodDown, Aim.kCameraHeightHoodUp, f);
         double pitch = MathUtil.interpolate(Aim.kCameraPitchHoodDown, Aim.kCameraPitchHoodUp, f);
