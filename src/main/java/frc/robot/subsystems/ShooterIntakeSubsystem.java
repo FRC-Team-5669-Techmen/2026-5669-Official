@@ -30,7 +30,7 @@ public class ShooterIntakeSubsystem extends SubsystemBase {
 
         // REDLINE LIMITS: Maximum power without triggering hardware fault
         CurrentLimitsConfigs currentLimits = config.CurrentLimits;
-        currentLimits.SupplyCurrentLimit = 60.0; // Max draw from battery
+        currentLimits.SupplyCurrentLimit = 40.0; // Max draw from battery (Oct 28 brownout research: was 60)
         currentLimits.SupplyCurrentLimitEnable = true;
 
         currentLimits.StatorCurrentLimit = 80.0; // Max push to motor coils

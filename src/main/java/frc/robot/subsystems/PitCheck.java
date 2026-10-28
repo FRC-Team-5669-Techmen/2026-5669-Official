@@ -62,7 +62,7 @@ public class PitCheck extends SubsystemBase {
 
         // 1. Battery.
         double volts = RobotController.getBatteryVoltage();
-        if (DriverStation.isDisabled() && volts < 12.4) problems.add(String.format("battery %.2f V: swap it", volts));
+        if (DriverStation.isDisabled() && volts < 12.5) problems.add(String.format("battery %.2f V: swap it (want 12.7+)", volts));
         lines.add(String.format("Battery %.2f V", volts));
         lines.add("Code: " + frc.robot.Robot.CODE_VERSION);
 

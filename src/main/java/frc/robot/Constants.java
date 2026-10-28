@@ -452,8 +452,8 @@ public final class Constants {
         public static final double kGuardDriveSupplyAmps = 25.0;
         // Battery + main wiring resistance (PowerMonitor): above this = high. A healthy FRC battery
         // is ~11-15 mOhm on a Battery Beak; the robot's leads, breaker and connectors add a few.
-        public static final double kResistanceHighOhms = 0.030;
-        public static final double kRestVoltsLow = 12.4;          // rested battery under this = not charged
+        public static final double kResistanceHighOhms = 0.028;   // research Oct 28: OK < 22, watch 22-28, pull > 28
+        public static final double kRestVoltsLow = 12.5;          // WPILib: swap a battery reading 12.5 V on an idle robot
     }
 
     public static final class IntakeRoller {

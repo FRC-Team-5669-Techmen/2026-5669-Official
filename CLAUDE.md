@@ -150,6 +150,15 @@ Guide: `docs/PRACTICE-MATCH.md`. Driver Station **Practice** mode, team station 
 - PowerBudget never sends a drive stator limit above `Constants.Power.kDriveStatorAmps` (70 = `kSlipCurrent`), even if a Talon didn't answer at boot.
 - Match screen: "ours" follows the robot's alliance; tap once for sound.
 
+## Brownouts: battery or robot (Oct 28)
+
+Guide for students: `docs/BROWNOUTS-AND-BATTERIES.md`; research: `/home/claude/research_notes/Brownouts battery vs robot/REPORT.md`. Elastic tab **Battery + Hood**.
+- `power/BatteryEstimator` (pure, tests): R = battery + main wiring from the robot's own load, least squares V = Voc - I x R over 2 s windows (25 A+ spread, r^2 >= 0.6, 3-200 mOhm), median of fits; verdict text (CHARGE / HIGH RESISTANCE / ROBOT DRAW / BROWNOUT).
+- `subsystems/PowerMonitor`: PDH voltage (roboRIO voltage logged too), PDH total current, each mechanism's Talon supply current and voltage; rest voltage (disabled, quiet 2 s); the match's worst moment, branch drop per mechanism, brownout snapshots, sticky Undervoltage/BridgeBrownout per Talon (cleared at match start); "power" section in every match file; `/home/lvuser/shotmap/battery-history.csv` by "Match Battery" (synced); "Test: Battery Load (shooter 2 s)" (enabled). Thresholds `Constants.Power.kResistanceHighOhms` 28 mOhm, `kRestVoltsLow` 12.5 V. Pit Check: battery under 12.5 V, high R last time, same battery as the last FMS match, no battery typed.
+- `PowerBudget` brownout guard in every enabled mode: under `kGuardVolts` 7.5 V for 0.05 s = drive supply 25 A until over 9.5 V for 1 s. Spindexer and uptake supply limits 40 A (were 80/60).
+- **Hood top is set on the robot**: Hood Limits OFF, jog to the top, "Set Hood Top (hood at top)" (Preferences "Hood Top Limit (rot)", 0.03 below the stop; `GoobaSubsystem.top()`; `Gooba.kTopPosition` only a fallback). "Clear Hood Top" forgets it.
+- FRC app: battery board reads robot R, verdicts and load tests (ledger 0031 in frc-app).
+
 ## Drive Team Controller Map
 
 `tools/controller-map/`: double-click **Start Controller Map.bat** on any Windows driver station laptop for a live map of both Xbox controllers under the docked Driver Station (reads the controllers in the background, so it follows presses while Driver Station has focus). See its README. **When a controller binding changes, update the `BIND` / `CALL` tables in `tools/controller-map/index.html` too.**

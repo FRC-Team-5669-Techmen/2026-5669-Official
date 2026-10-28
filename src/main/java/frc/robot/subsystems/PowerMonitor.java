@@ -62,7 +62,8 @@ public class PowerMonitor extends SubsystemBase {
     public static final String kHistoryFile = "/home/lvuser/shotmap/battery-history.csv";
 
     private record Group(String name, List<TalonFX> motors) {}
-    private record Moment(double t, double volts, double amps, Map<String, Double> groups) {}
+    private record Moment(double t, double volts, double rioVolts, double amps, Map<String, Double> groups,
+                          Map<String, Double> groupVolts) {}
 
     private final List<Group> groups = new ArrayList<>();
     private final BatteryEstimator session = new BatteryEstimator(); // since boot (dashboard)
@@ -81,6 +82,9 @@ public class PowerMonitor extends SubsystemBase {
     private Moment matchMin = null;
     private double matchPeakAmps = 0, matchAmpSeconds = 0, matchRest = Double.NaN, lastT = -1;
     private int matchBrownouts = 0, matchBelow7 = 0;
+    private double matchRioMin = 99, matchMotorAmpsAtPeak = 0;
+    private String lastMatchBattery = null;
+    private volatile List<Map<String, Object>> lastStickyFaults = List.of();
     private boolean below7 = false;
     private final List<Map<String, Object>> brownoutSnapshots = new ArrayList<>();
     private String lastVerdict = "no match yet";
@@ -107,13 +111,26 @@ public class PowerMonitor extends SubsystemBase {
     @Override
     public void periodic() {
         double t = Timer.getFPGATimestamp();
-        double volts = RobotController.getBatteryVoltage();
+        // Research Oct 28: fit on the PDH's own voltage (battery side of the robot), not the
+        // roboRIO's input, which sits downstream of the PDH and its own wires. Both are logged: a
+        // growing gap between them = a bad roboRIO feed.
+        double rioVolts = RobotController.getBatteryVoltage();
+        double volts = rioVolts;
+        if (RobotBase.isReal()) {
+            try { double pv = pdh().getVoltage(); if (pv > 3 && pv < 16) volts = pv; } catch (Exception e) { /* no PDH */ }
+        }
         Map<String, Double> g = new LinkedHashMap<>();
+        Map<String, Double> gv = new LinkedHashMap<>();
         double motorAmps = 0;
         for (Group gr : groups) {
-            double a = 0;
-            for (TalonFX m : gr.motors()) a += Math.abs(m.getSupplyCurrent().getValueAsDouble());
+            double a = 0, vmin = 99;
+            for (TalonFX m : gr.motors()) {
+                a += Math.abs(m.getSupplyCurrent().getValueAsDouble());
+                double sv = m.getSupplyVoltage().getValueAsDouble();
+                if (sv > 1) vmin = Math.min(vmin, sv);
+            }
             g.put(gr.name(), a);
+            gv.put(gr.name(), vmin > 90 ? Double.NaN : vmin);
             motorAmps += a;
         }
         double total = Double.NaN;
@@ -130,7 +147,9 @@ public class PowerMonitor extends SubsystemBase {
         if (enabled) {
             session.add(t, volts, total);
             match.add(t, volts, total);
-            Moment now = new Moment(t, volts, total, g);
+            Moment now = new Moment(t, volts, rioVolts, total, g, gv);
+            matchRioMin = Math.min(matchRioMin, rioVolts);
+            matchMotorAmpsAtPeak = total >= matchPeakAmps ? motorAmps : matchMotorAmpsAtPeak;
             lastSecond.addLast(now);
             while (!lastSecond.isEmpty() && t - lastSecond.peekFirst().t() > 1.0) lastSecond.removeFirst();
             if (matchMin == null || volts < matchMin.volts()) matchMin = now;
@@ -153,6 +172,8 @@ public class PowerMonitor extends SubsystemBase {
         SmartDashboard.putString("Battery Verdict", lastVerdict);
         DogLog.log("Power/TotalAmps", total);
         DogLog.log("Power/BatteryVolts", volts);
+        DogLog.log("Power/RioVolts", rioVolts);
+        DogLog.log("Power/TalonAmps", motorAmps);
         if (!Double.isNaN(session.latest())) DogLog.log("Power/ResistanceOhms", session.latest());
         for (var e : g.entrySet()) DogLog.log("Power/Amps/" + e.getKey(), e.getValue());
     }
@@ -192,6 +213,41 @@ public class PowerMonitor extends SubsystemBase {
         matchBrownouts = matchBelow7 = 0;
         brownoutSnapshots.clear();
         matchRest = restVolts;
+        matchRioMin = 99;
+        matchMotorAmpsAtPeak = 0;
+        writer.execute(this::clearStickies); // so only this match's faults count
+    }
+
+    private List<TalonFX> allTalons() {
+        List<TalonFX> all = new ArrayList<>();
+        for (Group gr : groups) all.addAll(gr.motors());
+        return all;
+    }
+
+    private void clearStickies() {
+        for (TalonFX m : allTalons()) {
+            try { m.clearStickyFaults(0.05); } catch (Exception e) { /* off the bus */ }
+        }
+    }
+
+    /**
+     * Talons that saw their supply sag during the match (sticky Undervoltage / BridgeBrownout,
+     * Research Oct 28): the robot's 50 Hz loop can miss a short dip, the motor controllers don't.
+     * One motor alone = its own branch (breaker, WAGO terminal, wire); many = the main path or battery.
+     */
+    private List<Map<String, Object>> readStickies() {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Group gr : groups) {
+            for (TalonFX m : gr.motors()) {
+                List<String> f = new ArrayList<>();
+                try {
+                    if (Boolean.TRUE.equals(m.getStickyFault_Undervoltage().getValue())) f.add("undervoltage");
+                    if (Boolean.TRUE.equals(m.getStickyFault_BridgeBrownout().getValue())) f.add("bridge brownout");
+                } catch (Exception e) { /* off the bus */ }
+                if (!f.isEmpty()) out.add(Map.of("device", gr.name() + " " + m.getDeviceID(), "faults", f));
+            }
+        }
+        return out;
     }
 
     /** The "power" section of the match file, and a battery-history row. */
@@ -203,6 +259,21 @@ public class PowerMonitor extends SubsystemBase {
         p.put("resistanceFits", match.fits());
         p.put("openCircuitVolts", Double.isNaN(match.openCircuitVolts()) ? null : round(match.openCircuitVolts(), 2));
         p.put("minVolts", matchMin == null ? null : round(matchMin.volts(), 2));
+        p.put("pdhMinVolts", matchMin == null ? null : round(matchMin.volts(), 2));
+        p.put("rioMinVolts", matchRioMin > 90 ? null : round(matchRioMin, 2));
+        if (matchMin != null) {
+            // Branch drop at the worst moment: battery-side volts minus each mechanism's own supply
+            // volts. A big drop on one mechanism = that branch's breaker, terminal or wire.
+            Map<String, Object> drop = new LinkedHashMap<>();
+            matchMin.groupVolts().forEach((k, v) -> { if (!Double.isNaN(v)) drop.put(k, round(matchMin.volts() - v, 2)); });
+            p.put("branchDropAtMin", drop);
+        }
+        List<Map<String, Object>> sticky = readStickies();
+        lastStickyFaults = sticky;
+        p.put("stickyFaults", sticky);
+        String lbl = batteryLabel == null ? "" : batteryLabel.trim();
+        p.put("sameBatteryAsLastMatch", !lbl.isEmpty() && lbl.equalsIgnoreCase(lastMatchBattery));
+        if (!lbl.isEmpty() && !"teleop_session".equals(kind) && !"auto_test".equals(kind)) lastMatchBattery = lbl;
         p.put("ampsAtMin", matchMin == null ? null : Math.round(matchMin.amps()));
         p.put("topDrawAtMin", matchMin == null ? Map.of() : topGroups(matchMin.groups(), 4));
         p.put("peakAmps", Math.round(matchPeakAmps));
@@ -212,6 +283,9 @@ public class PowerMonitor extends SubsystemBase {
         p.put("brownoutSnapshots", new ArrayList<>(brownoutSnapshots));
         String verdict = BatteryEstimator.verdict(matchRest, r, matchMin == null ? 13 : matchMin.volts(),
             matchMin == null ? 0 : matchMin.amps(), matchBrownouts, Power.kResistanceHighOhms, Power.kRestVoltsLow);
+        if (!sticky.isEmpty() && sticky.size() <= 2 && matchBrownouts == 0)
+            verdict = (verdict.equals("OK") ? "" : verdict + " | ") + "BRANCH: only " + sticky.get(0).get("device")
+                + " saw its supply sag: check that motor's breaker, PDH terminal and wire";
         p.put("verdict", verdict);
         lastVerdict = (batteryLabel == null || batteryLabel.isBlank() ? "" : batteryLabel + ": ") + verdict;
         appendHistory(kind, batteryLabel, matchRest, r, matchMin == null ? Double.NaN : matchMin.volts(),
@@ -301,6 +375,8 @@ public class PowerMonitor extends SubsystemBase {
     /** Pit Check: a warning when the battery typed in had high resistance last time, else null. */
     public String batteryWarning(String label) {
         if (label == null || label.isBlank()) return null;
+        if (DriverStation.isFMSAttached() && label.trim().equalsIgnoreCase(lastMatchBattery))
+            return "battery " + label.trim() + " was in the LAST match too: swap it (or retype Match Battery)";
         Double r = lastRByBattery.get(label.trim().toLowerCase(Locale.US));
         if (r == null || r <= Power.kResistanceHighOhms) return null;
         return String.format(Locale.US, "battery %s read %.0f mOhm last time (high): swap it or load-test it", label.trim(), r * 1000);

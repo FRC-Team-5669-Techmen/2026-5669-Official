@@ -28,7 +28,7 @@ public class IndexSubsystem extends SubsystemBase {
         CurrentLimitsConfigs currentLimits = config.CurrentLimits;
         
         // Let it pull up to 80 Amps from the battery instantly
-        currentLimits.SupplyCurrentLimit = 80.0; 
+        currentLimits.SupplyCurrentLimit = 40.0; // Oct 28 brownout research: was 80; 1678 runs 25-45, 6328 30-40. A jam is limited by the stator anyway
         currentLimits.SupplyCurrentLimitEnable = true;
 
         // Let it push up to 160 Amps of torque to the physical coils
