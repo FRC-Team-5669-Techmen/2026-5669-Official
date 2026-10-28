@@ -52,6 +52,9 @@ public class DefenseMode extends SubsystemBase {
     /** Defense mode is on (the drive command reads this). */
     public static boolean active() { return on; }
 
+    /** The driver's translate stick (0-1), as last reported by the drive command. */
+    public static double driverStick() { return driverStick; }
+
     /** The drive command reports the driver's translate stick (0-1) every loop. */
     public static void reportDriverStick(double magnitude) { driverStick = magnitude; }
 

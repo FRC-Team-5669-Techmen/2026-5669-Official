@@ -14,6 +14,7 @@ import com.pathplanner.lib.commands.FollowPathCommand;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -31,6 +32,7 @@ import frc.robot.controls.HotasX56;
 import frc.robot.generated.TunerConstants;
 
 // Subsystems
+import frc.robot.characterization.DriveTests;
 import frc.robot.subsystems.Agitator;
 import frc.robot.subsystems.AimSubsystem;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
@@ -139,6 +141,7 @@ public class RobotContainer {
 
     // State Toggles
     private boolean m_isShooterIdle = false;
+    private static final String kAutoLookKey = "Auto: Turret Watches Hub";
 
     public RobotContainer() {
         // We intentionally configure more HIDs (Xbox x2 + HOTAS x2) than are usually
@@ -452,6 +455,26 @@ public class RobotContainer {
         // Hood measuring switch: click = limits off, click again = back on.
         SmartDashboard.putData("Hood Limits OFF (measure)", gooba.limitsOffCommand());
 
+        // AUTO LOCALIZATION: during autos the turret (which carries the Limelight) keeps pointing at
+        // our hub while the robot drives, so the camera sees hub tags the whole time and keeps
+        // correcting the position (wheel slip and bumps make odometry drift). Only the turret moves,
+        // not the hood (vision is skipped while the hood moves). "score" takes the turret over as
+        // usual; this resumes after. Dashboard switch "Auto: Turret Watches Hub" (saved).
+        Preferences.initBoolean(kAutoLookKey, true);
+        SmartDashboard.putBoolean(kAutoLookKey, Preferences.getBoolean(kAutoLookKey, true));
+        goober.setDefaultCommand(Commands.run(() -> {
+            boolean on = SmartDashboard.getBoolean(kAutoLookKey, true);
+            if (on != Preferences.getBoolean(kAutoLookKey, true)) Preferences.setBoolean(kAutoLookKey, on);
+            if (on && DriverStation.isAutonomousEnabled() && aim.poseUsable() && goober.endMeasured()) {
+                var s = aim.solution();
+                goober.aimAtAngleWithRate(s.turretDegrees(), s.reachable() ? s.turretRateDegPerSec()
+                    : Math.toDegrees(drivetrain.getState().Speeds.omegaRadiansPerSecond));
+            } else {
+                goober.stop();
+                goober.clearAngleTarget();
+            }
+        }, goober).withName("Turret: watch hub in auto"));
+
         shooter.setDefaultCommand(new RunCommand(() -> {
             boolean wantsShot = operatorController.getHID().getRightTriggerAxis() > 0.5
                 || operatorController.getHID().getLeftTriggerAxis() > 0.5
@@ -475,6 +498,12 @@ public class RobotContainer {
         SmartDashboard.putData("Save Spot: Right Trench", backupShots.saveCommand(BackupShots.Spot.RIGHT_TRENCH));
         SmartDashboard.putData("Clear Recorded Shot Points", aim.clearRecordedCommand());
         SmartDashboard.putData("Clear Recorded Pass Points", aim.clearRecordedPassCommand());
+        // Drive tests (enabled, teleop, clear space): results on "Drive Test" + console. See DriveTests.
+        DriveTests driveTests = new DriveTests(drivetrain, () -> Math.max(DefenseMode.driverStick(),
+            Math.abs(driverController.getRightX())));
+        SmartDashboard.putData("Test: Wheel Radius", driveTests.wheelRadiusCommand());
+        SmartDashboard.putData("Test: Drive Feedforward", driveTests.feedforwardCommand());
+        SmartDashboard.putData("Test: Slip Current", driveTests.slipCurrentCommand());
 
         drivetrain.registerTelemetry(logger::telemeterize);
     }
