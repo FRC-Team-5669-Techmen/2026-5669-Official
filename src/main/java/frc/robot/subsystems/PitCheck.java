@@ -64,6 +64,7 @@ public class PitCheck extends SubsystemBase {
         double volts = RobotController.getBatteryVoltage();
         if (DriverStation.isDisabled() && volts < 12.4) problems.add(String.format("battery %.2f V: swap it", volts));
         lines.add(String.format("Battery %.2f V", volts));
+        lines.add("Code: " + frc.robot.Robot.CODE_VERSION);
 
         // 2. Every CAN device answering (only after 5 s, so boot-up doesn't count).
         if (loops > 250) {

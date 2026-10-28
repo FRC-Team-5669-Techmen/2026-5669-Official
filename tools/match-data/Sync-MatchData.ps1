@@ -36,17 +36,23 @@ try {
 } catch { Write-Host "Logs: none listed yet (a USB stick in the roboRIO keeps them)" }
 
 # Commit and push the small files (not the logs) when git and the internet are there.
+# Windows PowerShell turns git's normal stderr chatter into errors under "Stop", so git runs under
+# "Continue" and is judged by its exit code.
+$ErrorActionPreference = "Continue"
 Set-Location $repo
 $isRepo = $false
-try { $isRepo = ((git rev-parse --is-inside-work-tree 2>$null) -eq "true") } catch {}
+if (Get-Command git -ErrorAction SilentlyContinue) { $isRepo = ((& git rev-parse --is-inside-work-tree 2>&1) -eq "true") }
 if ($isRepo) {
-    git add match-data/matches match-data/matches.csv match-data/shot-log.csv 2>$null
-    $changes = git diff --cached --name-only
+    & git add -- "match-data/matches" "match-data/matches.csv" "match-data/shot-log.csv" 2>&1 | Out-Null
+    $changes = & git diff --cached --name-only
     if ($changes) {
-        git commit -q -m "Match data from the robot ($(Get-Date -Format 'yyyy-MM-dd HH:mm'))"
-        try { git pull -q --rebase; git push -q; Write-Host "Pushed to GitHub: Claude and the team can read it." -ForegroundColor Green }
-        catch { Write-Host "Saved and committed here; push when the laptop is online (run this again)." -ForegroundColor Yellow }
+        & git commit -q -m "Match data from the robot ($(Get-Date -Format 'yyyy-MM-dd HH:mm'))" 2>&1 | Out-Null
+        & git pull -q --rebase 2>&1 | Out-Null
+        & git push -q 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) { Write-Host "Pushed to GitHub: Claude and the team can read it." -ForegroundColor Green }
+        else { Write-Host "Saved and committed here; it pushes next time you run this with internet." -ForegroundColor Yellow }
     } else { Write-Host "Nothing new to commit." }
+} else {
+    Write-Host "This folder is not a git clone: send the match-data folder another way." -ForegroundColor Yellow
 }
-if (-not $isRepo) { Write-Host "This folder is not a git clone: send the match-data folder another way." -ForegroundColor Yellow }
 Write-Host "Done. Folder: $out"

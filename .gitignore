@@ -189,3 +189,6 @@ compile_commands.json
 # Controller map run log
 tools/controller-map/controller-map.log
 networktables.json.bck
+
+# written by every build (see build.gradle writeBuildInfo)
+src/main/deploy/buildinfo.txt

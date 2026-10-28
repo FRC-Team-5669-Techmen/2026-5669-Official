@@ -41,6 +41,31 @@ deploy {
     }
 }
 
+// CODE VERSION (Oct 28): every build writes src/main/deploy/buildinfo.txt (build time, laptop name,
+// git commit when git is there). The robot shows it as "Code Version" on the dashboard and in Pit
+// Check, so after a deploy anyone can see the new code is really running.
+def writeBuildInfo = tasks.register('writeBuildInfo') {
+    outputs.upToDateWhen { false }
+    doLast {
+        def sha = 'no git'
+        try {
+            def p = ['git', 'rev-parse', '--short', 'HEAD'].execute(null, projectDir)
+            p.waitFor()
+            if (p.exitValue() == 0) {
+                sha = p.text.trim()
+                def d = ['git', 'status', '--porcelain', '--untracked-files=no'].execute(null, projectDir)
+                d.waitFor()
+                if (d.text.trim()) sha += ' + local changes'
+            }
+        } catch (Exception ignored) { }
+        def host = 'unknown'
+        try { host = InetAddress.localHost.hostName } catch (Exception ignored) { }
+        file('src/main/deploy/buildinfo.txt').text =
+            "built ${new Date().format('yyyy-MM-dd HH:mm')} on ${host}, commit ${sha}"
+    }
+}
+tasks.named('compileJava') { dependsOn writeBuildInfo }
+
 def deployArtifact = deploy.targets.roborio.artifacts.frcJava
 
 // Set to true to use debug for all targets including JNI, which will drastically impact

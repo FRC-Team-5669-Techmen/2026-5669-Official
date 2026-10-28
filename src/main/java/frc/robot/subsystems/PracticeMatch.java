@@ -250,6 +250,7 @@ public class PracticeMatch extends SubsystemBase {
         meta.put("alliance", red() ? "red" : "blue");
         meta.put("station", DriverStation.getLocation().orElse(0));
         meta.put("autoName", autoName.get());
+        meta.put("codeVersion", frc.robot.Robot.CODE_VERSION);
         for (String k : kCrew) {
             String key = "Match " + k;
             String v = SmartDashboard.getString(key, "");

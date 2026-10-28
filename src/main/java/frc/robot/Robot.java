@@ -19,6 +19,8 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
 public class Robot extends TimedRobot {
+    /** "built <date> on <laptop>, commit <sha>": which code is running. */
+    public static String CODE_VERSION = "unknown";
     private Command m_autonomousCommand;
     private double autoStart = 0;
 
@@ -64,6 +66,15 @@ public class Robot extends TimedRobot {
                 DogLog.log("Commands/AutoSeconds", Timer.getFPGATimestamp() - autoStart);
             }
         });
+
+        // Which code is running (written by every build): dashboard "Code Version", console, match files.
+        String version = "unknown (no buildinfo.txt)";
+        try {
+            version = java.nio.file.Files.readString(new java.io.File(Filesystem.getDeployDirectory(), "buildinfo.txt").toPath()).trim();
+        } catch (Exception e) { /* older deploy */ }
+        CODE_VERSION = version;
+        edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putString("Code Version", version);
+        System.out.println("CODE | " + version);
 
         // Elastic "Load Layout From Robot" (Ctrl+D) downloads src/main/deploy/elastic-layout.json from here.
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());

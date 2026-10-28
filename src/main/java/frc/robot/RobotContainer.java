@@ -431,7 +431,9 @@ public class RobotContainer {
         // (Oct 28: it used to feed balls into a stopped wheel unless LT was held first).
         tele(operatorController.rightTrigger()).and(notUnjamming).and(aimOn.negate()).whileTrue(
             new FeedShooterCommand(index, shooterIntake,
-                () -> shooter.targetRpm() > 500 && shooter.getCurrentRpm() > 0.9 * shooter.targetRpm()));
+                // 75%: the fast preset (5400) is above what the wheel can HOLD (~4720 at 12 V, ~4300 at
+                // 11 V, kV 0.15), so "90% of target" would never come and RT would never feed.
+                () -> shooter.targetRpm() > 500 && shooter.getCurrentRpm() > 0.75 * shooter.targetRpm()));
 
         // VACUUM MODE (Back, press to toggle): intake + shoot hands-free. Intake down, roller in,
         // auto-aim on, fires by itself whenever ready. Scores from inside our alliance zone,
