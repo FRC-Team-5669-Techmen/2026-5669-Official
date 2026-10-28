@@ -43,19 +43,13 @@ public class Marcos {
 
         // SHOOT FROM ANYWHERE (Oct 26): aim from the field position (the path sets it) and fire
         // every ball the moment the shot is ready, for up to 3.5 s. Works stopped or moving.
-        NamedCommands.registerCommand("score",
-            new ShootCommand(aim, shooter, index, shooterIntake, goober, gooba, true).withTimeout(3.5)
-                .deadlineFor(new AimCommand(aim, goober, gooba, limelight, drivetrain))
-        );
+        NamedCommands.registerCommand("score", scoreUntilEmpty(aim, shooter, index, shooterIntake, goober, gooba, limelight, drivetrain));
 
         // Same as "score" (Oct 27). It used to spin to a fixed 5400 RPM and feed with the turret
         // wherever it was: with the turret at HOME (shooter facing the robot front) the Center
         // Preload auto faced our own wall. Aiming from the field position needs no camera: the
         // auto's starting pose is enough.
-        NamedCommands.registerCommand("scorePreload",
-            new ShootCommand(aim, shooter, index, shooterIntake, goober, gooba, true).withTimeout(3.5)
-                .deadlineFor(new AimCommand(aim, goober, gooba, limelight, drivetrain))
-        );
+        NamedCommands.registerCommand("scorePreload", scoreUntilEmpty(aim, shooter, index, shooterIntake, goober, gooba, limelight, drivetrain));
 
         // GET READY TO SHOOT while still driving (Oct 27): turret + hood on the hub and the
         // shooter at the table speed, no feeding. Put it on the last part of a path that ends at
@@ -84,10 +78,7 @@ public class Marcos {
         );
 
         // Same as "score" (kept so existing autos load): aim from position, fire when ready.
-        NamedCommands.registerCommand("visionScore",
-            new ShootCommand(aim, shooter, index, shooterIntake, goober, gooba, true).withTimeout(3.5)
-                .deadlineFor(new AimCommand(aim, goober, gooba, limelight, drivetrain))
-        );
+        NamedCommands.registerCommand("visionScore", scoreUntilEmpty(aim, shooter, index, shooterIntake, goober, gooba, limelight, drivetrain));
 
         // Point the turret (and hood) at the hub from the field position, for 2 s.
         NamedCommands.registerCommand("aimTurret",
@@ -150,5 +141,37 @@ public class Marcos {
         NamedCommands.registerCommand("deployGooba", new GoobaToggleCommand(gooba, true));
         NamedCommands.registerCommand("stowGooba", new GoobaToggleCommand(gooba, false));
         NamedCommands.registerCommand("autoAimGooba", new AutoGooba(gooba, limelight).withTimeout(2.0));
+    }
+
+    /**
+     * AUTO SCORE that ends as soon as the hopper is EMPTY (Oct 27): once firing has started, no
+     * ball has left for kEmptySeconds = done, so the auto moves on instead of waiting out the full
+     * 3.5 s (the 3-piece autos ran ~23 s of a 20 s auto). Still stops at 3.5 s no matter what.
+     */
+    private static final double kEmptySeconds = 1.0; // > the agitation pump trigger (0.8 s), so a bridged hopper gets one pump first
+
+    private static Command scoreUntilEmpty(AimSubsystem aim, ShooterSubsystem shooter, IndexSubsystem index,
+            ShooterIntakeSubsystem shooterIntake, Goober goober, GoobaSubsystem gooba,
+            LimelightSubsystem limelight, CommandSwerveDrivetrain drivetrain) {
+        double[] firstFire = {Double.NaN};
+        double[] lastBall = {Double.NEGATIVE_INFINITY};
+        int[] shotsAtStart = {0};
+        return new ShootCommand(aim, shooter, index, shooterIntake, goober, gooba, true)
+            .deadlineFor(new AimCommand(aim, goober, gooba, limelight, drivetrain))
+            .until(() -> {
+                double now = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
+                if (Double.isNaN(firstFire[0]) && aim.isFiring()) firstFire[0] = now;
+                if (Double.isNaN(firstFire[0])) return false;
+                if (shooter.shotsStarted() > shotsAtStart[0]) lastBall[0] = shooter.lastShotTime();
+                double since = now - Math.max(firstFire[0], lastBall[0]);
+                return since > kEmptySeconds;
+            })
+            .beforeStarting(() -> {
+                firstFire[0] = Double.NaN;
+                lastBall[0] = Double.NEGATIVE_INFINITY;
+                shotsAtStart[0] = shooter.shotsStarted();
+            })
+            .withTimeout(3.5)
+            .withName("score (until empty)");
     }
 }

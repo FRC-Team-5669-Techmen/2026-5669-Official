@@ -88,6 +88,11 @@ public class ShooterSubsystem extends SubsystemBase {
     private int finishedShots = 0;
     private double lastLaunch = 0, lastDip = 0, lastRecovery = 0, lastTarget = 0;
     public int finishedShots() { return finishedShots; }
+    /** Balls that have left (counted at the start of each flywheel dip). */
+    public int shotsStarted() { return shots; }
+    /** FPGA time of the last ball leaving. */
+    public double lastShotTime() { return lastShotTime; }
+    private double lastShotTime = Double.NEGATIVE_INFINITY;
     public double lastLaunchRpm() { return lastLaunch; }
     public double lastDipRpm() { return lastDip; }
     public double lastRecoverySec() { return lastRecovery; }
@@ -98,7 +103,7 @@ public class ShooterSubsystem extends SubsystemBase {
         if (target < 1000) { inDip = false; prevRpm = rpm; return; }
         double now = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
         if (!inDip && rpm < target - kDipStart && prevRpm >= target - kDipStart) {
-            inDip = true; dipStart = now; minRpm = rpm; launchRpm = prevRpm; shots++;
+            inDip = true; dipStart = now; minRpm = rpm; launchRpm = prevRpm; shots++; lastShotTime = now;
             if (Math.abs(launchRpm - target) <= kAtSpeed) goodShots++;
             SmartDashboard.putNumber("Last Shot Launch RPM", launchRpm);
             dev.doglog.DogLog.log("Shooter/ShotLaunchRpm", launchRpm);

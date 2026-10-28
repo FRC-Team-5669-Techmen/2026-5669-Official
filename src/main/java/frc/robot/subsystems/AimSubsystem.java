@@ -312,6 +312,8 @@ public class AimSubsystem extends SubsystemBase {
 
     /** ShootCommand reports whether it is feeding (freezes the pass target for the volley). */
     public void setFiring(boolean on) { firing = on; }
+    /** ShootCommand is feeding balls right now. */
+    public boolean isFiring() { return firing; }
     public void setActive(boolean on) { active = on; }
 
     /** Aim tolerance (deg) for the current target and distance. */
