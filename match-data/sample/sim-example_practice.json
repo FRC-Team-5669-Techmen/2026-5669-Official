@@ -1,0 +1,158 @@
+{
+  "schema" : 1,
+  "kind" : "practice",
+  "robotMatch" : 1,
+  "startedAt" : "2026-10-28T10:36:05.893596804",
+  "fms" : false,
+  "event" : "",
+  "fmsMatchType" : "None",
+  "fmsMatchNumber" : 0,
+  "fmsReplay" : 0,
+  "alliance" : "red",
+  "station" : 1,
+  "autoName" : "Shoot Preload (stay put)",
+  "driver" : "",
+  "operator" : "",
+  "coach" : "",
+  "batteryLabel" : "",
+  "durationSeconds" : 17.1,
+  "scoring" : {
+    "autoBalls" : 0,
+    "ballsHubOpen" : 0,
+    "ballsHubClosed" : 0,
+    "passes" : 0,
+    "ballsTotal" : 0,
+    "rtHeldSeconds" : 4.0,
+    "readyWhileRtHeldPct" : 0.0,
+    "firingSeconds" : 0.0,
+    "ballsPerFiringSecond" : 0.0,
+    "launchRpmErrorMean" : null,
+    "notReadySecondsByReason" : {
+      "tag-only: turret not on hub tag" : 4.0,
+      "-" : 0.0
+    }
+  },
+  "battery" : {
+    "start" : 13.5,
+    "end" : 13.5,
+    "min" : 13.5,
+    "minWhere" : "AUTO 0:20",
+    "avg" : 13.5,
+    "secondsBelow10V" : 0.0,
+    "secondsBelow8V" : 0.0,
+    "brownouts" : 0,
+    "powerSagSeconds" : 0.0
+  },
+  "drive" : {
+    "distanceMeters" : 0.0,
+    "topSpeedMps" : 0.0,
+    "driveSupplyAmpsAvg" : 0.0,
+    "driveSupplyAmpsPeak" : 0.0,
+    "defenseSeconds" : 0.0,
+    "vacuumSeconds" : 5.0,
+    "dumpSeconds" : 0.0
+  },
+  "aim" : {
+    "aimOnPct" : 96.6,
+    "positionKnownPct" : 0.0,
+    "longestSecondsWithoutVisionFix" : 124.4
+  },
+  "climb" : {
+    "liftAtSeconds" : null,
+    "hangAtSeconds" : null,
+    "hangingAtEnd" : false
+  },
+  "can" : {
+    "busOffEvents" : 0,
+    "utilizationMaxPct" : 0.0
+  },
+  "phases" : [ {
+    "phase" : "AUTO",
+    "seconds" : 4.0,
+    "shots" : 0,
+    "batteryMin" : 13.5,
+    "batteryAvg" : 13.5
+  }, {
+    "phase" : "TRANSITION",
+    "seconds" : 10.1,
+    "shots" : 0,
+    "batteryMin" : 13.5,
+    "batteryAvg" : 13.5
+  }, {
+    "phase" : "SHIFT 1",
+    "seconds" : 3.0,
+    "shots" : 0,
+    "batteryMin" : 13.5,
+    "batteryAvg" : 13.5
+  } ],
+  "events" : [ {
+    "t" : 0.02,
+    "clock" : "0:20",
+    "phase" : "AUTO",
+    "text" : "aim ON"
+  }, {
+    "t" : 3.52,
+    "clock" : "0:17",
+    "phase" : "AUTO",
+    "text" : "aim OFF"
+  }, {
+    "t" : 3.52,
+    "clock" : "0:17",
+    "phase" : "AUTO",
+    "text" : "AUTO finished after 3.5 s (auto is 20 s)"
+  }, {
+    "t" : 4.02,
+    "clock" : "-",
+    "phase" : "DISABLED",
+    "text" : "RunCommand interrupted by RunCommand"
+  }, {
+    "t" : 4.02,
+    "clock" : "-",
+    "phase" : "DISABLED",
+    "text" : "RunCommand interrupted by disable / mode change / cancel"
+  }, {
+    "t" : 4.02,
+    "clock" : "-",
+    "phase" : "DISABLED",
+    "text" : "Turret: watch hub in auto interrupted by disable / mode change / cancel"
+  }, {
+    "t" : 7.0,
+    "clock" : "2:20",
+    "phase" : "TRANSITION",
+    "text" : "phase TRANSITION"
+  }, {
+    "t" : 7.02,
+    "clock" : "2:20",
+    "phase" : "TRANSITION",
+    "text" : "aim ON"
+  }, {
+    "t" : 7.02,
+    "clock" : "2:20",
+    "phase" : "TRANSITION",
+    "text" : "RunCommand interrupted by disable / mode change / cancel"
+  }, {
+    "t" : 14.02,
+    "clock" : "2:13",
+    "phase" : "TRANSITION",
+    "text" : "ShootCommand interrupted by disable / mode change / cancel"
+  }, {
+    "t" : 15.03,
+    "clock" : "2:12",
+    "phase" : "TRANSITION",
+    "text" : "vacuum ON"
+  }, {
+    "t" : 15.03,
+    "clock" : "2:12",
+    "phase" : "TRANSITION",
+    "text" : "RunCommand interrupted by Vacuum: shoot"
+  }, {
+    "t" : 17.0,
+    "clock" : "2:10",
+    "phase" : "SHIFT 1",
+    "text" : "phase SHIFT 1"
+  } ],
+  "autoWinner" : "blue",
+  "autoWinnerRandom" : true,
+  "batteryEndAtRest" : 13.5,
+  "logDir" : "/home/lvuser/logs"
+}
