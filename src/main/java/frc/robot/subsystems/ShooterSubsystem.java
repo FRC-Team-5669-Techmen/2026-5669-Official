@@ -78,7 +78,7 @@ public class ShooterSubsystem extends SubsystemBase {
     // that ball launched at. If balls come faster than the wheel recovers, later balls launch slow
     // and fall short. Dashboard: "Shots Counted", "Shots At Speed", "Last Shot Launch RPM",
     // "Last Shot Dip (RPM)", "Last Shot Recovery (s)". Button "Reset Shot Stats".
-    private static final double kDipStart = 120;   // RPM below target that counts as a ball hitting
+    private static final double kDipStart = 60;    // RPM below target that counts as a ball (Oct 27: 120 missed balls at lower RPM)
     private static final double kRecovered = 50;   // RPM below target that counts as recovered
     private static final double kAtSpeed = 100;    // launch within this of target = a good shot
     private double prevRpm = 0, minRpm = 0, launchRpm = 0, dipStart = 0;
@@ -136,6 +136,21 @@ public class ShooterSubsystem extends SubsystemBase {
         return leader.getVelocity().getValueAsDouble() * 60.0;
     }
 
+    private static final String kBoostKey = "Shooter Recovery Boost (V)";
+
+    private static double boostVolts() {
+        if (!edu.wpi.first.wpilibj.Preferences.containsKey(kBoostKey)) {
+            edu.wpi.first.wpilibj.Preferences.initDouble(kBoostKey, Constants.Shooter.kBoostVolts);
+            SmartDashboard.putNumber(kBoostKey, Constants.Shooter.kBoostVolts);
+        }
+        double v = MathUtil.clamp(SmartDashboard.getNumber(kBoostKey,
+            edu.wpi.first.wpilibj.Preferences.getDouble(kBoostKey, Constants.Shooter.kBoostVolts)), 0.0, 8.0);
+        if (v != edu.wpi.first.wpilibj.Preferences.getDouble(kBoostKey, Constants.Shooter.kBoostVolts)) {
+            edu.wpi.first.wpilibj.Preferences.setDouble(kBoostKey, v);
+        }
+        return v;
+    }
+
     public void runAtRPM(double targetRpm) {
         // SAFETY CLAMP: keep the requested RPM inside +/- kMaxRPM
         targetRpm = MathUtil.clamp(targetRpm, -Constants.Shooter.kMaxRPM, Constants.Shooter.kMaxRPM);
@@ -161,9 +176,17 @@ public class ShooterSubsystem extends SubsystemBase {
             m_rampedSetpointRpm = targetRpm;
         }
 
+        // RECOVERY BOOST: well under target (a ball just left, or spinning up) = push extra volts
+        // so the wheel is back at speed before the next ball. Off once within kBoostBelowRpm.
+        double boost = 0.0;
+        double measured = getCurrentRpm();
+        if (m_rampedSetpointRpm > 500.0 && measured < m_rampedSetpointRpm - Constants.Shooter.kBoostBelowRpm) {
+            boost = boostVolts();
+        }
+        SmartDashboard.putBoolean("Shooter Boosting", boost > 0);
         // Send the managed software setpoint to the TalonFX
-        leader.setControl(m_velocityRequest.withVelocity(m_rampedSetpointRpm / 60.0));
-        follower.setControl(m_velocityRequest.withVelocity(m_rampedSetpointRpm / 60.0));
+        leader.setControl(m_velocityRequest.withVelocity(m_rampedSetpointRpm / 60.0).withFeedForward(boost));
+        follower.setControl(m_velocityRequest.withVelocity(m_rampedSetpointRpm / 60.0).withFeedForward(boost));
     }
 
     /** Bench test: run only the leader motor. */

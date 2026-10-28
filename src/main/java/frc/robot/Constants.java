@@ -92,7 +92,13 @@ public final class Constants {
         public static final double kSupplyCurrentLimit = 60.0;
         public static final double kStatorCurrentLimit = 120.0;
         // Spin-up ramp: 0 to full voltage in 0.25 s, easy on the belt, still at speed in about a second.
-        public static final double kVoltageRampPeriod = 0.25;
+        // Oct 27: 0.05 s (was 0.25): the ramp slowed the RECOVERY after every ball, not just spin-up.
+        public static final double kVoltageRampPeriod = 0.05;
+        // RECOVERY BOOST (6328 2026 style bang-bang assist): while the wheel is more than
+        // kBoostBelowRpm under its target (a ball just took energy out, or spinning up), add this
+        // many volts on top of the velocity loop. Dashboard "Shooter Recovery Boost (V)" (saved, 0 = off).
+        public static final double kBoostVolts = 4.0;
+        public static final double kBoostBelowRpm = 60.0;
         public static final double kDutyCycleRampPeriod = 0.0;
     }
 
@@ -418,8 +424,8 @@ public final class Constants {
 
         // Shot detection for agitation (independent of the target RPM, so it also works when the
         // wheel can't reach the target): a ball = speed falls this far below its recent peak.
-        public static final double kShotDropRpm = 120.0;
-        public static final double kShotRearmRpm = 60.0;     // back within this of the pre-dip speed
+        public static final double kShotDropRpm = 60.0;     // Oct 27: 120 -> 60 (lower RPM + recovery boost = smaller dips per ball)
+        public static final double kShotRearmRpm = 30.0;     // back within this of the pre-dip speed
         public static final double kShotMaxDipSeconds = 0.6;
         public static final double kMinShooterRpm = 1000.0;  // below this the shooter isn't shooting
     }
@@ -429,7 +435,7 @@ public final class Constants {
         public static final int kMotorId = 22;  // Tuner X name: "Intake motor(22)"
         public static final boolean kInverted = false;  // flip if it spins balls OUT instead of in
         public static final double kRollerVolts = 12.0; // spin speed while Driver RT is held (volts). Full power (Oct 25; was 9.0, before that 6.0)
-        public static final double kReverseVolts = -9.0; // Driver LT (hold): spit balls back out
+        public static final double kReverseVolts = -12.0; // Driver LT (hold): spit balls back out (Oct 27: full power, was -9)
         public static final double kStatorCurrentLimit = 60.0;  // amps (was 40, raised with full power)
     }
 

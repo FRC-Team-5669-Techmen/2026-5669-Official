@@ -34,12 +34,15 @@ public final class ShotTable {
      */
     public static ShotTable defaults() {
         ShotTable t = new ShotTable();
-        t.put(new Point(1.5, 3400, 0.36, 0.55));
-        t.put(new Point(2.5, 3900, 0.70, 0.70));
-        t.put(new Point(3.5, 4400, 1.00, 0.85));
-        t.put(new Point(4.5, 4900, 1.38, 1.00));
-        t.put(new Point(5.5, 5300, 1.70, 1.15));
-        t.put(new Point(6.5, 5600, 1.85, 1.30));
+        // Oct 27: kept within what the wheel can HOLD on a loaded battery (~4300 RPM at 11 V with
+        // kV 0.15) and leaning on the hood for distance (elite 2026 teams scored at 24-50% of free
+        // speed and covered distance with the hood). Still guesses: record real points.
+        t.put(new Point(1.5, 3000, 0.60, 0.60));
+        t.put(new Point(2.5, 3300, 1.20, 0.75));
+        t.put(new Point(3.5, 3600, 1.80, 0.90));
+        t.put(new Point(4.5, 3850, 2.40, 1.05));
+        t.put(new Point(5.5, 4050, 3.00, 1.20));
+        t.put(new Point(6.5, 4250, 3.50, 1.35));
         return t;
     }
 

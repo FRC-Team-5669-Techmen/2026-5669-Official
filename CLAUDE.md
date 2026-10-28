@@ -91,6 +91,15 @@ Research (6328, 1678, 581, 5000, 254, 2910 public code; CTRE, PathPlanner, WPILi
 - **Battery**: top speed ~4.39 m/s at 12 V, ~4.03 at 11 V, ~3.66 at 10 V; roboRIO 2 brownout disables motors at 6.75 V until 7.5 V. Autos on the freshest battery; Battery Beak every match battery (keep out of matches above ~20 mOhm).
 - Flipping for red is right: REBUILT is rotationally symmetric and PathPlannerLib 2026.1.2 defaults to `kRotational` (checked against the 2026 tag layout).
 
+## Shooter speed and plotting (Oct 27 night)
+
+Research: `/home/claude/research_notes/Shooter RPM and shot arc/` (elite 2026 teams scored at 24-50% of free speed, hood covers distance; this robot's kV 0.15 means it can only HOLD ~4720 RPM at 12 V, ~4320 at 11 V).
+- **Don't run the shooter at full speed**: pick the LOWEST RPM with a good arc at each distance; spare voltage = fast recovery = every ball in a burst launches the same. Score table starting guesses now 3000-4250 RPM with more hood.
+- **Recovery boost**: while the wheel is more than 60 RPM under target, +4 V on top of the velocity loop ("Shooter Recovery Boost (V)", saved, 0 = off; 6328-style). Closed-loop voltage ramp 0.05 s (was 0.25, it slowed every recovery). Dashboard "Shooter Boosting".
+- Ball counting: a ball = flywheel 60 RPM under target (was 120; smaller dips at lower RPM), `ShooterSubsystem.kDipStart` and `Agitation.kShotDropRpm`.
+- **Plot Spot** (camera-proof plotting): robot CENTER on a tape mark on the hub center line, "Plot Distance (m)", "Set Pose: Plot Spot", "Vision Pose ON" off. Camera tilt hood down/up typed on the dashboard ("Camera Pitch Hood Down/Up (deg)", saved).
+- **Intake power**: RT in 12 V (full), LT out -12 V (was -9). Kept on purpose: roller ASSIST while shooting 5 V (12 V packs the hopper and causes inlet jams/bridging), agitation tap-out -4 V (-9 V threw a ball out of the robot).
+
 ## Drive Team Controller Map
 
 `tools/controller-map/`: double-click **Start Controller Map.bat** on any Windows driver station laptop for a live map of both Xbox controllers under the docked Driver Station (reads the controllers in the background, so it follows presses while Driver Station has focus). See its README. **When a controller binding changes, update the `BIND` / `CALL` tables in `tools/controller-map/index.html` too.**
