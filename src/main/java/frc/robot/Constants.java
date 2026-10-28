@@ -221,9 +221,9 @@ public final class Constants {
         // went to 10.7, so the gearing is different now). Oct 27: raised 3.8 -> 3.87 (team asked
         // for more hood for long shots and passes): 0.02 below the measured top stop. More than
         // this needs the hood to physically go higher: re-measure with "Hood Limits OFF (measure)".
-        public static final double kTopPosition = 3.87;
+        public static final double kTopPosition = 7.87;   // Oct 28 rebuilt hood: top measured 7.94 (Set Hood Top saved 7.906); was 3.87
         // Where the hood's top stop really is (the Limelight height 22.35 in was measured there).
-        public static final double kTopStop = 3.89;
+        public static final double kTopStop = 7.94;        // Oct 28 rebuilt hood (was 3.89)
 
         public static final double kP = 2.4;
         public static final double kI = 0.0;
@@ -236,7 +236,7 @@ public final class Constants {
         // Operator Y presets (rotations)
         public static final double kPositionStowed = 0.2;  // = kBottomPosition
         // Last season's 3.5 out of 10.7, scaled to this hood's 3.89 travel (same share of the way up)
-        public static final double kPositionDeployed = 1.3;
+        public static final double kPositionDeployed = 2.65; // Oct 28: rebuilt hood travels ~2.04x the rotations (was 1.3)
         // Operator D-pad Up/Down jog: rotations per 20 ms loop (0.04 = 2 rotations per second)
         public static final double kManualStep = 0.04;
     }
@@ -577,7 +577,7 @@ public final class Constants {
         public static final double kRpmTolerance = 100.0;   // to START firing (or kRpmTolerancePct, whichever is bigger). Oct 27: 150 -> 100
         public static final double kRpmTolerancePct = 0.025; // Oct 27: 4% -> 2.5% (long shots only tolerate ~3-4% launch-speed error)
         public static final double kKeepFiringDegrees = 4.0; // once firing, keep feeding unless the turret is this far off
-        public static final double kHoodTolerance = 0.12; // rotations
+        public static final double kHoodTolerance = 0.24; // rotations (Oct 28: x2 for the rebuilt hood's ~2x rotations per degree; was 0.12)
 
         // ---- Hub out of the turret's reach (the ~90 degree dead zone behind the wires) ----
         // The drivetrain turns the robot just enough to bring the hub into reach, but only while
@@ -662,7 +662,7 @@ public final class Constants {
         public static final double kTrenchOverrideSpeed = 0.3;   // m/s
         public static final double kTrenchOpeningY = 1.283;    // trench opening runs y 0 to 1.283 (and mirrored); manual: 50.34 in
         public static final double kPassRpmTolerance = 600.0;   // Oct 27: 400 -> 600 (volume over precision)
-        public static final double kPassHoodTolerance = 0.40;   // Oct 27: 0.25 -> 0.40
+        public static final double kPassHoodTolerance = 0.80;   // Oct 27: 0.25 -> 0.40; Oct 28 x2 for the rebuilt hood
         // PASS feed: spindexer and uptake as fast as they go, so the balls leave in a tight stream.
         // Dashboard "Pass Feed Volts" (saved). Scoring keeps the tuned single-file volts.
         public static final double kPassFeedVolts = 12.0;

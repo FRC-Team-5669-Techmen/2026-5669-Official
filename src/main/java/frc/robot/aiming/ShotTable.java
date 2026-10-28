@@ -37,12 +37,13 @@ public final class ShotTable {
         // Oct 27: kept within what the wheel can HOLD on a loaded battery (~4300 RPM at 11 V with
         // kV 0.15) and leaning on the hood for distance (elite 2026 teams scored at 24-50% of free
         // speed and covered distance with the hood). Still guesses: record real points.
-        t.put(new Point(1.5, 3000, 0.60, 0.60));
-        t.put(new Point(2.5, 3300, 1.20, 0.75));
-        t.put(new Point(3.5, 3600, 1.80, 0.90));
-        t.put(new Point(4.5, 3850, 2.40, 1.05));
-        t.put(new Point(5.5, 4050, 3.00, 1.20));
-        t.put(new Point(6.5, 4250, 3.50, 1.35));
+        // Oct 28: hood values x2.04 for the rebuilt hood (top 3.87 -> 7.9 rot). Shot table scrapped: re-plot.
+        t.put(new Point(1.5, 3000, 1.20, 0.60));
+        t.put(new Point(2.5, 3300, 2.45, 0.75));
+        t.put(new Point(3.5, 3600, 3.70, 0.90));
+        t.put(new Point(4.5, 3850, 4.90, 1.05));
+        t.put(new Point(5.5, 4050, 6.10, 1.20));
+        t.put(new Point(6.5, 4250, 7.15, 1.35));
         return t;
     }
 
@@ -66,11 +67,11 @@ public final class ShotTable {
         // 3.5 to 13 m: driving at 4 m/s shifts a 7.7 m pass to ~4 m (toward home) or ~12.5 m (away).
         // Oct 27: hood at the TOP for every pass (raising the hood flattens the shot: further, not
         // higher; 6328 fixed its hood at max for passes and only changed RPM).
-        t.put(new Point(3.5, 3000, 3.80, 0.95));
-        t.put(new Point(6.0, 3500, 3.80, 1.20));
-        t.put(new Point(8.0, 3850, 3.80, 1.40));
-        t.put(new Point(10.0, 4150, 3.80, 1.60));
-        t.put(new Point(13.0, 4500, 3.80, 1.90));
+        t.put(new Point(3.5, 3000, 7.75, 0.95));
+        t.put(new Point(6.0, 3500, 7.75, 1.20));
+        t.put(new Point(8.0, 3850, 7.75, 1.40));
+        t.put(new Point(10.0, 4150, 7.75, 1.60));
+        t.put(new Point(13.0, 4500, 7.75, 1.90));
         return t;
     }
 
