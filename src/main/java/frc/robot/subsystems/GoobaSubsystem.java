@@ -88,10 +88,10 @@ public class GoobaSubsystem extends SubsystemBase {
         // To re-tune: park, jog the hood (Operator D-pad Up/Down) until shots land, then
         // record "Limelight ty" and "Hood Position (rot)" here.
         // ==========================================
-        shotMap.put(27.3, 0.36);
-        shotMap.put(-16.8, 0.86);
-        shotMap.put(-18.3, 1.38);
-        shotMap.put(-23.9, 1.85);
+        shotMap.put(27.3, 0.74);
+        shotMap.put(-16.8, 1.76);
+        shotMap.put(-18.3, 2.82);
+        shotMap.put(-23.9, 3.78);
     }
 
     /** Soft limits: reverse = bottom, forward = top. */
