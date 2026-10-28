@@ -162,6 +162,19 @@
               "topic": "/SmartDashboard/Pit Check",
               "period": 0.06
             }
+          },
+          {
+            "title": "Defense",
+            "x": 0.0,
+            "y": 640.0,
+            "width": 1024.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Defense",
+              "period": 0.06,
+              "show_submit_button": false
+            }
           }
         ]
       }
@@ -615,6 +628,168 @@
               "topic": "/SmartDashboard/Roller Assist Volts",
               "period": 0.06,
               "show_submit_button": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Drive Tests",
+      "grid_layout": {
+        "layouts": [],
+        "containers": [
+          {
+            "title": "Drive Test",
+            "x": 0.0,
+            "y": 0.0,
+            "width": 1280.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Drive Test",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Test: Wheel Radius",
+            "x": 0.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Test: Wheel Radius",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Test: Slip Current",
+            "x": 256.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Test: Slip Current",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Test: Drive Feedforward",
+            "x": 512.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Test: Drive Feedforward",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Auto: Turret Watches Hub",
+            "x": 768.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Toggle Switch",
+            "properties": {
+              "topic": "/SmartDashboard/Auto: Turret Watches Hub",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Robot Tilt (deg)",
+            "x": 1024.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Robot Tilt (deg)",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Vision Status",
+            "x": 0.0,
+            "y": 256.0,
+            "width": 768.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Vision Status",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Seconds Since Vision Fix",
+            "x": 768.0,
+            "y": 256.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Seconds Since Vision Fix",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Drive Avg Amps",
+            "x": 1024.0,
+            "y": 256.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Drive Avg Amps",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Robot Speed (m per s)",
+            "x": 0.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Robot Speed (m per s)",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Defense",
+            "x": 256.0,
+            "y": 384.0,
+            "width": 768.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Defense",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Pit Check",
+            "x": 1024.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Pit Check",
+              "period": 0.06,
+              "show_submit_button": false
             }
           }
         ]

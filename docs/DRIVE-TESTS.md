@@ -26,7 +26,7 @@ Re-run it whenever the tread is replaced or after a long event.
 ## 2. Test: Slip Current
 
 Why: above this current the wheels only spin. Every spin loses traction and makes the robot think
-it moved when it didn't. The code allows 120 A; a robot this size usually slips around 60 to 80 A.
+it moved when it didn't. The code now allows 70 A (it was 120 A); a robot this size usually slips around 60 to 80 A.
 
 1. Drive the robot so its **front bumper is flat against a wall** (the field wall or a solid shop wall).
 2. Click **Test: Slip Current**. It pushes harder and harder (up to about 16 s) until the

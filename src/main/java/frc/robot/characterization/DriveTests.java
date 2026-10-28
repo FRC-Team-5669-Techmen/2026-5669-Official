@@ -175,9 +175,26 @@ public final class DriveTests {
 
     // ---------------------------------------------------------------- slip current
 
+    /**
+     * Drive motor stator limit (A) for every module. The robot normally runs at its slip current;
+     * the slip test raises it for the test so it can find where the wheels really break loose.
+     */
+    private void setDriveStatorLimit(double amps) {
+        for (var m : drive.getModules()) {
+            var c = new com.ctre.phoenix6.configs.CurrentLimitsConfigs();
+            var cfg = m.getDriveMotor().getConfigurator();
+            cfg.refresh(c);
+            c.StatorCurrentLimit = amps;
+            c.StatorCurrentLimitEnable = true;
+            cfg.apply(c);
+        }
+    }
+
     public Command slipCurrentCommand() {
         final double rampVoltsPerSec = 0.5;
         final double maxVolts = 8.0;
+        final double testLimit = 120.0;   // A, only during this test
+        final double normalLimit = TunerConstants.FrontLeft.SlipCurrent;
         SlipDetector[] det = {null};
         double[] t0 = {0};
 
@@ -189,6 +206,7 @@ public final class DriveTests {
                     v, avgDriveAmps(), avgWheelSpeed()));
             }, () -> {
                 drive.setControl(idle);
+                setDriveStatorLimit(normalLimit);
                 double a = det[0].slipAmps();
                 if (Double.isNaN(a)) {
                     say(String.format(Locale.US, "Slip: wheels never broke loose (peak %.0f A). Ran out of voltage or stopped early.",
@@ -204,6 +222,7 @@ public final class DriveTests {
             .beforeStarting(() -> {
                 t0[0] = Timer.getFPGATimestamp();
                 det[0] = new SlipDetector(0.3);
+                setDriveStatorLimit(testLimit);
             })
             .until(() -> driverTouched() || det[0].update(avgDriveAmps(), avgWheelSpeed())
                 || Timer.getFPGATimestamp() - t0[0] > maxVolts / rampVoltsPerSec + 1.0)
