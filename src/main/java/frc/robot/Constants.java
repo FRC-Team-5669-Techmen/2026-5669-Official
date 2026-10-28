@@ -570,7 +570,7 @@ public final class Constants {
         // center at the shot distance (581: 5 in scoring, 20 in passing), never below the turret's
         // own 2 deg tolerance.
         public static final double kScoreAimMargin = 0.15;  // m (hub opening ~41.7 in wide)
-        public static final double kPassAimMargin = 0.50;   // m
+        public static final double kPassAimMargin = 1.00;   // m (Oct 27: 0.50 -> 1.00, passes need volume, not precision)
         // While the turret tracks a moving target it can't be "nearly still": instead its speed
         // must be within this of the speed it SHOULD be turning (feedforward rate).
         public static final double kTurretRateTolerance = 30.0; // deg/s
@@ -618,8 +618,11 @@ public final class Constants {
         // hood fully up, so near a trench the hood is capped here (lens ~22.0 in).
         public static final double kTrenchHoodMax = 3.0;
         public static final double kTrenchOpeningY = 1.283;    // trench opening runs y 0 to 1.283 (and mirrored)
-        public static final double kPassRpmTolerance = 400.0;
-        public static final double kPassHoodTolerance = 0.25;
+        public static final double kPassRpmTolerance = 600.0;   // Oct 27: 400 -> 600 (volume over precision)
+        public static final double kPassHoodTolerance = 0.40;   // Oct 27: 0.25 -> 0.40
+        // PASS feed: spindexer and uptake as fast as they go, so the balls leave in a tight stream.
+        // Dashboard "Pass Feed Volts" (saved). Scoring keeps the tuned single-file volts.
+        public static final double kPassFeedVolts = 12.0;
 
         // ---- Vision position (Limelight MegaTag) ----
         // Ignore vision while the turret (and camera) is swinging faster than this, or the robot

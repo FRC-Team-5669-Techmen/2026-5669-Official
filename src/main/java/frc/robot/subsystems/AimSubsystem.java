@@ -45,6 +45,7 @@ public class AimSubsystem extends SubsystemBase {
     private static final String kPassPrefKey = "Pass Table Recorded";
     private static final String kClimbPrefKey = "Climb Table Recorded";
     private static final String kClimbSwitchKey = "Climb Shot Table";
+    private static final String kPassFeedKey = "Pass Feed Volts";
     private static final String kHoldKey = "Hold Fire: Hub Closed";
 
     private final CommandSwerveDrivetrain drivetrain;
@@ -89,6 +90,8 @@ public class AimSubsystem extends SubsystemBase {
         Preferences.initBoolean(kHoldKey, true);
         Preferences.initDouble(kRangeKey, Aim.kPassMaxRange);
         Preferences.initBoolean(kClimbSwitchKey, true);
+        Preferences.initDouble(kPassFeedKey, Aim.kPassFeedVolts);
+        SmartDashboard.putNumber(kPassFeedKey, Preferences.getDouble(kPassFeedKey, Aim.kPassFeedVolts));
         SmartDashboard.putBoolean(kClimbSwitchKey, Preferences.getBoolean(kClimbSwitchKey, true));
         SmartDashboard.putNumber(kRangeKey, Preferences.getDouble(kRangeKey, Aim.kPassMaxRange));
         SmartDashboard.putBoolean(kHoldKey, Preferences.getBoolean(kHoldKey, true));
@@ -240,6 +243,13 @@ public class AimSubsystem extends SubsystemBase {
 
     /** Robot is inside the OPPONENT's alliance zone (shuttling from there). */
     public boolean inTheirZone() { return inTheirZone; }
+
+    /** Spindexer + uptake volts while PASSING: dashboard "Pass Feed Volts" (saved, default 12 = max). */
+    public double passFeedVolts() {
+        double v = MathUtil.clamp(SmartDashboard.getNumber(kPassFeedKey, Aim.kPassFeedVolts), 0.0, 12.0);
+        if (v != Preferences.getDouble(kPassFeedKey, Aim.kPassFeedVolts)) Preferences.setDouble(kPassFeedKey, v);
+        return v;
+    }
 
     /** Longest pass (m): dashboard "Pass Max Range (m)", saved on the roboRIO. */
     private double passRange() {

@@ -52,8 +52,12 @@ public class ShooterIntakeSubsystem extends SubsystemBase {
 
     /** Feed the shooter at the dashboard's "Uptake Forward Volts" (battery-proof). */
     public void feed() {
-        double volts = MathUtil.clamp(SmartDashboard.getNumber("Uptake Forward Volts", Constants.ShooterIntake.kForwardVolts), 0.0, 12.0);
-        motor.setControl(feedRequest.withOutput(volts));
+        feed(MathUtil.clamp(SmartDashboard.getNumber("Uptake Forward Volts", Constants.ShooterIntake.kForwardVolts), 0.0, 12.0));
+    }
+
+    /** Feed at a given voltage (passing: as fast as it goes). */
+    public void feed(double volts) {
+        motor.setControl(feedRequest.withOutput(MathUtil.clamp(volts, 0.0, 12.0)));
     }
 
     public void run(double speed) {

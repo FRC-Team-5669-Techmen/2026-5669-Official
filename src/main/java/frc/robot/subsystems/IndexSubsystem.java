@@ -64,11 +64,17 @@ public class IndexSubsystem extends SubsystemBase {
      * again. Every shooting command calls this every loop.
      */
     public void feed() {
+        feed(forwardVolts());
+    }
+
+    /** SHOOTING feed at a given forward voltage (passing: as fast as it goes), with automatic unjam. */
+    public void feed(double forwardVolts) {
         double now = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
         lastFeedCall = now;
         boolean reverse = jam.update(now, motor.getStatorCurrent().getValueAsDouble(),
             motor.getVelocity().getValueAsDouble());
-        motor.setControl(request.withOutput(reverse ? Constants.Agitation.kUnjamVolts : forwardVolts()));
+        motor.setControl(request.withOutput(reverse ? Constants.Agitation.kUnjamVolts
+            : edu.wpi.first.math.MathUtil.clamp(forwardVolts, 0.0, 12.0)));
     }
 
     /** True while a shooting command is feeding (including its short unjam/shake reversals). */

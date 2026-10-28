@@ -72,8 +72,16 @@ public class ShootCommand extends Command {
         firing = firing ? aim.keepFiring(turret) : aim.readyToFire(turret, shooter, hood);
         aim.setFiring(firing);
         if (firing) {
-            index.feed(); // forward with automatic unjam
-            uptake.feed();
+            if (aim.passing()) {
+                // PASSING: precision doesn't matter, volume does. Feed as fast as it goes so the
+                // balls leave in a tight stream ("Pass Feed Volts", saved, default 12 V).
+                double v = aim.passFeedVolts();
+                index.feed(v);
+                uptake.feed(v);
+            } else {
+                index.feed(); // forward with automatic unjam
+                uptake.feed();
+            }
             SmartDashboard.putString("Shot Ready", "FIRING");
         } else {
             index.stop();

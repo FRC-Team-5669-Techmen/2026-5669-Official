@@ -842,6 +842,19 @@
               "period": 0.06,
               "show_submit_button": false
             }
+          },
+          {
+            "title": "Pass Feed Volts",
+            "x": 0.0,
+            "y": 640.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Pass Feed Volts",
+              "period": 0.06,
+              "show_submit_button": true
+            }
           }
         ]
       }
