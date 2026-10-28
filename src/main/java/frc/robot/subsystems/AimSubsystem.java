@@ -43,6 +43,8 @@ import frc.robot.aiming.TargetPicker;
 public class AimSubsystem extends SubsystemBase {
     private static final String kPrefKey = "Shot Table Recorded";
     private static final String kPassPrefKey = "Pass Table Recorded";
+    private static final String kClimbPrefKey = "Climb Table Recorded";
+    private static final String kClimbSwitchKey = "Climb Shot Table";
     private static final String kHoldKey = "Hold Fire: Hub Closed";
 
     private final CommandSwerveDrivetrain drivetrain;
@@ -59,7 +61,11 @@ public class AimSubsystem extends SubsystemBase {
 
     private ShotTable table = ShotTable.defaults();
     private ShotTable passTable = ShotTable.passDefaults();
+    // SHOOT WHILE CLIMBING: hanging on the tower lifts the shooter, so the same distance needs a
+    // different RPM/hood. Its own table, used automatically while the elevator is up.
+    private ShotTable climbTable = ShotTable.climbDefaults();
     private ShotSolver.Solution solution;
+    private ShotSolver.Solution hubSolution; // our hub, no lead: where the camera should look in autos
     private TargetPicker.Target target;
     private TargetPicker.Mode mode = TargetPicker.Mode.AUTO;
     private double robotSpeed = 0;
@@ -82,6 +88,8 @@ public class AimSubsystem extends SubsystemBase {
         SmartDashboard.putNumber("Tune TOF (s)", 0.9);
         Preferences.initBoolean(kHoldKey, true);
         Preferences.initDouble(kRangeKey, Aim.kPassMaxRange);
+        Preferences.initBoolean(kClimbSwitchKey, true);
+        SmartDashboard.putBoolean(kClimbSwitchKey, Preferences.getBoolean(kClimbSwitchKey, true));
         SmartDashboard.putNumber(kRangeKey, Preferences.getDouble(kRangeKey, Aim.kPassMaxRange));
         SmartDashboard.putBoolean(kHoldKey, Preferences.getBoolean(kHoldKey, true));
         modeChooser.setDefaultOption("AUTO (score near our hub, pass from past it)", TargetPicker.Mode.AUTO);
@@ -129,7 +137,20 @@ public class AimSubsystem extends SubsystemBase {
     public TargetPicker.Kind targetKind() { return target.kind(); }
     public boolean passing() { return target.kind() == TargetPicker.Kind.PASS; }
 
-    private ShotTable activeTable() { return passing() ? passTable : table; }
+    private ShotTable activeTable() { return passing() ? passTable : climbShot() ? climbTable : table; }
+
+    /**
+     * Shooting from the tower: HANGING (elevator went up, then pulled the robot up) and a SCORE
+     * shot. Uses the CLIMB table. Dashboard switch "Climb Shot Table" (saved) turns it off (then
+     * the normal table). While the elevator is up but the robot is still on the floor, the normal
+     * table is used.
+     */
+    public boolean climbShot() {
+        return !passing() && ElevatorSubsystem.isHanging() && SmartDashboard.getBoolean(kClimbSwitchKey, true);
+    }
+
+    /** Which table the shot uses right now: SCORE, CLIMB or PASS. */
+    private String tableName() { return passing() ? "PASS" : climbShot() ? "CLIMB" : "SCORE"; }
 
     // ---------- solving ----------
 
@@ -180,6 +201,8 @@ public class AimSubsystem extends SubsystemBase {
         }
         // During an agitation shimmy the robot rocks a centimeter or two: no motion lead then.
         boolean lead = Aim.kShootWhileMoving && !Agitator.shimmying();
+        hubSolution = ShotSolver.solve(pose, fs.vxMetersPerSecond, fs.vyMetersPerSecond,
+            state.Speeds.omegaRadiansPerSecond, ourHub(), geometry, this::effectiveTof, -1.0);
         solution = ShotSolver.solve(pose, fs.vxMetersPerSecond, fs.vyMetersPerSecond,
             state.Speeds.omegaRadiansPerSecond, target.point(), geometry, this::effectiveTof,
             lead ? Aim.kReleaseLatency : -1.0);
@@ -188,6 +211,9 @@ public class AimSubsystem extends SubsystemBase {
     // ---------- what the commands ask ----------
 
     public ShotSolver.Solution solution() { return solution; }
+
+    /** Turret angle/rate to look at OUR HUB with no shoot-on-the-move lead (camera aiming in autos). */
+    public ShotSolver.Solution hubSolution() { return hubSolution; }
 
     /** Robot's position can be used for aiming (otherwise aim falls back to the hub tag). */
     public boolean poseUsable() {
@@ -309,7 +335,7 @@ public class AimSubsystem extends SubsystemBase {
             if (vacuum) return "VACUUM holds: position unknown (face the hub until Vision Status says OK)";
             return turret.targetLocked() ? "tag-only: shooter spinning up" : "tag-only: turret not on hub tag";
         }
-        String what = passing() ? (TargetPicker.isRelay(target) ? "SHUTTLE" : "PASS") : "SCORE";
+        String what = passing() ? (TargetPicker.isRelay(target) ? "SHUTTLE" : "PASS") : climbShot() ? "CLIMB SCORE" : "SCORE";
         if (!passing() && !legalToScore) return "SCORE: outside our alliance zone (G407 foul): drive in or PASS";
         if (passing() && !target.laneClear()) return (TargetPicker.isRelay(target) ? "SHUTTLE" : "PASS")
             + ": a hub is (or is about to be) in every lane: hold, move sideways";
@@ -334,6 +360,8 @@ public class AimSubsystem extends SubsystemBase {
         for (ShotTable.Point p : ShotTable.decode(Preferences.getString(kPrefKey, ""))) table.put(p);
         passTable = ShotTable.passDefaults();
         for (ShotTable.Point p : ShotTable.decode(Preferences.getString(kPassPrefKey, ""))) passTable.put(p);
+        climbTable = ShotTable.climbDefaults();
+        for (ShotTable.Point p : ShotTable.decode(Preferences.getString(kClimbPrefKey, ""))) climbTable.put(p);
     }
 
     /** Times "Record Shot Point" was pressed since boot (the Shot Map guide watches this). */
@@ -352,7 +380,8 @@ public class AimSubsystem extends SubsystemBase {
     /** Java lines for ShotTable.defaults() / passDefaults(), to paste the recorded tables into code. */
     public String shotTableCode() {
         return code(recordedPoints(kPrefKey)) + (recordedPoints(kPassPrefKey).isEmpty() ? ""
-            : " | PASS: " + code(recordedPoints(kPassPrefKey)));
+            : " | PASS: " + code(recordedPoints(kPassPrefKey)))
+            + (recordedPoints(kClimbPrefKey).isEmpty() ? "" : " | CLIMB: " + code(recordedPoints(kClimbPrefKey)));
     }
 
     private static String code(java.util.List<ShotTable.Point> pts) {
@@ -371,7 +400,7 @@ public class AimSubsystem extends SubsystemBase {
     /** "Record Shot Point": saves the Tune values at the current distance, into the current target's table. */
     public Command recordPointCommand() {
         return runOnce(() -> {
-            String key = passing() ? kPassPrefKey : kPrefKey;
+            String key = passing() ? kPassPrefKey : climbShot() ? kClimbPrefKey : kPrefKey;
             double d = solution.distanceMeters();
             var pts = recordedPoints(key);
             pts.removeIf(p -> Math.abs(p.distance() - d) < ShotTable.kSameDistance);
@@ -383,7 +412,7 @@ public class AimSubsystem extends SubsystemBase {
             Preferences.setString(key, ShotTable.encode(pts));
             loadRecorded();
             recordCount++;
-            String which = passing() ? "PASS" : "SHOT";
+            String which = passing() ? "PASS" : climbShot() ? "CLIMB" : "SHOT";
             System.out.println(which + " POINT RECORDED at " + String.format(java.util.Locale.US, "%.2f m", d));
             System.out.println(which + " TABLE | " + ShotTable.encode(pts));
             System.out.println("SHOT TABLE CODE | " + shotTableCode());
@@ -396,6 +425,13 @@ public class AimSubsystem extends SubsystemBase {
             Preferences.setString(kPrefKey, "");
             loadRecorded();
         }).ignoringDisable(true).withName("Clear Recorded Shot Points");
+    }
+
+    public Command clearRecordedClimbCommand() {
+        return runOnce(() -> {
+            Preferences.setString(kClimbPrefKey, "");
+            loadRecorded();
+        }).ignoringDisable(true).withName("Clear Recorded Climb Points");
     }
 
     public Command clearRecordedPassCommand() {
@@ -421,7 +457,7 @@ public class AimSubsystem extends SubsystemBase {
         field.getObject("Target").setPose(new Pose2d(target.point(), Rotation2d.kZero));
         field.getObject("Aim Point").setPose(new Pose2d(solution.aimPoint(), Rotation2d.kZero));
 
-        SmartDashboard.putString("Shot Target", (passing() ? "PASS" : "SCORE") + " (" + currentMode() + "): " + target.name()
+        SmartDashboard.putString("Shot Target", tableName() + " (" + currentMode() + "): " + target.name()
             + (inTheirZone ? " [in THEIR zone]" : ""));
         SmartDashboard.putBoolean("Pass Lane Clear", !passing() || target.laneClear());
         SmartDashboard.putNumber("Aim Distance (m)", solution.distanceMeters());
@@ -441,6 +477,9 @@ public class AimSubsystem extends SubsystemBase {
         SmartDashboard.putString("Aim Geometry", Aim.kGeometryMeasured ? "measured" : "AIM GEOMETRY NOT MEASURED");
         SmartDashboard.putString("Shot Table", table.describe());
         SmartDashboard.putString("Pass Table", passTable.describe());
+        SmartDashboard.putString("Climb Table", climbTable.describe());
+        boolean climbOn = SmartDashboard.getBoolean(kClimbSwitchKey, true);
+        if (climbOn != Preferences.getBoolean(kClimbSwitchKey, true)) Preferences.setBoolean(kClimbSwitchKey, climbOn);
         DogLog.log("Aim/Distance", solution.distanceMeters());
         DogLog.log("Aim/TurretTarget", solution.turretDegrees());
         DogLog.log("Aim/TurretRate", solution.turretRateDegPerSec());

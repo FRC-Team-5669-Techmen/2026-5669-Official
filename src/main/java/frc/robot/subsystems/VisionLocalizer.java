@@ -181,6 +181,9 @@ public class VisionLocalizer extends SubsystemBase {
         if (Math.abs(spin) > Aim.kMaxRobotSpinForVision) return "skip: robot spinning fast";
         if (Math.abs(hoodSpeed) > Aim.kMaxHoodSpeedForVision) return "skip: hood moving";
         if (Timer.getFPGATimestamp() - lastTilted < Aim.kTiltSettleSeconds) return "skip: robot tilted (bump)";
+        // Hanging on the tower: the camera is higher than the code thinks and the robot may swing.
+        // The position from just before the climb is right (the wheels aren't on the floor).
+        if (ElevatorSubsystem.isHanging()) return "hold: hanging on the tower (position kept)";
 
         LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(kName);
         LimelightHelpers.PoseEstimate mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(kName);

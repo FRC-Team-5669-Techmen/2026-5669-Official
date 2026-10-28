@@ -126,9 +126,22 @@ public class ElevatorSubsystem extends SubsystemBase {
     /** The elevator is up off the bottom (climbing, or about to). */
     public static boolean isRaised() { return raised; }
 
+    // HANGING: the elevator went up, then pulled back down by kHangPullRotations from its highest
+    // point (that pull is what lifts the robot). Resets when the elevator is back down.
+    private static volatile boolean hanging = false;
+    private double highest = 0.0;
+
+    /** The robot is (most likely) lifted on the tower: shoot with the CLIMB table. */
+    public static boolean isHanging() { return hanging; }
+
     @Override
     public void periodic() {
-        raised = motor.getPosition().getValueAsDouble() > Elevator.kRaisedThreshold;
+        double pos = motor.getPosition().getValueAsDouble();
+        raised = pos > Elevator.kRaisedThreshold;
+        if (!raised) highest = 0.0;
+        highest = Math.max(highest, pos);
+        hanging = raised && pos < highest - Elevator.kHangPullRotations;
+        SmartDashboard.putBoolean("Hanging (climb shot)", hanging);
         SmartDashboard.putBoolean("Climbing (elevator up)", raised);
         SmartDashboard.putString("Elevator Status", status());
         SmartDashboard.putNumber("Elevator Position (rot)", motor.getPosition().getValueAsDouble());

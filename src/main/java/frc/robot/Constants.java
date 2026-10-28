@@ -310,6 +310,9 @@ public final class Constants {
         // pumps or vacuum deploy (they could twist or bang the robot on the tower). Shooting is
         // still allowed (no rule against it; the tower is in our alliance zone).
         public static final double kRaisedThreshold = 5.0;
+        // SHOOT WHILE CLIMBING: "hanging" once the elevator has pulled back DOWN this many rotations
+        // from its highest point (the pull lifts the robot). Then shots use the CLIMB table.
+        public static final double kHangPullRotations = 10.0;
 
         // In the code, positive = UP. If D-pad Up makes it go DOWN, flip this.
         public static final boolean kElevatorInverted = false;

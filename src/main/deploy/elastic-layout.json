@@ -175,6 +175,18 @@
               "period": 0.06,
               "show_submit_button": false
             }
+          },
+          {
+            "title": "Hanging (climb shot)",
+            "x": 1024.0,
+            "y": 640.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Hanging (climb shot)",
+              "period": 0.06
+            }
           }
         ]
       }
@@ -788,6 +800,45 @@
             "type": "Text Display",
             "properties": {
               "topic": "/SmartDashboard/Pit Check",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Climb Shot Table",
+            "x": 0.0,
+            "y": 512.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Toggle Switch",
+            "properties": {
+              "topic": "/SmartDashboard/Climb Shot Table",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Clear Recorded Climb Points",
+            "x": 256.0,
+            "y": 512.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Clear Recorded Climb Points",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Climb Table",
+            "x": 512.0,
+            "y": 512.0,
+            "width": 768.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Climb Table",
               "period": 0.06,
               "show_submit_button": false
             }

@@ -466,7 +466,7 @@ public class RobotContainer {
             boolean on = SmartDashboard.getBoolean(kAutoLookKey, true);
             if (on != Preferences.getBoolean(kAutoLookKey, true)) Preferences.setBoolean(kAutoLookKey, on);
             if (on && DriverStation.isAutonomousEnabled() && aim.poseUsable() && goober.endMeasured()) {
-                var s = aim.solution();
+                var s = aim.hubSolution(); // our hub, no shoot-on-the-move lead (it's for the camera)
                 goober.aimAtAngleWithRate(s.turretDegrees(), s.reachable() ? s.turretRateDegPerSec()
                     : Math.toDegrees(drivetrain.getState().Speeds.omegaRadiansPerSecond));
             } else {
@@ -498,8 +498,11 @@ public class RobotContainer {
         SmartDashboard.putData("Save Spot: Right Trench", backupShots.saveCommand(BackupShots.Spot.RIGHT_TRENCH));
         SmartDashboard.putData("Clear Recorded Shot Points", aim.clearRecordedCommand());
         SmartDashboard.putData("Clear Recorded Pass Points", aim.clearRecordedPassCommand());
+        SmartDashboard.putData("Clear Recorded Climb Points", aim.clearRecordedClimbCommand());
         // Drive tests (enabled, teleop, clear space): results on "Drive Test" + console. See DriveTests.
-        DriveTests driveTests = new DriveTests(drivetrain, () -> Math.max(DefenseMode.driverStick(),
+        // Read the sticks directly: a test takes over the drivetrain, so the drive command's report freezes.
+        DriveTests driveTests = new DriveTests(drivetrain, () -> Math.max(
+            Math.hypot(driverController.getLeftX(), driverController.getLeftY()),
             Math.abs(driverController.getRightX())));
         SmartDashboard.putData("Test: Wheel Radius", driveTests.wheelRadiusCommand());
         SmartDashboard.putData("Test: Drive Feedforward", driveTests.feedforwardCommand());

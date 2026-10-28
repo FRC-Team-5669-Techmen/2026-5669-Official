@@ -7,7 +7,6 @@ import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import edu.wpi.first.math.filter.SlewRateLimiter;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -69,6 +68,14 @@ public final class DriveTests {
         double[] d = new double[pos.length];
         for (int i = 0; i < pos.length; i++) d[i] = pos[i].distanceMeters;
         return d;
+    }
+
+    /** Average wheel travel since `start` (m): wheels only, so a vision correction can't fake it. */
+    private double avgTravel(double[] start) {
+        double[] now = wheelDistances();
+        double d = 0;
+        for (int i = 0; i < now.length; i++) d += Math.abs(now[i] - start[i]);
+        return d / now.length;
     }
 
     private static void say(String s) {
@@ -142,7 +149,7 @@ public final class DriveTests {
         final double maxDistance = 2.5;   // m (8 ft)
         FeedforwardFit[] fit = {null};
         double[] t0 = {0};
-        Translation2d[] start = {null};
+        double[] start = new double[4];
 
         return Commands.runEnd(() -> {
                 double v = Math.min(maxVolts, rampVoltsPerSec * (Timer.getFPGATimestamp() - t0[0]));
@@ -157,7 +164,7 @@ public final class DriveTests {
                 } else {
                     say(String.format(Locale.US,
                         "Drive kS %.3f V, kV %.3f V per m/s = %.4f V per motor rot/s. Set TunerConstants driveGains "
-                        + ".withKS(%.3f).withKV(%.4f) (now kS 0, kV 0.124).",
+                        + ".withKS(%.3f).withKV(%.4f). Run it twice; use the average.",
                         ks, kv, FeedforwardFit.perMotorRps(kv, codeRadius, gearRatio), ks,
                         FeedforwardFit.perMotorRps(kv, codeRadius, gearRatio)));
                 }
@@ -165,10 +172,10 @@ public final class DriveTests {
             .beforeStarting(() -> {
                 t0[0] = Timer.getFPGATimestamp();
                 fit[0] = new FeedforwardFit(0.05);
-                start[0] = drive.getState().Pose.getTranslation();
+                System.arraycopy(wheelDistances(), 0, start, 0, 4);
             })
             .until(() -> driverTouched()
-                || drive.getState().Pose.getTranslation().getDistance(start[0]) > maxDistance
+                || avgTravel(start) > maxDistance
                 || Timer.getFPGATimestamp() - t0[0] > maxVolts / rampVoltsPerSec + 1.0)
             .withName("Test: Drive Feedforward");
     }

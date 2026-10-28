@@ -44,6 +44,15 @@ public final class ShotTable {
     }
 
     /**
+     * SHOOT WHILE CLIMBING (elevator up): starts as a copy of the SCORE table. Hanging lifts the
+     * shooter, so record real points from the tower ("Record Shot Point" while climbing records
+     * here) at both climb spots (left and right end of the rung).
+     */
+    public static ShotTable climbDefaults() {
+        return defaults();
+    }
+
+    /**
      * !!! PASSING STARTING GUESSES, NOT MEASURED: distance from the turret to the landing point
      * (meters) -> RPM, hood, flight time. Passes are lower, longer lobs onto the floor. Hood high,
      * RPM rising with distance (the elite teams' pattern: 6328 fixed its hood at max and only
