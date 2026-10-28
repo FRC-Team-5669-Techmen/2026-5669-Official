@@ -158,6 +158,12 @@ Guide for students: `docs/BROWNOUTS-AND-BATTERIES.md`; research: `/home/claude/r
 - `PowerBudget` brownout guard in every enabled mode: under `kGuardVolts` 7.5 V for 0.05 s = drive supply 25 A until over 9.5 V for 1 s. Spindexer and uptake supply limits 40 A (were 80/60).
 - **Hood top is set on the robot**: Hood Limits OFF, jog to the top, "Set Hood Top (hood at top)" (Preferences "Hood Top Limit (rot)", 0.03 below the stop; `GoobaSubsystem.top()`; `Gooba.kTopPosition` only a fallback). "Clear Hood Top" forgets it.
 - FRC app: battery board reads robot R, verdicts and load tests (ledger 0031 in frc-app).
+- **Loop fix (robot, Oct 28)**: reading every Talon's SupplyVoltage at 50 Hz printed "stale" warnings and overran the loop (robotPeriodic 15-32 ms, Elastic dropped): PowerMonitor now reads only supply current, all in one `BaseStatusSignal.refreshAll`, skips devices off the bus (checked every 2 s); the PDH is checked once (`PowerMonitor.pdhPresent()`), and DogLog only gets it if it answers; `IntakeRollerSubsystem` skips reads/commands while Talon 22 is off the bus.
+
+## Hood rebuilt, shot table scrapped (Oct 28)
+
+The hood no longer goes as far down as before: power-on zero is the NEW bottom (Zero Hood pressed there), the top is set with "Set Hood Top", and the recorded SCORE table was cleared (old points kept in `match-data/robot-settings.json` / roboRIO `robot-settings.json` history). The Limelight was re-aimed to about 15-16 deg: `kCameraPitchHoodDown/Up` 15.5 (dashboard "Camera Pitch Hood Down/Up (deg)" wins). Lens heights are typed on the dashboard ("Camera Height Hood Down/Up (in)", floor to lens center, saved): MEASURE both with the rebuilt hood. Elastic tabs **Hood + Camera** and **Battery**. Re-plot the whole shot table.
+
 
 ## Drive Team Controller Map
 

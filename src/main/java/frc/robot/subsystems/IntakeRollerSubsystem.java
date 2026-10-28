@@ -41,19 +41,33 @@ public class IntakeRollerSubsystem extends SubsystemBase {
         }
     }
 
+    // Oct 28 (robot): with Talon 22 off the bus, reading or commanding it every loop printed CAN
+    // errors to the Driver Station and overran the loop. Checked every 2 s; skipped while missing.
+    private boolean onlineCache = true;
+    private double onlineCheckedAt = -10;
+
+    private boolean online() {
+        double t = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
+        if (t - onlineCheckedAt > 2.0) {
+            onlineCheckedAt = t;
+            onlineCache = motor.isConnected(0.5);
+        }
+        return onlineCache;
+    }
+
     public void run() {
         setVolts(IntakeRoller.kRollerVolts);
     }
 
     /** Positive = balls in, negative = balls out. */
     public void setVolts(double volts) {
-        if (motor != null) {
+        if (motor != null && online()) {
             motor.setControl(request.withOutput(volts));
         }
     }
 
     public void stop() {
-        if (motor != null) {
+        if (motor != null && online()) {
             motor.stopMotor();
         }
     }
@@ -71,7 +85,8 @@ public class IntakeRollerSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         SmartDashboard.putBoolean("Intake Roller Enabled", motor != null);
-        if (motor != null) {
+        SmartDashboard.putBoolean("Intake Roller On CAN", motor != null && online());
+        if (motor != null && online()) {
             // While Right Trigger is held, speed should be well above 0.
             SmartDashboard.putNumber("Intake Roller Speed (rot/s)", motor.getVelocity().getValueAsDouble());
             SmartDashboard.putNumber("Intake Roller Amps", motor.getStatorCurrent().getValueAsDouble());

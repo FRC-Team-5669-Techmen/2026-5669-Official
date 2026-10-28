@@ -132,9 +132,13 @@ public class VisionLocalizer extends SubsystemBase {
         lastHoodPos = hoodPos;
         double f = Constants.Gooba.kHoodEnabled
             ? MathUtil.clamp((hoodPos - Constants.Gooba.kBottomPosition)
-                / (Constants.Gooba.kTopStop - Constants.Gooba.kBottomPosition), 0.0, 1.0)
+                / (GoobaSubsystem.top() - Constants.Gooba.kBottomPosition), 0.0, 1.0)
             : 0.0;
-        double height = MathUtil.interpolate(Aim.kCameraHeightHoodDown, Aim.kCameraHeightHoodUp, f);
+        // Oct 28: the hood was rebuilt (it no longer goes as far down), so the lens heights are
+        // typed on the dashboard (inches, floor to lens center, hood DOWN and hood fully UP), saved.
+        double hDown = savedNumber("Camera Height Hood Down (in)", Aim.kCameraHeightHoodDown / 0.0254) * 0.0254;
+        double hUp = savedNumber("Camera Height Hood Up (in)", Aim.kCameraHeightHoodUp / 0.0254) * 0.0254;
+        double height = MathUtil.interpolate(hDown, hUp, f);
         // Oct 27: tunable without a redeploy (the hood's camera-leveling belt can be off: then the
         // camera tilts WITH the hood; measure the tilt with the hood down and up and type both).
         double pitchDown = savedNumber("Camera Pitch Hood Down (deg)", Aim.kCameraPitchHoodDown);

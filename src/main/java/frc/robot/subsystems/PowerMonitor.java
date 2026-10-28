@@ -59,6 +59,45 @@ public class PowerMonitor extends SubsystemBase {
         return pdh;
     }
 
+    private static Boolean pdhOk = null;
+
+    /**
+     * Is a power distribution module answering on CAN? Checked ONCE (the first read), because
+     * every read of a missing one prints "CAN: Message not found" and slows the loop (seen on the
+     * robot Oct 28). Without one, total current = the Talons' sum + 3 A.
+     */
+    public static synchronized boolean pdhPresent() {
+        if (pdhOk == null) {
+            if (RobotBase.isSimulation()) { pdhOk = false; return false; }
+            double v = 0;
+            try { v = pdh().getVoltage(); } catch (Exception e) { v = 0; }
+            pdhOk = v > 3 && v < 16;
+            System.out.println("POWER | power distribution " + (pdhOk ? "found (" + v + " V)" : "NOT answering on CAN: using the Talons' current"));
+        }
+        return pdhOk;
+    }
+
+    private final java.util.Set<TalonFX> connected = new java.util.HashSet<>();
+    private final Map<TalonFX, com.ctre.phoenix6.StatusSignal<edu.wpi.first.units.measure.Current>> currentSignals = new HashMap<>();
+    private com.ctre.phoenix6.BaseStatusSignal[] signals = new com.ctre.phoenix6.BaseStatusSignal[0];
+    private double lastConnCheck = -10;
+
+    private void refreshConnected(double t) {
+        lastConnCheck = t;
+        java.util.Set<TalonFX> now = new java.util.HashSet<>();
+        for (Group gr : groups) for (TalonFX m : gr.motors()) {
+            currentSignals.computeIfAbsent(m, k -> k.getSupplyCurrent(false));
+            if (m.isConnected(0.5)) now.add(m);
+        }
+        if (!now.equals(connected)) {
+            connected.clear();
+            connected.addAll(now);
+            List<com.ctre.phoenix6.BaseStatusSignal> l = new ArrayList<>();
+            for (TalonFX m : connected) l.add(currentSignals.get(m));
+            signals = l.toArray(new com.ctre.phoenix6.BaseStatusSignal[0]);
+        }
+    }
+
     public static final String kHistoryFile = "/home/lvuser/shotmap/battery-history.csv";
 
     private record Group(String name, List<TalonFX> motors) {}
@@ -116,25 +155,30 @@ public class PowerMonitor extends SubsystemBase {
         // growing gap between them = a bad roboRIO feed.
         double rioVolts = RobotController.getBatteryVoltage();
         double volts = rioVolts;
-        if (RobotBase.isReal()) {
+        if (RobotBase.isReal() && pdhPresent()) {
             try { double pv = pdh().getVoltage(); if (pv > 3 && pv < 16) volts = pv; } catch (Exception e) { /* no PDH */ }
         }
+        // Oct 28 (on the robot): reading every Talon's SupplyVoltage at 50 Hz printed "stale"
+        // warnings (that signal updates slowly) and overran the loop, so only supply CURRENT is
+        // read, all signals refreshed in ONE call, and devices that are off the bus (Talon 22)
+        // are skipped (checked every 2 s) so they don't print "CAN frame not received".
+        if (t - lastConnCheck > 2.0) refreshConnected(t);
+        if (signals.length > 0) com.ctre.phoenix6.BaseStatusSignal.refreshAll(signals);
         Map<String, Double> g = new LinkedHashMap<>();
         Map<String, Double> gv = new LinkedHashMap<>();
         double motorAmps = 0;
         for (Group gr : groups) {
-            double a = 0, vmin = 99;
+            double a = 0;
             for (TalonFX m : gr.motors()) {
-                a += Math.abs(m.getSupplyCurrent().getValueAsDouble());
-                double sv = m.getSupplyVoltage().getValueAsDouble();
-                if (sv > 1) vmin = Math.min(vmin, sv);
+                var sig = currentSignals.get(m);
+                if (sig != null && connected.contains(m)) a += Math.abs(sig.getValueAsDouble());
             }
             g.put(gr.name(), a);
-            gv.put(gr.name(), vmin > 90 ? Double.NaN : vmin);
+            gv.put(gr.name(), Double.NaN);
             motorAmps += a;
         }
         double total = Double.NaN;
-        try { total = pdh().getTotalCurrent(); } catch (Exception e) { /* no PDH answer */ }
+        if (pdhPresent()) { try { total = pdh().getTotalCurrent(); } catch (Exception e) { /* no PDH answer */ } }
         if (!(total >= 0) || RobotBase.isSimulation()) total = motorAmps + 3.0; // + roboRIO, radio, Limelight
         boolean enabled = DriverStation.isEnabled();
 
@@ -226,6 +270,7 @@ public class PowerMonitor extends SubsystemBase {
 
     private void clearStickies() {
         for (TalonFX m : allTalons()) {
+            if (!connected.contains(m)) continue;
             try { m.clearStickyFaults(0.05); } catch (Exception e) { /* off the bus */ }
         }
     }
@@ -239,6 +284,7 @@ public class PowerMonitor extends SubsystemBase {
         List<Map<String, Object>> out = new ArrayList<>();
         for (Group gr : groups) {
             for (TalonFX m : gr.motors()) {
+                if (!connected.contains(m)) continue;
                 List<String> f = new ArrayList<>();
                 try {
                     if (Boolean.TRUE.equals(m.getStickyFault_Undervoltage().getValue())) f.add("undervoltage");
@@ -261,13 +307,6 @@ public class PowerMonitor extends SubsystemBase {
         p.put("minVolts", matchMin == null ? null : round(matchMin.volts(), 2));
         p.put("pdhMinVolts", matchMin == null ? null : round(matchMin.volts(), 2));
         p.put("rioMinVolts", matchRioMin > 90 ? null : round(matchRioMin, 2));
-        if (matchMin != null) {
-            // Branch drop at the worst moment: battery-side volts minus each mechanism's own supply
-            // volts. A big drop on one mechanism = that branch's breaker, terminal or wire.
-            Map<String, Object> drop = new LinkedHashMap<>();
-            matchMin.groupVolts().forEach((k, v) -> { if (!Double.isNaN(v)) drop.put(k, round(matchMin.volts() - v, 2)); });
-            p.put("branchDropAtMin", drop);
-        }
         List<Map<String, Object>> sticky = readStickies();
         lastStickyFaults = sticky;
         p.put("stickyFaults", sticky);
