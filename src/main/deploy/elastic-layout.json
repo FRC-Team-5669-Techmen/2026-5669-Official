@@ -200,6 +200,93 @@
               "period": 0.06,
               "sort_options": false
             }
+          },
+          {
+            "title": "Auto Start",
+            "x": 512.0,
+            "y": 768.0,
+            "width": 512.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Auto Start",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Auto Start OK",
+            "x": 1024.0,
+            "y": 768.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Auto Start OK",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Turret Auto-Aim",
+            "x": 0.0,
+            "y": 896.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Turret Auto-Aim",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Ready To Fire",
+            "x": 256.0,
+            "y": 896.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Ready To Fire",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Pass Lane Clear",
+            "x": 512.0,
+            "y": 896.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Pass Lane Clear",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Aim Hub In Reach",
+            "x": 768.0,
+            "y": 896.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Aim Hub In Reach",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Auto Mode",
+            "x": 1024.0,
+            "y": 896.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "ComboBox Chooser",
+            "properties": {
+              "topic": "/SmartDashboard/Auto Mode",
+              "period": 0.06,
+              "sort_options": false
+            }
           }
         ]
       }

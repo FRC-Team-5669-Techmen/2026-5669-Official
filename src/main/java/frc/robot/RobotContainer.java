@@ -552,7 +552,48 @@ public class RobotContainer {
         return HubShiftTracker.isOurHubOpen();
     }
 
+    /**
+     * AUTO START CHECK (while disabled): is the robot where the selected auto starts? The camera
+     * gives the position; the selected PathPlanner auto gives its start (flipped for red). Says
+     * which way to nudge the robot, in the drive team's words, so a misplaced robot doesn't run the
+     * whole auto shifted. Also catches "no auto selected" (the chooser's default does nothing).
+     */
+    private void updateAutoStartCheck() {
+        Command sel = autoChooser.getSelected();
+        String text;
+        boolean ok = false;
+        if (!(sel instanceof com.pathplanner.lib.commands.PathPlannerAuto auto)) {
+            text = "NO AUTO SELECTED: pick one in \"Auto Mode\"";
+        } else {
+            var start = auto.getStartingPose();
+            boolean red = DriverStation.getAlliance().map(a -> a == DriverStation.Alliance.Red).orElse(false);
+            if (start == null) {
+                text = "auto has no start pose";
+            } else if (!localizer.poseTrusted()) {
+                if (red) start = com.pathplanner.lib.util.FlippingUtil.flipFieldPose(start);
+                text = "can't check: position unknown (camera needs to see 2 tags)";
+            } else {
+                if (red) start = com.pathplanner.lib.util.FlippingUtil.flipFieldPose(start);
+                var pose = drivetrain.getState().Pose;
+                double dx = start.getX() - pose.getX(), dy = start.getY() - pose.getY();
+                // Driver's words: "away" = away from our driver station, "left" = driver's left.
+                double away = red ? -dx : dx, left = red ? -dy : dy;
+                double turn = start.getRotation().minus(pose.getRotation()).getDegrees();
+                double dist = Math.hypot(dx, dy);
+                ok = dist < 0.10 && Math.abs(turn) < 5.0;
+                text = ok ? String.format(java.util.Locale.US, "OK (%.0f in, %.0f deg off)", dist / 0.0254, turn)
+                    : String.format(java.util.Locale.US, "MOVE %.0f in %s, %.0f in %s, turn %.0f deg %s",
+                        Math.abs(away) / 0.0254, away >= 0 ? "AWAY from DS" : "TOWARD DS",
+                        Math.abs(left) / 0.0254, left >= 0 ? "LEFT" : "RIGHT",
+                        Math.abs(turn), turn >= 0 ? "left (CCW)" : "right (CW)");
+            }
+        }
+        SmartDashboard.putString("Auto Start", text);
+        SmartDashboard.putBoolean("Auto Start OK", ok);
+    }
+
     public void updateDashboard() {
+        if (DriverStation.isDisabled()) updateAutoStartCheck();
         boolean isHubOpen = isHubOpenForUs();
 
         driverDashboard.updateLiveStats(

@@ -75,6 +75,17 @@ public class DefenseMode extends SubsystemBase {
     /** Last 30 s near their tower: rumble the driver (steady). */
     public boolean towerWarning() { return towerWarning; }
 
+    private double autoEndedAt = Double.NEGATIVE_INFINITY;
+
+    /**
+     * Defense just ended by itself (the operator turned aim/vacuum on): two short buzzes for the
+     * driver, so they don't press Y again thinking it's still on (that would turn it back ON).
+     */
+    public boolean endedByOperatorBuzz() {
+        double t = Timer.getFPGATimestamp() - autoEndedAt;
+        return t < 0.6 && (t < 0.2 || t > 0.4);
+    }
+
     private static boolean red() {
         Optional<Alliance> a = DriverStation.getAlliance();
         return a.isPresent() && a.get() == Alliance.Red;
@@ -85,6 +96,7 @@ public class DefenseMode extends SubsystemBase {
         // The operator wants to shoot again: defense is over.
         if (on && aim.isActive()) {
             on = false;
+            autoEndedAt = Timer.getFPGATimestamp();
             System.out.println("DEFENSE | OFF (auto-aim or vacuum turned on)");
         }
         var state = drivetrain.getState();

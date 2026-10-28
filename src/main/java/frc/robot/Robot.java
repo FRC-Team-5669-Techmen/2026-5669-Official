@@ -90,6 +90,10 @@ public class Robot extends TimedRobot {
             driverHid.setRumble(RumbleType.kBothRumble, (Timer.getFPGATimestamp() % 0.25) < 0.15 ? 1.0 : 0.0);
             return;
         }
+        if (defense.endedByOperatorBuzz()) {
+            driverHid.setRumble(RumbleType.kBothRumble, 0.8);
+            return;
+        }
         if (defense.towerWarning()) {
             driverHid.setRumble(RumbleType.kBothRumble, 0.6);
             return;
