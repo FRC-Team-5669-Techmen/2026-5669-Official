@@ -502,6 +502,7 @@ public class RobotContainer {
         SmartDashboard.putData("Test: Turret Sweep", localizationCheck.turretSweepTest());
         SmartDashboard.putData("Re-find Position (camera)", localizer.refindCommand());
         SmartDashboard.putData("Reset Shot Stats", shooter.resetShotStatsCommand());
+        SmartDashboard.putData("Set Pose: Plot Spot", backupShots.plotSpotCommand());
         SmartDashboard.putData("Save Spot: Midshot", backupShots.saveCommand(BackupShots.Spot.MIDSHOT));
         SmartDashboard.putData("Save Spot: Left Trench", backupShots.saveCommand(BackupShots.Spot.LEFT_TRENCH));
         SmartDashboard.putData("Save Spot: Right Trench", backupShots.saveCommand(BackupShots.Spot.RIGHT_TRENCH));

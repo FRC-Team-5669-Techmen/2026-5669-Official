@@ -113,7 +113,11 @@ public class VisionLocalizer extends SubsystemBase {
                 / (Constants.Gooba.kTopStop - Constants.Gooba.kBottomPosition), 0.0, 1.0)
             : 0.0;
         double height = MathUtil.interpolate(Aim.kCameraHeightHoodDown, Aim.kCameraHeightHoodUp, f);
-        double pitch = MathUtil.interpolate(Aim.kCameraPitchHoodDown, Aim.kCameraPitchHoodUp, f);
+        // Oct 27: tunable without a redeploy (the hood's camera-leveling belt can be off: then the
+        // camera tilts WITH the hood; measure the tilt with the hood down and up and type both).
+        double pitchDown = savedNumber("Camera Pitch Hood Down (deg)", Aim.kCameraPitchHoodDown);
+        double pitchUp = savedNumber("Camera Pitch Hood Up (deg)", Aim.kCameraPitchHoodUp);
+        double pitch = MathUtil.interpolate(pitchDown, pitchUp, f);
         LimelightHelpers.setCameraPose_RobotSpace(kName, cam[0], side, height, 0.0, pitch, yaw);
         SmartDashboard.putNumber("Camera Height (in)", height / 0.0254);
         SmartDashboard.putNumber("Camera Pitch (deg)", pitch);
@@ -142,6 +146,16 @@ public class VisionLocalizer extends SubsystemBase {
         SmartDashboard.putNumber("Vision Fixes Accepted", accepted);
         SmartDashboard.putNumber("Seconds Since Vision Fix", Timer.getFPGATimestamp() - lastAcceptedTime);
         SmartDashboard.putNumberArray("Camera In Robot (fwd,left,yaw)", cam);
+    }
+
+    private static double savedNumber(String key, double dflt) {
+        if (!edu.wpi.first.wpilibj.Preferences.containsKey(key)) {
+            edu.wpi.first.wpilibj.Preferences.initDouble(key, dflt);
+            SmartDashboard.putNumber(key, edu.wpi.first.wpilibj.Preferences.getDouble(key, dflt));
+        }
+        double v = SmartDashboard.getNumber(key, edu.wpi.first.wpilibj.Preferences.getDouble(key, dflt));
+        if (v != edu.wpi.first.wpilibj.Preferences.getDouble(key, dflt)) edu.wpi.first.wpilibj.Preferences.setDouble(key, v);
+        return v;
     }
 
     private static final int kSeedFrames = 10;     // camera frames in a row that must agree

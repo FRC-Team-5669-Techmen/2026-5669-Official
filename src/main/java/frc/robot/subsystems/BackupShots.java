@@ -89,6 +89,42 @@ public class BackupShots {
         return Math.hypot(r[0], r[1]);
     }
 
+    /**
+     * SHOT PLOTTING without the camera (Oct 27): put the robot's CENTER on a tape mark straight out
+     * from the middle of our hub's front face (on the hub's center line), type the mark's distance
+     * from the HUB CENTER into "Plot Distance (m)", press "Set Pose: Plot Spot". The robot puts
+     * itself exactly there (keeps the gyro heading; unknown heading = facing straight away from our
+     * driver station), so "Record Shot Point" records at the true distance. Turn "Vision Pose ON"
+     * OFF while plotting so a mis-tilted camera can't move it.
+     */
+    public Command plotSpotCommand() {
+        SmartDashboard.putNumber("Plot Distance (m)", SmartDashboard.getNumber("Plot Distance (m)", 1.5));
+        return Commands.runOnce(() -> {
+            double d = SmartDashboard.getNumber("Plot Distance (m)", 1.5);
+            if (d < 0.8 || d > 8.0) {
+                SmartDashboard.putString("Backup Shot", "PLOT SPOT: distance must be 0.8 to 8 m");
+                return;
+            }
+            Translation2d hub = AimSubsystem.ourHub();
+            Translation2d spot = red() ? new Translation2d(hub.getX() + d, hub.getY())
+                                       : new Translation2d(hub.getX() - d, hub.getY());
+            Rotation2d rot;
+            String heading;
+            if (localizer.headingKnown()) {
+                rot = drivetrain.getState().Pose.getRotation();
+                heading = "gyro heading";
+            } else {
+                rot = red() ? Rotation2d.k180deg : Rotation2d.kZero;
+                heading = "heading ASSUMED: facing straight away from our driver station";
+            }
+            drivetrain.resetPose(new Pose2d(spot, rot));
+            localizer.markPoseSetByAuto();
+            String msg = String.format(Locale.US, "PLOT SPOT set: %.2f m (%.0f in) from the hub center (%s)", d, d / 0.0254, heading);
+            SmartDashboard.putString("Backup Shot", msg);
+            System.out.println("PLOT | " + msg);
+        }).ignoringDisable(true).withName("Set Pose: Plot Spot");
+    }
+
     /** Operator button: "we are parked on this spot". Seeds the pose and turns auto-aim on. */
     public Command useCommand(Spot s, Command aimCommand) {
         return Commands.runOnce(() -> {

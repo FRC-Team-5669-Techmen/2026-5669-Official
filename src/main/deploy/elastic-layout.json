@@ -401,6 +401,71 @@
               "show_type": false,
               "maximize_button_space": true
             }
+          },
+          {
+            "title": "Plot Distance (m)",
+            "x": 0.0,
+            "y": 640.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Plot Distance (m)",
+              "period": 0.06,
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "Set Pose: Plot Spot",
+            "x": 256.0,
+            "y": 640.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Set Pose: Plot Spot",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Vision Pose ON",
+            "x": 512.0,
+            "y": 640.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Toggle Switch",
+            "properties": {
+              "topic": "/SmartDashboard/Vision Pose ON",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Camera Pitch Hood Down (deg)",
+            "x": 768.0,
+            "y": 640.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Camera Pitch Hood Down (deg)",
+              "period": 0.06,
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "Camera Pitch Hood Up (deg)",
+            "x": 1024.0,
+            "y": 640.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Camera Pitch Hood Up (deg)",
+              "period": 0.06,
+              "show_submit_button": true
+            }
           }
         ]
       }
