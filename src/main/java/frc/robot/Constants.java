@@ -449,6 +449,8 @@ public final class Constants {
         // drive supply drops to kGuardDriveSupplyAmps until it's back over kRecoverVolts for 1 s.
         // The drive is where the big current spikes come from (4 motors accelerating or pushing).
         public static final double kGuardVolts = 7.5;
+        // Oct 28 15:10: OFF while chasing loop overruns / dashboard drops seen on the robot.
+        public static final boolean kMonitorEnabled = false;
         public static final double kGuardDriveSupplyAmps = 25.0;
         // Battery + main wiring resistance (PowerMonitor): above this = high. A healthy FRC battery
         // is ~11-15 mOhm on a Battery Beak; the robot's leads, breaker and connectors add a few.

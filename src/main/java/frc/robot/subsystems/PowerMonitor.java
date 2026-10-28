@@ -130,6 +130,8 @@ public class PowerMonitor extends SubsystemBase {
     private String loadTest = "not run";
 
     public PowerMonitor(CommandSwerveDrivetrain drivetrain) {
+        SmartDashboard.putString("Battery Load Test", Power.kMonitorEnabled ? loadTest : "power monitor OFF (Constants.Power.kMonitorEnabled)");
+        if (!Power.kMonitorEnabled) return;
         List<TalonFX> drive = new ArrayList<>(), steer = new ArrayList<>();
         for (var m : drivetrain.getModules()) { drive.add(m.getDriveMotor()); steer.add(m.getSteerMotor()); }
         groups.add(new Group("drive", drive));
@@ -149,6 +151,7 @@ public class PowerMonitor extends SubsystemBase {
 
     @Override
     public void periodic() {
+        if (!Power.kMonitorEnabled) return;
         double t = Timer.getFPGATimestamp();
         // Research Oct 28: fit on the PDH's own voltage (battery side of the robot), not the
         // roboRIO's input, which sits downstream of the PDH and its own wires. Both are logged: a
