@@ -556,6 +556,58 @@
               "topic": "/SmartDashboard/Slow Down While Shooting",
               "period": 0.06
             }
+          },
+          {
+            "title": "Match Driver",
+            "x": 0.0,
+            "y": 1408.0,
+            "width": 320.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Match Driver",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Match Operator",
+            "x": 320.0,
+            "y": 1408.0,
+            "width": 320.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Match Operator",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Match Coach",
+            "x": 640.0,
+            "y": 1408.0,
+            "width": 320.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Match Coach",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Match Battery",
+            "x": 960.0,
+            "y": 1408.0,
+            "width": 320.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Match Battery",
+              "period": 0.06,
+              "show_submit_button": false
+            }
           }
         ]
       }

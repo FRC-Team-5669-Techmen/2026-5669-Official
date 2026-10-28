@@ -175,6 +175,8 @@ public class RobotContainer {
         SmartDashboard.putData("Auto Mode", autoChooser);
         drivetrain.setKeepHeadingAtAutoStart(localizer::headingFromCamera, localizer::markHeadingFromPath);
         pitCheck.setMatchSetup(this::matchSetupProblems);
+        practiceMatch.setSources(drivetrain, () -> operatorController.getHID().getRightTriggerAxis() > 0.5,
+            this::selectedAutoName);
 
         driveModeChooser.setDefaultOption("Field Centric", "field");
         driveModeChooser.addOption("Robot Centric", "robot");

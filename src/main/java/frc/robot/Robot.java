@@ -54,11 +54,13 @@ public class Robot extends TimedRobot {
             String line = cmd.getName() + " interrupted by " + who;
             if (cmd == m_autonomousCommand) line = "AUTO " + line + autoTime();
             System.out.println("CMD | " + line);
+            frc.robot.subsystems.PracticeMatch.note(line);
             DogLog.log("Commands/Interrupted", line);
         });
         CommandScheduler.getInstance().onCommandFinish(cmd -> {
             if (cmd == m_autonomousCommand) {
                 System.out.println("CMD | AUTO finished" + autoTime());
+                frc.robot.subsystems.PracticeMatch.note("AUTO finished" + autoTime());
                 DogLog.log("Commands/AutoSeconds", Timer.getFPGATimestamp() - autoStart);
             }
         });

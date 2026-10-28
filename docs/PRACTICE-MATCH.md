@@ -13,8 +13,8 @@ The robot runs the match; a second device shows it like the field does.
    `tools/practice-match/Start Practice Match.bat`. Keep Elastic on the driver station.
 3. **Scorer**: one student taps **+1** on the match screen for every ball that goes IN our hub, and
    the tower level at the end. The robot counts what it shot by itself.
-4. After the match, the row is saved on the screen's device (Export CSV) and on the robot:
-   http://10.56.69.2:5805/practice-matches.csv.
+4. Before the match, type the **Driver, Operator, Coach and Battery** on the Elastic Match tab
+   (they stay until changed). After the match the robot saves a full match file (see "Match data").
 
 ## What happens
 
@@ -52,3 +52,27 @@ game data); WPILib DriverStation docs (match time is -1 without FMS outside Prac
 Data reaches the robot only at teleop enable or the practice End Game time); Cheesy Arena
 (github.com/Team254/cheesy-arena); Chief Delphi REBUILT practice threads. Research notes:
 /home/claude/research_notes/Practice match simulator/.
+
+## Match data (every match, practice or real)
+
+The robot writes one JSON file per match to `/home/lvuser/shotmap/matches/` (also auto tests and
+teleop sessions over 20 s; real FMS matches carry the event, match type and number):
+
+- crew (driver, operator, coach, battery label typed on the Match tab), auto name, auto winner
+- scoring: auto balls, balls into our hub while open / closed (wasted), passes, RT-held seconds,
+  % of that time ready to fire, the top reasons it wasn't ready (seconds each), balls per firing
+  second, launch RPM error
+- battery: start, end, minimum and where it happened, seconds under 10 V and 8 V, brownouts,
+  power-budget sag time; per phase: minimum and average voltage, shots
+- drive: distance, top speed, drive current average and peak, defense / vacuum / dump time
+- aim: % aim on, % position known, longest gap without a vision fix
+- climb: lift and hang time, hanging at the end; CAN bus-off events and peak utilization
+- timeline: every phase change, mode change, brownout, position loss and interrupted command
+
+`matches.csv` has one row per match. The full every-signal log is the `.wpilog` on the USB stick
+(AdvantageScope), downloadable on port 5807.
+
+**Get it off the robot**: double-click `tools/match-data/Sync Match Data.bat` on the driver
+station laptop (robot on). It copies new match files, the CSVs and the logs into `match-data/`,
+then commits and pushes the small files when the laptop is online, so the team and Claude can
+read them from GitHub. The FRC app import is the next step (prompt in the chat, Oct 28).
