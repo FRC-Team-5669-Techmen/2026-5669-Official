@@ -73,6 +73,7 @@ public class Robot extends TimedRobot {
     @Override
     public void robotPeriodic() {
         m_timeAndJoystickReplay.update();
+        HubShiftTracker.update(); // match clock (own clock in a practice match)
         CommandScheduler.getInstance().run();
 
         m_robotContainer.updateDashboard();
@@ -96,7 +97,7 @@ public class Robot extends TimedRobot {
             return;
         }
 
-        double matchTime = DriverStation.getMatchTime();
+        double matchTime = HubShiftTracker.matchTime();
         double rumble = 0.0;
 
         // NO GAME DATA in a real match (FMS attached): the FMS sends it about 3 s after auto ends,

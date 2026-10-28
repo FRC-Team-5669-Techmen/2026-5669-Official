@@ -136,6 +136,10 @@ Research (6328, 581, 5000, 1678, 2910 2026 code; FIRST drive-team guides; Chief 
 - **Elastic**: new **Drive Team** tab (big Ready To Fire, Aim Active, Pose Trusted, Our Hub, Shot Ready, Shot Target, modes, Pit Check); Match tab adds Vision Status, Pose Trusted, Seconds Since Vision Fix, Intake Next A Press, Shot Target Mode, Shooter Idle, and the two new switches.
 - Not done (next): trench lock (5000: Y centered in the trench + heading snap, 1-2 days, needs the trench vs bumper dimensions), climb heading snap / prep-climb macro.
 
+## Practice matches (Oct 28)
+
+Guide: `docs/PRACTICE-MATCH.md`. Driver Station **Practice** mode, team station Red; the robot runs auto then teleop. **`HubShiftTracker.update()/matchTime()`**: with an FMS the DS clock; without one, a match SEQUENCE (teleop within 6 s after an auto) gets the robot's own REBUILT clock (teleop 140 s from teleop start), plain teleop keeps -1 (never acts like a match). **`subsystems/PracticeMatch`**: random auto winner at teleop start of a practice sequence (switch "Practice: Random Auto Winner", saved, ON; reset to the chooser after), scorecard from the flywheel ball counter (auto / hub open / hub closed / passes, climb times) appended to `/home/lvuser/shotmap/practice-matches.csv`, live `match.json` + the page served from RAM on **port 5806** (`src/main/deploy/practice-match/index.html`, also works standalone from a file). `practice/MatchPhase` = pure timeline (tests `MatchPhaseTest`). Launcher `tools/practice-match/Start Practice Match.bat`.
+
 ## Drive Team Controller Map
 
 `tools/controller-map/`: double-click **Start Controller Map.bat** on any Windows driver station laptop for a live map of both Xbox controllers under the docked Driver Station (reads the controllers in the background, so it follows presses while Driver Station has focus). See its README. **When a controller binding changes, update the `BIND` / `CALL` tables in `tools/controller-map/index.html` too.**

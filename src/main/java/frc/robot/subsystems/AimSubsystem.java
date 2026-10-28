@@ -420,7 +420,7 @@ public class AimSubsystem extends SubsystemBase {
         if (!rpmReady(shooter)) return what + ": shooter spinning up";
         if (Constants.Gooba.kHoodEnabled && Math.abs(hood.getPosition() - targetHood()) > hoodTolerance()) return what + ": hood moving";
         if (hubClosedForShot()) {
-            double s = HubShiftTracker.secondsUntilChange(DriverStation.getMatchTime());
+            double s = HubShiftTracker.secondsUntilChange(HubShiftTracker.matchTime());
             return s > 0 ? String.format(java.util.Locale.US, "HUB CLOSED: opens in %.0f s (pass instead?)", s)
                 : "HUB CLOSED";
         }

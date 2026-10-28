@@ -77,7 +77,7 @@ public class DriverDashboard {
      * Updates the dashboard with live data.
      */
     public void updateLiveStats(double tx, double ty, boolean hasVisionTarget, boolean isHubOpen, double currentRpm) {
-        double matchTime = Math.max(0, DriverStation.getMatchTime());
+        double matchTime = Math.max(0, HubShiftTracker.matchTime());
 
         // Update Primary Stats
         matchTimeEntry.setDouble(matchTime);

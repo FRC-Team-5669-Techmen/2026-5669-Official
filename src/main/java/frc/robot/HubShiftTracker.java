@@ -28,6 +28,45 @@ public final class HubShiftTracker {
 
     private HubShiftTracker() {}
 
+    // ---------------------------------------------------------------- MATCH CLOCK
+    // With an FMS the Driver Station's match time is the truth. Without one (Driver Station
+    // Practice mode), the DS's teleop clock layout isn't certain (its Teleop and End Game boxes may
+    // count separately), and plain teleop has NO clock (-1). So when the robot sees a real match
+    // SEQUENCE (auto, then teleop within 6 s; the manual has a 3 s gap), it keeps its own REBUILT
+    // clock: teleop 140 s from the moment teleop starts. Plain teleop (plotting, drive tests) keeps
+    // -1, so nothing there ever acts like a match.
+    private static double autoStart = Double.NEGATIVE_INFINITY, autoEnd = Double.NEGATIVE_INFINITY;
+    private static double teleopStart = Double.NEGATIVE_INFINITY;
+    private static boolean wasAuto = false, wasTeleop = false, practiceSequence = false;
+
+    /** Call once per loop, before the scheduler (Robot.robotPeriodic). */
+    public static void update() {
+        boolean auto = DriverStation.isAutonomousEnabled(), teleop = DriverStation.isTeleopEnabled();
+        double now = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
+        if (auto && !wasAuto) { autoStart = now; practiceSequence = false; }
+        if (wasAuto && !auto) autoEnd = now;
+        if (teleop && !wasTeleop) {
+            teleopStart = now;
+            practiceSequence = !DriverStation.isFMSAttached() && now - autoEnd < 6.0;
+        }
+        if (wasTeleop && !teleop) practiceSequence = false;
+        wasAuto = auto;
+        wasTeleop = teleop;
+    }
+
+    /** A practice match is running (no FMS; teleop came right after an auto). */
+    public static boolean practiceSequence() { return practiceSequence; }
+
+    /** Seconds left in the current period: FMS/DS clock, or the robot's own in a practice match; -1 = none. */
+    public static double matchTime() {
+        double ds = DriverStation.getMatchTime();
+        if (DriverStation.isFMSAttached()) return ds;
+        double now = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
+        if (DriverStation.isAutonomousEnabled()) return ds >= 0 ? ds : Math.max(0, 20 - (now - autoStart));
+        if (DriverStation.isTeleopEnabled() && practiceSequence) return Math.max(0, 140 - (now - teleopStart));
+        return ds;
+    }
+
     // ---------------------------------------------------------------- AUTO WINNER OVERRIDE
     // FMS game data ('R'/'B' = the alliance that won AUTO) drives the shift schedule. If it never
     // arrives (a missed message is not an arena fault), the drive team picks it on the dashboard
@@ -69,7 +108,7 @@ public final class HubShiftTracker {
             DriverStation.isTeleopEnabled(),
             DriverStation.getAlliance().orElse(null),
             gameData(),
-            DriverStation.getMatchTime());
+            matchTime());
     }
 
     /**
@@ -132,7 +171,7 @@ public final class HubShiftTracker {
             DriverStation.isTeleopEnabled(),
             DriverStation.getAlliance().orElse(null),
             gameData(),
-            DriverStation.getMatchTime(),
+            matchTime(),
             secondsAhead);
     }
 

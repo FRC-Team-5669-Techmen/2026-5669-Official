@@ -127,7 +127,7 @@ public class DefenseMode extends SubsystemBase {
             : pin.update(now, 0, speed, 0);
         var p = state.Pose.getTranslation();
         towerWarning = DriverStation.isTeleopEnabled() && aim.poseUsable()
-            && TowerGuard.endgame(DriverStation.getMatchTime())
+            && TowerGuard.endgame(frc.robot.HubShiftTracker.matchTime())
             && TowerGuard.nearTheirTower(p.getX(), p.getY(), red(), Defense.kTowerMargin);
 
         String text;
