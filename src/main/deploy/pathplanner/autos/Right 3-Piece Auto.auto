@@ -57,6 +57,12 @@
           "data": {
             "name": "visionScore"
           }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "FinalRight-to-Neutral"
+          }
         }
       ]
     }
