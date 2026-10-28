@@ -142,6 +142,7 @@ public class RobotContainer {
     // State Toggles
     private boolean m_isShooterIdle = false;
     private static final String kAutoLookKey = "Auto: Turret Watches Hub";
+    private final SendableChooser<HubShiftTracker.AutoWinner> autoWinnerChooser = new SendableChooser<>();
 
     public RobotContainer() {
         // We intentionally configure more HIDs (Xbox x2 + HOTAS x2) than are usually
@@ -503,6 +504,13 @@ public class RobotContainer {
         SmartDashboard.putData("Re-find Position (camera)", localizer.refindCommand());
         SmartDashboard.putData("Reset Shot Stats", shooter.resetShotStatsCommand());
         SmartDashboard.putData("Set Pose: Plot Spot", backupShots.plotSpotCommand());
+        // AUTO WINNER override: only if the FMS game data never shows up ("Our Hub" stays unknown
+        // in a real match, both controllers buzz at the start of teleop). Leave on FMS otherwise.
+        autoWinnerChooser.setDefaultOption("FMS (automatic)", HubShiftTracker.AutoWinner.FMS);
+        autoWinnerChooser.addOption("WE won auto", HubShiftTracker.AutoWinner.WE_WON);
+        autoWinnerChooser.addOption("THEY won auto", HubShiftTracker.AutoWinner.THEY_WON);
+        autoWinnerChooser.onChange(HubShiftTracker::setAutoWinnerOverride);
+        SmartDashboard.putData("Auto Winner", autoWinnerChooser);
         SmartDashboard.putData("Save Spot: Midshot", backupShots.saveCommand(BackupShots.Spot.MIDSHOT));
         SmartDashboard.putData("Save Spot: Left Trench", backupShots.saveCommand(BackupShots.Spot.LEFT_TRENCH));
         SmartDashboard.putData("Save Spot: Right Trench", backupShots.saveCommand(BackupShots.Spot.RIGHT_TRENCH));

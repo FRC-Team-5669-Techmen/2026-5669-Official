@@ -187,6 +187,19 @@
               "topic": "/SmartDashboard/Hanging (climb shot)",
               "period": 0.06
             }
+          },
+          {
+            "title": "Auto Winner",
+            "x": 0.0,
+            "y": 768.0,
+            "width": 512.0,
+            "height": 128.0,
+            "type": "ComboBox Chooser",
+            "properties": {
+              "topic": "/SmartDashboard/Auto Winner",
+              "period": 0.06,
+              "sort_options": false
+            }
           }
         ]
       }

@@ -74,6 +74,15 @@ public class Robot extends TimedRobot {
         double matchTime = DriverStation.getMatchTime();
         double rumble = 0.0;
 
+        // NO GAME DATA in a real match (FMS attached): buzz BOTH controllers for the first 3 s of
+        // teleop so the drive team sets "Auto Winner" on the dashboard.
+        if (DriverStation.isFMSAttached() && HubShiftTracker.gameDataMissing() && matchTime > 137) {
+            double r = (Timer.getFPGATimestamp() % 0.5) < 0.25 ? 1.0 : 0.0;
+            driverHid.setRumble(RumbleType.kBothRumble, r);
+            m_robotContainer.operatorController.getHID().setRumble(RumbleType.kBothRumble, r);
+            return;
+        }
+
         // DEFENSE warnings come first: pin count near the 3 s limit = strong fast pulses; last
         // 30 s next to THEIR tower = steady strong rumble (see DefenseMode).
         var defense = m_robotContainer.defense;

@@ -28,6 +28,32 @@ public final class HubShiftTracker {
 
     private HubShiftTracker() {}
 
+    // ---------------------------------------------------------------- AUTO WINNER OVERRIDE
+    // FMS game data ('R'/'B' = the alliance that won AUTO) drives the shift schedule. If it never
+    // arrives (a missed message is not an arena fault), the drive team picks it on the dashboard
+    // chooser "Auto Winner" (6328, 1678 and 5000 all had this override in 2026).
+    public enum AutoWinner { FMS, WE_WON, THEY_WON }
+    private static volatile AutoWinner override = AutoWinner.FMS;
+
+    public static void setAutoWinnerOverride(AutoWinner w) { override = w == null ? AutoWinner.FMS : w; }
+
+    /** True when the FMS sent no game data (and no override is set): rumble both controllers. */
+    public static boolean gameDataMissing() {
+        String g = DriverStation.getGameSpecificMessage();
+        return (g == null || g.isEmpty()) && override == AutoWinner.FMS;
+    }
+
+    /** FMS game data, or the override (it wins when set). */
+    public static String gameData() {
+        String g = DriverStation.getGameSpecificMessage();
+        if (override == AutoWinner.FMS) return g;
+        var a = DriverStation.getAlliance();
+        if (a.isEmpty()) return g;
+        boolean weAreRed = a.get() == Alliance.Red;
+        boolean redWon = override == AutoWinner.WE_WON ? weAreRed : !weAreRed;
+        return redWon ? "R" : "B";
+    }
+
     /**
      * @return true when scoring FUEL into our HUB earns points right now.
      *         Returns false when the alliance or game data is unknown (e.g. practice
@@ -38,7 +64,7 @@ public final class HubShiftTracker {
             DriverStation.isAutonomousEnabled(),
             DriverStation.isTeleopEnabled(),
             DriverStation.getAlliance().orElse(null),
-            DriverStation.getGameSpecificMessage(),
+            gameData(),
             DriverStation.getMatchTime());
     }
 
@@ -101,7 +127,7 @@ public final class HubShiftTracker {
             DriverStation.isAutonomousEnabled(),
             DriverStation.isTeleopEnabled(),
             DriverStation.getAlliance().orElse(null),
-            DriverStation.getGameSpecificMessage(),
+            gameData(),
             DriverStation.getMatchTime(),
             secondsAhead);
     }
