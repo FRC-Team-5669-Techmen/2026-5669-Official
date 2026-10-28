@@ -3,41 +3,41 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 7.703725165562915,
-        "y": 6.801034768211919
+        "x": 7.6892052980132455,
+        "y": 6.713115562913908
       },
       "prevControl": null,
       "nextControl": {
-        "x": 7.732764900662252,
-        "y": 4.623054635761587
+        "x": 8.095761589403974,
+        "y": 4.4189764900662265
       },
       "isLocked": false,
-      "linkedName": "LeftBallCenter"
+      "linkedName": "BallCenter (Left)"
     },
     {
       "anchor": {
-        "x": 7.216360424028269,
-        "y": 5.173860424028269
+        "x": 6.876092715231788,
+        "y": 4.614994701986754
       },
       "prevControl": {
-        "x": 7.720279794943285,
-        "y": 5.154098880070817
+        "x": 7.403997799875617,
+        "y": 4.3709992738357535
       },
       "nextControl": {
-        "x": 6.6676415628183054,
-        "y": 5.195378810742385
+        "x": 6.417882822924082,
+        "y": 4.826777316151334
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 6.720530035335689,
-        "y": 5.902111307420494
+        "x": 6.462276490066225,
+        "y": 6.69859569536424
       },
       "prevControl": {
-        "x": 6.692922153816976,
-        "y": 5.653640373752089
+        "x": 6.549395695364238,
+        "y": 5.6894649006622515
       },
       "nextControl": null,
       "isLocked": false,
@@ -46,8 +46,8 @@
   ],
   "rotationTargets": [
     {
-      "waypointRelativePos": 0.8753462603878216,
-      "rotationDegrees": -113.64125172861965
+      "waypointRelativePos": 0.8,
+      "rotationDegrees": 175.2984186943389
     }
   ],
   "constraintZones": [],
@@ -70,13 +70,13 @@
   },
   "goalEndState": {
     "velocity": 2.0,
-    "rotation": 88.66206881792768
+    "rotation": 107.89613292503934
   },
   "reversed": false,
   "folder": "Left",
   "idealStartingState": {
     "velocity": 2.0,
-    "rotation": -89.07595464722726
+    "rotation": -88.99908532243735
   },
   "useDefaultConstraints": true
 }
