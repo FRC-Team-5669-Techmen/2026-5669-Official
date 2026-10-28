@@ -111,9 +111,12 @@ public class ShotMapGuide extends SubsystemBase {
                 next, aim.tableRpm(next), aim.tableHood(next)));
         }
 
-        SmartDashboard.putString("Shot Map Step", step(next));
-        SmartDashboard.putString("Shot Map Progress", progress());
-        SmartDashboard.putString("Shot Table Code", aim.shotTableCode());
+        // Text for people: 5 times a second (these decode the saved table: too slow for every loop).
+        if (++textLoops % 10 == 0) {
+            SmartDashboard.putString("Shot Map Step", step(next));
+            SmartDashboard.putString("Shot Map Progress", progress());
+            SmartDashboard.putString("Shot Table Code", aim.shotTableCode());
+        }
 
         // Shot log: one row per finished shot, one per Record press.
         if (shooter.finishedShots() != lastShots) {
@@ -126,24 +129,38 @@ public class ShotMapGuide extends SubsystemBase {
         }
     }
 
+    private int textLoops = 0;
+    // The file is written on its own thread: opening a file on every ball (10 a second in a volley)
+    // stalled the robot loop (audit Oct 27).
+    private final java.util.concurrent.ExecutorService writer =
+        java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+            Thread t = new Thread(r, "shot-log");
+            t.setDaemon(true);
+            t.setPriority(Thread.MIN_PRIORITY);
+            return t;
+        });
+
     private void writeRow(String event) {
-        File f = new File(kLogDir, "shot-log.csv");
-        if (f.length() > 2_000_000) return; // never fill the roboRIO
-        boolean header = !f.exists() || f.length() == 0;
-        try (FileWriter w = new FileWriter(f, true)) {
-            if (header) {
-                w.write("time,event,distance_m,target_rpm,launch_rpm,dip_rpm,recovery_s,hood_target,hood_actual,"
-                    + "tuning_mode,tune_rpm,tune_hood,spindex_volts,uptake_volts,battery_v,pose_trusted\n");
-            }
-            w.write(String.format(Locale.US, "%s,%s,%.3f,%.0f,%.0f,%.0f,%.3f,%.3f,%.3f,%b,%.0f,%.3f,%.2f,%.2f,%.2f,%b%n",
+        String row = String.format(Locale.US, "%s,%s,%.3f,%.0f,%.0f,%.0f,%.3f,%.3f,%.3f,%b,%.0f,%.3f,%.2f,%.2f,%.2f,%b%n",
                 LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME), event,
                 aim.solution().distanceMeters(), shooter.lastShotTargetRpm(), shooter.lastLaunchRpm(),
                 shooter.lastDipRpm(), shooter.lastRecoverySec(), aim.targetHood(), hood.getPosition(),
                 aim.tuningMode(), SmartDashboard.getNumber("Tune RPM", 0), SmartDashboard.getNumber("Tune Hood (rot)", 0),
                 IndexSubsystem.forwardVolts(), SmartDashboard.getNumber("Uptake Forward Volts", 0),
-                RobotController.getBatteryVoltage(), aim.poseUsable()));
-        } catch (Exception e) {
-            System.out.println("SHOT MAP | could not write shot log: " + e.getMessage());
-        }
+                RobotController.getBatteryVoltage(), aim.poseUsable());
+        writer.execute(() -> {
+            File f = new File(kLogDir, "shot-log.csv");
+            if (f.length() > 2_000_000) return; // never fill the roboRIO
+            boolean header = !f.exists() || f.length() == 0;
+            try (FileWriter w = new FileWriter(f, true)) {
+                if (header) {
+                    w.write("time,event,distance_m,target_rpm,launch_rpm,dip_rpm,recovery_s,hood_target,hood_actual,"
+                        + "tuning_mode,tune_rpm,tune_hood,spindex_volts,uptake_volts,battery_v,pose_trusted\n");
+                }
+                w.write(row);
+            } catch (Exception e) {
+                System.out.println("SHOT MAP | could not write shot log: " + e.getMessage());
+            }
+        });
     }
 }

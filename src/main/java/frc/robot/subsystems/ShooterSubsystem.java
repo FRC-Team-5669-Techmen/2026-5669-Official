@@ -97,6 +97,8 @@ public class ShooterSubsystem extends SubsystemBase {
     public double lastDipRpm() { return lastDip; }
     public double lastRecoverySec() { return lastRecovery; }
     public double lastShotTargetRpm() { return lastTarget; }
+    /** The speed the wheel is being asked for now (0 = stopped). */
+    public double targetRpm() { return m_targetRpm; }
 
     private void meterShots(double rpm) {
         double target = m_targetRpm;

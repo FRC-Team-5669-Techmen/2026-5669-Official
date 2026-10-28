@@ -150,7 +150,7 @@ public class Marcos {
      */
     private static final double kEmptySeconds = 1.0; // > the agitation pump trigger (0.8 s), so a bridged hopper gets one pump first
 
-    private static Command scoreUntilEmpty(AimSubsystem aim, ShooterSubsystem shooter, IndexSubsystem index,
+    public static Command scoreUntilEmpty(AimSubsystem aim, ShooterSubsystem shooter, IndexSubsystem index,
             ShooterIntakeSubsystem shooterIntake, Goober goober, GoobaSubsystem gooba,
             LimelightSubsystem limelight, CommandSwerveDrivetrain drivetrain) {
         double[] firstFire = {Double.NaN};

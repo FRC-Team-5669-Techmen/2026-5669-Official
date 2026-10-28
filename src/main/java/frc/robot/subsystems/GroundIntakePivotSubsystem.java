@@ -239,13 +239,13 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
      * the intake back, even if the position numbers are off. It's slow, and letting go stops it.
      */
     private void startJog(double volts) {
-        leader.getConfigurator().apply(softLimitsOff);
+        leader.getConfigurator().apply(softLimitsOff, 0.0); // 0 = don't wait for the reply (no loop stall)
         setVolts(volts);
     }
 
     private void endJog() {
         stop();
-        leader.getConfigurator().apply(softLimitsOn); // DOWN soft limit back on
+        leader.getConfigurator().apply(softLimitsOn, 0.0); // DOWN soft limit back on (no wait)
     }
 
     /** Hotter of the two pivot motors, deg C. */

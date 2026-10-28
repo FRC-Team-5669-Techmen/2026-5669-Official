@@ -215,7 +215,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             var config = RobotConfig.fromGUISettings();
             AutoBuilder.configure(
                 () -> getState().Pose,   // Supplier of current robot pose
-                this::resetPose,         // Consumer for seeding pose against auto
+                this::resetPoseForAuto,  // Consumer for seeding pose against auto
                 () -> getState().Speeds, // Supplier of current robot speeds
                 // Consumer of ChassisSpeeds and feedforwards to drive the robot
                 (speeds, feedforwards) -> setControl(
@@ -322,6 +322,39 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         /* Run simulation at the high-frequency rate */
         m_simNotifier = new Notifier(mapleSimSwerveDrivetrain::update);
         m_simNotifier.startPeriodic(kSimLoopPeriod);
+    }
+
+    private java.util.function.BooleanSupplier keepHeadingAtAutoStart = () -> false;
+    private boolean autoKeptHeading = false;
+
+    /** The localizer says whether the current heading came from the camera (then autos keep it). */
+    private Runnable pathHeadingUsed = () -> {};
+    public void setKeepHeadingAtAutoStart(java.util.function.BooleanSupplier keep, Runnable onPathHeading) {
+        keepHeadingAtAutoStart = keep;
+        pathHeadingUsed = onPathHeading;
+    }
+
+    /** The last auto start kept the camera's heading instead of the path's. */
+    public boolean autoKeptHeading() { return autoKeptHeading; }
+
+    /**
+     * AUTO START (PathPlanner resetOdom): the position comes from the path, as always. The HEADING
+     * stays the camera's when the camera set it and it's within 15 deg of the path's: a robot placed
+     * a few degrees crooked then still knows which way it really faces (the path follower turns it
+     * straight), instead of believing it's exactly on the path and aiming off for the whole match.
+     */
+    private void resetPoseForAuto(Pose2d pathStart) {
+        Pose2d now = getState().Pose;
+        double off = pathStart.getRotation().minus(now.getRotation()).getDegrees();
+        autoKeptHeading = keepHeadingAtAutoStart.getAsBoolean() && Math.abs(off) < 15.0;
+        if (autoKeptHeading) {
+            resetPose(new Pose2d(pathStart.getTranslation(), now.getRotation()));
+            System.out.println(String.format(java.util.Locale.US,
+                "AUTO | start: path position, camera heading (robot is %.1f deg off the path's)", off));
+        } else {
+            resetPose(pathStart);
+            pathHeadingUsed.run();
+        }
     }
 
     @Override

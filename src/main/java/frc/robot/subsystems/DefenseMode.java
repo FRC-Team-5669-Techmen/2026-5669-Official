@@ -64,6 +64,8 @@ public class DefenseMode extends SubsystemBase {
     public Command toggleCommand(Runnable onEnable) {
         return Commands.runOnce(() -> {
             on = !on;
+            changedAt = Timer.getFPGATimestamp();
+            changedOn = on;
             if (on) onEnable.run();
             System.out.println("DEFENSE | " + (on ? "ON" : "OFF"));
         }).withName("Toggle defense mode");
@@ -75,15 +77,24 @@ public class DefenseMode extends SubsystemBase {
     /** Last 30 s near their tower: rumble the driver (steady). */
     public boolean towerWarning() { return towerWarning; }
 
-    private double autoEndedAt = Double.NEGATIVE_INFINITY;
+    private static double changedAt = Double.NEGATIVE_INFINITY;
+    private static boolean changedOn = false;
 
     /**
-     * Defense just ended by itself (the operator turned aim/vacuum on): two short buzzes for the
-     * driver, so they don't press Y again thinking it's still on (that would turn it back ON).
+     * The driver FEELS every defense change, so the Y toggle never gets out of step (audit Oct 27):
+     * ON = one long buzz; OFF (Driver Y, or by itself when the operator turns aim/vacuum on) = two
+     * short buzzes. Without it, defense ending by itself and then a Y press turned it back ON.
      */
-    public boolean endedByOperatorBuzz() {
-        double t = Timer.getFPGATimestamp() - autoEndedAt;
+    public boolean changeBuzz() {
+        double t = Timer.getFPGATimestamp() - changedAt;
+        if (changedOn) return t < 0.4;
         return t < 0.6 && (t < 0.2 || t > 0.4);
+    }
+
+    /** A match is starting: defense mode off (it used to survive a disable). */
+    public static void reset() {
+        if (on) System.out.println("DEFENSE | OFF (match start)");
+        on = false;
     }
 
     private static boolean red() {
@@ -96,7 +107,8 @@ public class DefenseMode extends SubsystemBase {
         // The operator wants to shoot again: defense is over.
         if (on && aim.isActive()) {
             on = false;
-            autoEndedAt = Timer.getFPGATimestamp();
+            changedAt = Timer.getFPGATimestamp();
+            changedOn = false;
             System.out.println("DEFENSE | OFF (auto-aim or vacuum turned on)");
         }
         var state = drivetrain.getState();

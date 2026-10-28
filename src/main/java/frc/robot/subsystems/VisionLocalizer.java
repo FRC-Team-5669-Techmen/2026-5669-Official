@@ -38,6 +38,11 @@ public class VisionLocalizer extends SubsystemBase {
     private double levelPitch = 0.0, levelRoll = 0.0, lastTilted = Double.NEGATIVE_INFINITY, tilt = 0.0;
 
     private boolean headingKnown = false;   // gyro heading matches the field (seeded)
+    private boolean headingFromCamera = false; // the heading came from a steady 2-tag camera fix (not Driver LB)
+    private double lastFrameTime = -1;      // Limelight frame already used (the camera is ~30 fps, the loop 50)
+    private int headingOffCount = 0;        // steady 2-tag frames that say the heading is off
+    private double lastHeadingOff = 0;
+    private static final String kHeadingFixKey = "Vision Fixes Heading";
     private boolean positionKnown = false;  // a vision fix arrived, or an auto set the pose
     private double lastAcceptedTime = -100; // FPGA seconds of the last accepted fix
     private String status = "starting";
@@ -48,7 +53,16 @@ public class VisionLocalizer extends SubsystemBase {
         this.turret = turret;
         this.hood = hood;
         SmartDashboard.putBoolean("Vision Pose ON", true);
+        edu.wpi.first.wpilibj.Preferences.initBoolean(kHeadingFixKey, true);
+        SmartDashboard.putBoolean(kHeadingFixKey, edu.wpi.first.wpilibj.Preferences.getBoolean(kHeadingFixKey, true));
     }
+
+    /**
+     * The heading came from the camera (steady 2-tag view), not from Driver LB or an auto's path.
+     * Then an auto start keeps it instead of the path's start heading (a robot placed a few degrees
+     * crooked would otherwise aim that far off all match: 5 deg at 4 m = 35 cm, 14 in).
+     */
+    public boolean headingFromCamera() { return headingKnown && headingFromCamera; }
 
     /**
      * The gyro heading now matches the field: called when the driver resets the gyro facing away
@@ -56,6 +70,8 @@ public class VisionLocalizer extends SubsystemBase {
      */
     public void markHeadingKnown() {
         headingKnown = true;
+        headingFromCamera = false;
+        headingOffCount = 0;
     }
 
     /**
@@ -76,6 +92,12 @@ public class VisionLocalizer extends SubsystemBase {
     public void markPoseSetByAuto() {
         headingKnown = true;
         positionKnown = true;
+    }
+
+    /** An auto's path set the heading (it didn't keep the camera's). */
+    public void markHeadingFromPath() {
+        headingFromCamera = false;
+        headingOffCount = 0;
     }
 
     /**
@@ -181,6 +203,7 @@ public class VisionLocalizer extends SubsystemBase {
         if (seedCount < kSeedFrames) return "heading: steady " + seedCount + "/" + kSeedFrames;
         drivetrain.resetPose(mt1.pose);
         headingKnown = true;
+        headingFromCamera = true;
         seedCount = 0;
         System.out.println(String.format("LOCALIZATION | pose SET by the camera: x %.2f y %.2f heading %.1f deg (%d tags). Driver LB overrides the heading.",
             mt1.pose.getX(), mt1.pose.getY(), mt1.pose.getRotation().getDegrees(), mt1.tagCount));
@@ -204,6 +227,9 @@ public class VisionLocalizer extends SubsystemBase {
         int tags = mt1 == null ? 0 : mt1.tagCount;
         SmartDashboard.putNumber("Vision Tags", tags);
         if (tags == 0) return "no tags";
+        // Same camera frame as last loop: nothing new (adding it again would over-trust it).
+        if (mt1.timestampSeconds == lastFrameTime) return status;
+        lastFrameTime = mt1.timestampSeconds;
 
         // MegaTag1 with 2+ tags: position AND heading.
         // Heading UNKNOWN: wait for kSeedFrames camera frames in a row that agree (robot still),
@@ -216,9 +242,10 @@ public class VisionLocalizer extends SubsystemBase {
             if (!headingKnown) {
                 return seedFromCamera(mt1, speeds);
             }
+            String fixed = checkHeading(mt1, speeds);
             double xy = xyStdDev(mt1.avgTagDist, mt1.tagCount);
             drivetrain.addVisionMeasurement(mt1.pose, mt1.timestampSeconds, VecBuilder.fill(xy, xy, 1e6));
-            return accept("MT1 " + mt1.tagCount + " tags");
+            return accept("MT1 " + mt1.tagCount + " tags" + fixed);
         }
         seedCount = 0;
 
@@ -230,6 +257,37 @@ public class VisionLocalizer extends SubsystemBase {
         drivetrain.addVisionMeasurement(mt2.pose, mt2.timestampSeconds, VecBuilder.fill(xy, xy, 1e6));
         DogLog.log("Vision/MT2Pose", mt2.pose);
         return accept("MT2 " + mt2.tagCount + " tag" + (mt2.tagCount > 1 ? "s" : ""));
+    }
+
+    /**
+     * HEADING CHECK (Oct 27, match-day audit): once the heading is known only the gyro changes it,
+     * so a wrong heading (robot placed crooked for an auto, a sloppy Driver LB) stayed wrong all
+     * match. If steady 2-tag frames keep agreeing that the heading is off (25 frames in a row,
+     * within 2 deg of each other, robot slow), set the heading from the camera. While disabled it
+     * fixes anything over 3 deg; enabled only over 8 deg (beyond any camera calibration error), so
+     * it never fights the driver over small amounts. Dashboard switch "Vision Fixes Heading" (saved).
+     */
+    private String checkHeading(LimelightHelpers.PoseEstimate mt1, edu.wpi.first.math.kinematics.ChassisSpeeds speeds) {
+        boolean on = SmartDashboard.getBoolean(kHeadingFixKey, true);
+        if (on != edu.wpi.first.wpilibj.Preferences.getBoolean(kHeadingFixKey, true))
+            edu.wpi.first.wpilibj.Preferences.setBoolean(kHeadingFixKey, on);
+        var pose = drivetrain.getState().Pose;
+        double off = mt1.pose.getRotation().minus(pose.getRotation()).getDegrees();
+        SmartDashboard.putNumber("Heading Off By (deg)", off);
+        boolean slow = Math.hypot(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond) < 0.5
+            && Math.abs(speeds.omegaRadiansPerSecond) < 0.3;
+        double limit = edu.wpi.first.wpilibj.DriverStation.isDisabled() ? 3.0 : 8.0;
+        if (!on || !slow || mt1.avgTagDist > 4.5 || Math.abs(off) < limit) { headingOffCount = 0; return ""; }
+        headingOffCount = (headingOffCount > 0 && Math.abs(off - lastHeadingOff) < 2.0) ? headingOffCount + 1 : 1;
+        lastHeadingOff = off;
+        if (headingOffCount < 25) return ", heading off " + Math.round(off) + " deg?";
+        drivetrain.resetPose(new edu.wpi.first.math.geometry.Pose2d(pose.getTranslation(), mt1.pose.getRotation()));
+        headingFromCamera = true;
+        headingOffCount = 0;
+        System.out.println(String.format(java.util.Locale.US,
+            "LOCALIZATION | heading was %.1f deg off: set from the camera (%d tags)", off, mt1.tagCount));
+        DogLog.log("Vision/HeadingFixDeg", off);
+        return ", HEADING FIXED " + Math.round(off) + " deg";
     }
 
     private String accept(String what) {

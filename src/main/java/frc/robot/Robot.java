@@ -20,6 +20,11 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
 public class Robot extends TimedRobot {
     private Command m_autonomousCommand;
+    private double autoStart = 0;
+
+    private String autoTime() {
+        return String.format(java.util.Locale.US, " after %.1f s (auto is 20 s)", Timer.getFPGATimestamp() - autoStart);
+    }
 
     private final RobotContainer m_robotContainer;
 
@@ -37,6 +42,26 @@ public class Robot extends TimedRobot {
                 .withNtPublish(true)
                 .withCaptureNt(true));
         DogLog.setPdh(new PowerDistribution());
+
+        // roboRIO 2 cuts the motors at 6.75 V by default; 581 and 1678 run 5.5 V, 5000 6.0 V. 6.0 V
+        // keeps the robot driving through a hard push or climb sag instead of going limp.
+        edu.wpi.first.wpilibj.RobotController.setBrownoutVoltage(6.0);
+
+        // WHY DID IT STOP? Every interrupted command is printed (console "CMD |") and logged with what
+        // interrupted it, so after a match anyone can see why the auto or the aim ended.
+        CommandScheduler.getInstance().onCommandInterrupt((cmd, by) -> {
+            String who = by.map(Command::getName).orElse("disable / mode change / cancel");
+            String line = cmd.getName() + " interrupted by " + who;
+            if (cmd == m_autonomousCommand) line = "AUTO " + line + autoTime();
+            System.out.println("CMD | " + line);
+            DogLog.log("Commands/Interrupted", line);
+        });
+        CommandScheduler.getInstance().onCommandFinish(cmd -> {
+            if (cmd == m_autonomousCommand) {
+                System.out.println("CMD | AUTO finished" + autoTime());
+                DogLog.log("Commands/AutoSeconds", Timer.getFPGATimestamp() - autoStart);
+            }
+        });
 
         // Elastic "Load Layout From Robot" (Ctrl+D) downloads src/main/deploy/elastic-layout.json from here.
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
@@ -74,10 +99,12 @@ public class Robot extends TimedRobot {
         double matchTime = DriverStation.getMatchTime();
         double rumble = 0.0;
 
-        // NO GAME DATA in a real match (FMS attached): buzz BOTH controllers for the first 3 s of
-        // teleop so the drive team sets "Auto Winner" on the dashboard.
-        if (DriverStation.isFMSAttached() && HubShiftTracker.gameDataMissing() && matchTime > 137) {
-            double r = (Timer.getFPGATimestamp() % 0.5) < 0.25 ? 1.0 : 0.0;
+        // NO GAME DATA in a real match (FMS attached): the FMS sends it about 3 s after auto ends,
+        // so it is missing for the first seconds of teleop BY DESIGN. Still missing 6 s into teleop
+        // = it isn't coming: buzz BOTH controllers (pulses, for up to 14 s or until "Auto Winner" is
+        // set on the dashboard).
+        if (DriverStation.isFMSAttached() && HubShiftTracker.gameDataMissing() && matchTime < 134 && matchTime > 120) {
+            double r = (Timer.getFPGATimestamp() % 1.0) < 0.3 ? 1.0 : 0.0;
             driverHid.setRumble(RumbleType.kBothRumble, r);
             m_robotContainer.operatorController.getHID().setRumble(RumbleType.kBothRumble, r);
             return;
@@ -90,7 +117,7 @@ public class Robot extends TimedRobot {
             driverHid.setRumble(RumbleType.kBothRumble, (Timer.getFPGATimestamp() % 0.25) < 0.15 ? 1.0 : 0.0);
             return;
         }
-        if (defense.endedByOperatorBuzz()) {
+        if (defense.changeBuzz()) {
             driverHid.setRumble(RumbleType.kBothRumble, 0.8);
             return;
         }
@@ -128,6 +155,8 @@ public class Robot extends TimedRobot {
     public void autonomousInit() {
         m_robotContainer.onAutoStart();
         m_autonomousCommand = m_robotContainer.getAutonomousCommand();
+        autoStart = Timer.getFPGATimestamp();
+        System.out.println("CMD | AUTO start: " + m_robotContainer.selectedAutoName());
 
         if (m_autonomousCommand != null) {
             CommandScheduler.getInstance().schedule(m_autonomousCommand);

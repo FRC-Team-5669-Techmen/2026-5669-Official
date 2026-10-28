@@ -43,10 +43,14 @@ public final class HubShiftTracker {
         return (g == null || g.isEmpty()) && override == AutoWinner.FMS;
     }
 
-    /** FMS game data, or the override (it wins when set). */
+    /**
+     * FMS game data; the override is used ONLY while the FMS has sent nothing (audit Oct 27: a
+     * dashboard re-sends its last chooser pick after a reboot, so a pick left over from an earlier
+     * match would have overridden real FMS data and held fire in an open hub for half of teleop).
+     */
     public static String gameData() {
         String g = DriverStation.getGameSpecificMessage();
-        if (override == AutoWinner.FMS) return g;
+        if (override == AutoWinner.FMS || (g != null && !g.isEmpty())) return g;
         var a = DriverStation.getAlliance();
         if (a.isEmpty()) return g;
         boolean weAreRed = a.get() == Alliance.Red;

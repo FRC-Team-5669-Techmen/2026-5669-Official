@@ -21,6 +21,18 @@ import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
 
 public class Telemetry {
+    /** Where a USB stick in the roboRIO is mounted (/u, also /U on some images), or null. */
+    private static String usbMount() {
+        for (String m : new String[] {"/u", "/U"}) {
+            java.io.File u = new java.io.File(m);
+            if (u.isDirectory() && u.canWrite()) return m;
+        }
+        return null;
+    }
+
+    /** A writable USB stick is plugged into the roboRIO. */
+    public static boolean usbLogDrive() { return usbMount() != null; }
+
     private final double MaxSpeed;
 
     /**
@@ -30,7 +42,15 @@ public class Telemetry {
      */
     public Telemetry(double maxSpeed) {
         MaxSpeed = maxSpeed;
-        SignalLogger.start();
+        // CTRE signal logs (.hoot) only onto a USB stick in the roboRIO (2910 does this): the
+        // roboRIO's own disk had ~5 MB free, so logs weren't saving at all. DogLog's .wpilog files
+        // also go to the USB stick by themselves when one is plugged in.
+        if (usbLogDrive()) {
+            SignalLogger.setPath(usbMount() + "/logs/hoot");
+            SignalLogger.start();
+        } else {
+            System.out.println("LOGS | no USB stick in the roboRIO: CTRE signal logging off (plug one in for match logs)");
+        }
 
         /* Set up the module state Mechanism2d telemetry */
         for (int i = 0; i < 4; ++i) {

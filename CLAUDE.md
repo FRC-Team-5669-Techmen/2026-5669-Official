@@ -100,6 +100,22 @@ Research: `/home/claude/research_notes/Shooter RPM and shot arc/` (elite 2026 te
 - **Plot Spot** (camera-proof plotting): robot CENTER on a tape mark on the hub center line, "Plot Distance (m)", "Set Pose: Plot Spot", "Vision Pose ON" off. Camera tilt hood down/up typed on the dashboard ("Camera Pitch Hood Down/Up (deg)", saved).
 - **Intake power**: RT in 12 V (full), LT out -12 V (was -9). Kept on purpose: roller ASSIST while shooting 5 V (12 V packs the hopper and causes inlet jams/bridging), agitation tap-out -4 V (-9 V threw a ball out of the robot).
 
+## Match-day hardening (Oct 27 night)
+
+From a code audit for match-losing failures plus the reliability code of 6328, 581, 1678, 2910, 5000 (notes: `/home/claude/research_notes/Competition ready robot code/`).
+
+- **Buttons can't cancel the auto**: every controller binding is teleop-only (`RobotContainer.tele()`). Before, any button needing a subsystem the auto uses (LT pre-spin, RT, RB, a jog, Driver LB) cancelled the whole rest of the auto. Checked in sim (3-piece auto ran through RB/LT/D-pad presses).
+- **Leftovers reset at match start** (`onAutoStart`): Operator Start target mode back to the chooser, defense off. **Auto Winner override is used only while the FMS has sent nothing** (a pick left from an earlier match used to override real data). The no-game-data buzz now starts 6 s into teleop (the data arrives ~3 s after auto BY DESIGN), pulses up to 14 s.
+- **Heading**: an auto start keeps the CAMERA's heading (if the camera set it and it's within 15 deg of the path's) and takes only the position from the path, so a robot placed crooked doesn't aim off all match. Steady 2-tag views that keep saying the heading is off (25 frames, within 2 deg) set it: over 3 deg while disabled, over 8 deg enabled. Dashboard "Heading Off By (deg)", switch "Vision Fixes Heading" (saved, ON; turn OFF if it ever fights the driver). Repeated camera frames are no longer added twice.
+- **RT keeps the wheel spinning** when auto-aim ends mid-volley (jog, Y, defense): the shooter holds its last speed while RT is held.
+- **Operator RB with vacuum on** = vacuum AND auto-aim off (it used to turn aim right back on).
+- **Defense feel**: Driver Y ON = one long buzz, OFF (Y or by itself) = two short buzzes.
+- **Tag-only fallback** can't fire on a stale lock (`Goober.targetLocked` needs the tag seen in the last 0.1 s).
+- **Pit Check also flags**: no auto picked, Auto Winner not FMS, target mode not AUTO, Shot Tuning Mode ON, Vision Pose OFF, hood/elevator limits off, defense on, a controller missing, **CAN bus-off** (for 60 s after it happens; Talon 22 stub). Details show CAN utilization and error counts.
+- **Logs**: put a **USB stick in the roboRIO**: CTRE signal logs go to it (`/u/logs/hoot`), DogLog's .wpilog goes there by itself; without one, CTRE logging is off (the roboRIO disk had ~5 MB). Every interrupted command prints `CMD | X interrupted by Y`; autos print start, end and seconds.
+- **Brownout** threshold 6.0 V (`setBrownoutVoltage`, roboRIO 2 default 6.75; 581/1678 run 5.5, 5000 6.0).
+- **Loop time**: the shot log writes on its own thread; long dashboard strings 2-5 times a second; the intake jog no longer waits on a config reply.
+
 ## Drive Team Controller Map
 
 `tools/controller-map/`: double-click **Start Controller Map.bat** on any Windows driver station laptop for a live map of both Xbox controllers under the docked Driver Station (reads the controllers in the background, so it follows presses while Driver Station has focus). See its README. **When a controller binding changes, update the `BIND` / `CALL` tables in `tools/controller-map/index.html` too.**
@@ -365,6 +381,7 @@ ignores an Xbox controller that lands in its slot. See `docs/X56-HOTAS-SETUP.md`
 ### Rumble Feedback (driver controller, TELEOP only)
 - Constant low rumble (0.1) while our HUB is open for scoring (`HubShiftTracker`)
 - Pulsing rumble (0.9) during the last 5 seconds of each 25s SHIFT window
+- Defense: one long buzz = ON, two short = OFF; pin/tower warnings (see Defense mode)
 
 ## PathPlanner Setup
 
@@ -379,7 +396,7 @@ ignores an Xbox controller that lands in its slot. See `docs/X56-HOTAS-SETUP.md`
 - Configured in `CommandSwerveDrivetrain.configureAutoBuilder()`
 - Translation PID: (10, 0, 0), Rotation PID: (7, 0, 0)
 - Alliance-aware path flipping (Red vs Blue)
-- Auto chooser defaults to "Tests", which doesn't exist (= do nothing): **pick an auto before every match**
+- Auto chooser defaults to **"Shoot Preload (stay put)"** (Oct 27 night; was "None" = zero points): shoots the preload from where the robot sits, never drives. Still **pick the real auto before every match**: Pit Check and "Auto Start" say if none is picked
 - **Auto is 20 s** in REBUILT. PathPlanner's "Simulated Driving Time" counts only driving, so add each `score` (up to 3.5 s). The 3-piece autos are ~16.2 s of driving + 2 x 3.5 s = ~23 s: the last volley gets cut off until the paths are faster or `prepareShot` zones save the spin-up time
 
 ### Named Commands (registered in `Marcos.java`)

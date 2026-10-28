@@ -34,6 +34,11 @@ public class PitCheck extends SubsystemBase {
     private double lastHeartbeat = -1;
     private int heartbeatStale = 0;
     private String lastSummary = "";
+    private int lastBusOff = -1, busOffSeen = 0;
+    private java.util.function.Supplier<List<String>> matchSetup = List::of;
+
+    /** Match-setup leftovers (auto picked, overrides back to normal...), from RobotContainer. */
+    public void setMatchSetup(java.util.function.Supplier<List<String>> s) { matchSetup = s; }
 
     public PitCheck(Goober turret, VisionLocalizer localizer) {
         this.turret = turret;
@@ -67,6 +72,15 @@ public class PitCheck extends SubsystemBase {
             }
         }
         lines.add("CAN: " + devices.size() + " devices checked");
+
+        // 2b. CAN bus health: "bus off" = the whole bus went down (what Talon 22 did Oct 26-27).
+        var can = RobotController.getCANStatus();
+        if (lastBusOff >= 0 && can.busOffCount > lastBusOff) busOffSeen = loops;
+        lastBusOff = can.busOffCount;
+        if (busOffSeen > 0 && loops - busOffSeen < 50 * 60)
+            problems.add("CAN bus went OFF (" + can.busOffCount + " total): check wiring, Talon 22 stub");
+        lines.add(String.format("CAN bus %.0f%% busy, bus-off %d, tx errors %d, rx errors %d",
+            can.percentBusUtilization * 100, can.busOffCount, can.transmitErrorCount, can.receiveErrorCount));
 
         // 3. Limelight alive (its heartbeat counter keeps changing).
         double hb = LimelightHelpers.getLimelightNTDouble("limelight", "hb");
@@ -102,10 +116,16 @@ public class PitCheck extends SubsystemBase {
         lines.add(String.format("Spindex %.1f V, Uptake %.1f V", IndexSubsystem.forwardVolts(),
             SmartDashboard.getNumber("Uptake Forward Volts", 0)));
 
-        // 9. roboRIO disk: logs stop saving when it fills up.
+        // 9. roboRIO disk: logs stop saving when it fills up. A USB stick in the roboRIO takes the logs.
         long freeMb = new File("/home/lvuser").getUsableSpace() / (1024 * 1024);
-        if (freeMb > 0 && freeMb < 50) problems.add("roboRIO disk " + freeMb + " MB free: delete old logs");
-        lines.add("roboRIO free disk: " + freeMb + " MB");
+        boolean usb = frc.robot.Telemetry.usbLogDrive();
+        if (!usb && freeMb > 0 && freeMb < 50) problems.add("roboRIO disk " + freeMb + " MB free and no USB log stick: plug one in");
+        lines.add("roboRIO free disk: " + freeMb + " MB; USB log stick: " + (usb ? "YES" : "NO"));
+
+        // 10. Match setup: leftovers from practice or tuning.
+        List<String> setup = matchSetup.get();
+        problems.addAll(setup);
+        lines.add("Match setup: " + (setup.isEmpty() ? "OK" : setup.size() + " to fix"));
 
         String summary = problems.isEmpty() ? "ALL GO" : problems.size() + " problem(s): " + String.join(" | ", problems);
         SmartDashboard.putString("Pit Check", summary);

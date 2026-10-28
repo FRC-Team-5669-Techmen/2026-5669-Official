@@ -118,6 +118,7 @@ public class AimSubsystem extends SubsystemBase {
 
     // ---------- target mode (Operator Start cycles it; dashboard "Shot Target Mode" too) ----------
 
+    private int describeLoops = 0;
     private TargetPicker.Mode buttonMode = null; // set by Operator Start, overrides the chooser
 
     public void cycleMode() {
@@ -131,6 +132,12 @@ public class AimSubsystem extends SubsystemBase {
     }
 
     private TargetPicker.Mode lastChooser = TargetPicker.Mode.AUTO;
+
+    /** A match is starting: Operator Start's pick goes back to the dashboard chooser (AUTO). */
+    public void resetTargetMode() {
+        if (buttonMode != null) System.out.println("AIM | Shot target mode reset at match start");
+        buttonMode = null;
+    }
 
     public TargetPicker.Mode currentMode() {
         TargetPicker.Mode m = modeChooser.getSelected();
@@ -537,9 +544,11 @@ public class AimSubsystem extends SubsystemBase {
         SmartDashboard.putString("Our Hub", hub == HubShiftTracker.HubState.UNKNOWN ? "unknown (no FMS)"
             : HubShiftTracker.isOurHubOpen() ? "OPEN" : "CLOSED");
         SmartDashboard.putString("Aim Geometry", Aim.kGeometryMeasured ? "measured" : "AIM GEOMETRY NOT MEASURED");
-        SmartDashboard.putString("Shot Table", table.describe());
-        SmartDashboard.putString("Pass Table", passTable.describe());
-        SmartDashboard.putString("Climb Table", climbTable.describe());
+        if (++describeLoops % 25 == 0) { // twice a second is plenty for these long strings (loop time)
+            SmartDashboard.putString("Shot Table", table.describe());
+            SmartDashboard.putString("Pass Table", passTable.describe());
+            SmartDashboard.putString("Climb Table", climbTable.describe());
+        }
         boolean climbOn = SmartDashboard.getBoolean(kClimbSwitchKey, true);
         if (climbOn != Preferences.getBoolean(kClimbSwitchKey, true)) Preferences.setBoolean(kClimbSwitchKey, climbOn);
         DogLog.log("Aim/Distance", solution.distanceMeters());

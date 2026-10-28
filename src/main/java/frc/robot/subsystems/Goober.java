@@ -109,6 +109,10 @@ public class Goober extends SubsystemBase {
      * Positive output also turns RIGHT, so the turret turns toward the tag.
      */
     public void aimAtTarget(double tx) {
+        // A new tag sighting after a gap: start the PID fresh (its "at setpoint" was from the old tag).
+        double now = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
+        if (now - lastTagAimTime > 0.1) { turnPID.reset(); txFilter.reset(); }
+        lastTagAimTime = now;
         // Run the raw Limelight data through our filter to smooth the noise
         double smoothedTx = txFilter.calculate(tx);
 
@@ -230,8 +234,15 @@ public class Goober extends SubsystemBase {
         motor.stopMotor();
     }
 
+    private double lastTagAimTime = Double.NEGATIVE_INFINITY;
+
+    /**
+     * Locked on the tag right now. Only counts while the tag is actually being followed (aimed at
+     * in the last 0.1 s): the PID's "at setpoint" stays true after the tag is lost (audit Oct 27:
+     * it could let the tag-only fallback fire blind).
+     */
     public boolean targetLocked() {
-        return turnPID.atSetpoint();
+        return edu.wpi.first.wpilibj.Timer.getFPGATimestamp() - lastTagAimTime < 0.1 && turnPID.atSetpoint();
     }
 
     /** For GooberAlign: what auto-aim is doing, shown as "Turret Auto-Aim". */

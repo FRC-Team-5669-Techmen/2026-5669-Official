@@ -1033,6 +1033,30 @@
               "period": 0.06,
               "show_submit_button": true
             }
+          },
+          {
+            "title": "Vision Fixes Heading",
+            "x": 256.0,
+            "y": 640.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Toggle Switch",
+            "properties": {
+              "topic": "/SmartDashboard/Vision Fixes Heading",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Heading Off By (deg)",
+            "x": 512.0,
+            "y": 640.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Heading Off By (deg)",
+              "period": 0.06
+            }
           }
         ]
       }

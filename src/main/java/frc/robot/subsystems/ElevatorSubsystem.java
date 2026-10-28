@@ -29,6 +29,9 @@ public class ElevatorSubsystem extends SubsystemBase {
 
     private boolean limitsOverridden = false; // true while the dashboard recovery button is on
 
+    /** The recovery switch left the soft limits OFF (Pit Check flags it). */
+    public boolean limitsOff() { return limitsOverridden; }
+
     public ElevatorSubsystem() {
         TalonFXConfiguration config = new TalonFXConfiguration();
         config.MotorOutput.NeutralMode = NeutralModeValue.Brake; // holds still when released

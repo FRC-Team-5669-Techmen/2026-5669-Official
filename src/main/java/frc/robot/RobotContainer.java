@@ -141,6 +141,8 @@ public class RobotContainer {
 
     // State Toggles
     private boolean m_isShooterIdle = false;
+    private static final String kStayPutAuto = "Shoot Preload (stay put)";
+    private double lastAimRpm = 0; // auto-aim's last shooter speed (kept while RT is held)
     private static final String kAutoLookKey = "Auto: Turret Watches Hub";
     private final SendableChooser<HubShiftTracker.AutoWinner> autoWinnerChooser = new SendableChooser<>();
 
@@ -155,7 +157,14 @@ public class RobotContainer {
         );
 
         autoChooser = AutoBuilder.buildAutoChooser("Tests");
+        // DEFAULT (audit Oct 27): forgetting to pick an auto used to run "None" (zero points). Now
+        // it shoots the preload from wherever the robot sits: it never drives, so it is safe from
+        // any starting spot. Aims from the camera's position (tag-following if that's unknown).
+        autoChooser.setDefaultOption(kStayPutAuto, Marcos.scoreUntilEmpty(aim, shooter, index, shooterIntake,
+            goober, gooba, limelight, drivetrain).withName(kStayPutAuto));
         SmartDashboard.putData("Auto Mode", autoChooser);
+        drivetrain.setKeepHeadingAtAutoStart(localizer::headingFromCamera, localizer::markHeadingFromPath);
+        pitCheck.setMatchSetup(this::matchSetupProblems);
 
         driveModeChooser.setDefaultOption("Field Centric", "field");
         driveModeChooser.addOption("Robot Centric", "robot");
@@ -285,33 +294,41 @@ public class RobotContainer {
     // Matches the drive team's official map. LOCKED = practiced, don't change.
     // (Left Stick = translate, Right Stick = rotate, Start = slow mode are in the
     // drive command above.)
+    /**
+     * TELEOP ONLY (audit Oct 27): PathPlannerAuto owns every subsystem its auto uses, so ANY button
+     * that needs one of them (operator holding LT to pre-spin, RT, RB, a D-pad jog, Driver LB...)
+     * cancelled the WHOLE rest of the auto. Every controller binding goes through this.
+     */
+    private final Trigger teleop = RobotModeTriggers.teleop();
+    private Trigger tele(Trigger t) { return t.and(teleop); }
+
     private void configureDriverBindings() {
         // LOCKED Left Bumper: reset gyro / seed field centric
         // Shoot from anywhere: this also tells the robot its heading matches the field, so press it
         // with the robot pointing straight AWAY from your driver station.
-        driverController.leftBumper().onTrue(drivetrain.runOnce(() -> {
+        tele(driverController.leftBumper()).onTrue(drivetrain.runOnce(() -> {
             drivetrain.seedFieldCentric();
             localizer.markHeadingKnown();
         }));
 
         // LOCKED Right Trigger (hold): ground intake roller. Does nothing until the
         // roller is on CAN and kIntakeRollerEnabled = true.
-        driverController.rightTrigger().whileTrue(intakeRoller.runCommand());
+        tele(driverController.rightTrigger()).whileTrue(intakeRoller.runCommand());
 
         // Left Trigger (hold): ground intake roller BACKWARDS, to spit balls out.
         // Added Oct 25 by the programming lead (was unused).
-        driverController.leftTrigger().whileTrue(intakeRoller.reverseCommand());
+        tele(driverController.leftTrigger()).whileTrue(intakeRoller.reverseCommand());
 
         // LOCKED A (press): toggle ground intake DOWN / UP. Does nothing until
         // kDownPosition is set.
-        driverController.a().onTrue(groundIntakePivot.toggleCommand());
+        tele(driverController.a()).onTrue(groundIntakePivot.toggleCommand());
 
         // LOCKED X: reserved (was the climb piston). Bind nothing.
 
         // Y (press): DEFENSE MODE toggle (added Oct 27). On: auto-aim and vacuum off, intake UP,
         // hood DOWN, quicker drive response, wheels lock in an X when the sticks are centered,
         // pin (G418) and tower (G420) warnings. See subsystems/DefenseMode.
-        driverController.y().onTrue(defense.toggleCommand(() -> {
+        tele(driverController.y()).onTrue(defense.toggleCommand(() -> {
             vacuumCommand.cancel();
             aimCommand.cancel();
             groundIntakePivot.stowIfDown();
@@ -319,11 +336,11 @@ public class RobotContainer {
         }));
 
         // LOCKED D-pad Up/Down (hold): climb up / down
-        driverController.povUp().whileTrue(elevator.upCommand());
-        driverController.povDown().whileTrue(elevator.downCommand());
+        tele(driverController.povUp()).whileTrue(elevator.upCommand());
+        tele(driverController.povDown()).whileTrue(elevator.downCommand());
 
         // LOCKED D-pad Left (press): shooter idle at 2000 RPM. Press again to turn it off.
-        driverController.povLeft().onTrue(new InstantCommand(this::toggleShooterIdleMode));
+        tele(driverController.povLeft()).onTrue(new InstantCommand(this::toggleShooterIdleMode));
     }
 
     // ==========================================
@@ -335,27 +352,26 @@ public class RobotContainer {
         //     hood in place), and pauses by itself when not. Hold it and keep driving.
         //   Auto-aim OFF: feeds right away, as before (spin up with LT first).
         Trigger aimOn = new Trigger(aim::isActive);
-        operatorController.rightTrigger().and(aimOn).whileTrue(
+        tele(operatorController.rightTrigger()).and(aimOn).whileTrue(
             new ShootCommand(aim, shooter, index, shooterIntake, goober, gooba, false));
-        operatorController.rightTrigger().and(aimOn.negate()).whileTrue(new FeedShooterCommand(index, shooterIntake));
+        tele(operatorController.rightTrigger()).and(aimOn.negate()).whileTrue(new FeedShooterCommand(index, shooterIntake));
 
         // VACUUM MODE (Back, press to toggle): intake + shoot hands-free. Intake down, roller in,
         // auto-aim on, fires by itself whenever ready. Scores from inside our alliance zone,
         // PASSES home from the neutral zone (follows the Start target mode). See VacuumCommand.
         // Operator RT/B and the jogs take over only while held; vacuum resumes after.
-        operatorController.back().toggleOnTrue(vacuumCommand);
-        // RB (aim off) and Y (manual hood) mean "I'm taking over": vacuum mode turns off.
-        operatorController.rightBumper().or(operatorController.y())
-            .onTrue(Commands.runOnce(vacuumCommand::cancel));
+        tele(operatorController.back()).toggleOnTrue(vacuumCommand);
+        // Y (manual hood) means "I'm taking over": vacuum mode turns off. RB does too (below).
+        tele(operatorController.y()).onTrue(Commands.runOnce(vacuumCommand::cancel));
 
         // SHOT TARGET MODE (Start, press): AUTO -> SCORE only -> PASS only -> AUTO. Dashboard
         // "Shot Target" shows it. AUTO = score inside our alliance zone, pass from past it.
-        operatorController.start().onTrue(aim.cycleModeCommand());
+        tele(operatorController.start()).onTrue(aim.cycleModeCommand());
 
         // LOCKED Left Trigger (hold): shooter windup. Auto-aim ON: to the shot table's speed for
         // the distance (the shooter's default command does it, see configureSystemDefaults).
         // Auto-aim OFF: the fast preset, as before.
-        operatorController.leftTrigger().and(aimOn.negate())
+        tele(operatorController.leftTrigger()).and(aimOn.negate())
             .whileTrue(new RunShooterCommand(shooter, Constants.Shooter.kFastTargetRPM));
 
         // LOCKED Right Bumper (press): toggle Limelight auto-aim. First press starts
@@ -366,50 +382,61 @@ public class RobotContainer {
         // stops the whole auto-aim (turret and hood).
         // SHOOT FROM ANYWHERE (Oct 26): aims from the robot's field position (falls back to the
         // hub tag when the position isn't known). See AimCommand.
-        operatorController.rightBumper().toggleOnTrue(aimCommand);
+        // One press handler (audit Oct 27): with vacuum on, RB ends vacuum AND auto-aim (before, the
+        // vacuum cancel ran first, then the toggle saw aim off and turned it right back on).
+        tele(operatorController.rightBumper()).onTrue(Commands.runOnce(() -> {
+            if (vacuumCommand.isScheduled()) {
+                vacuumCommand.cancel();
+                aimCommand.cancel();
+            } else if (aimCommand.isScheduled()) {
+                aimCommand.cancel();
+            } else {
+                CommandScheduler.getInstance().schedule(aimCommand);
+            }
+        }).withName("Operator RB: auto-aim toggle"));
 
         // BACKUP SHOTS (camera-proof): park on the spot, press its button, then hold RT.
         // A = Midshot (between hub and climb), X = Left trench, LB = Right trench (left/right as
         // seen from our driver station). See subsystems/BackupShots.
-        operatorController.a().onTrue(backupShots.useCommand(BackupShots.Spot.MIDSHOT, aimCommand));
+        tele(operatorController.a()).onTrue(backupShots.useCommand(BackupShots.Spot.MIDSHOT, aimCommand));
         // The trench spots sit right next to a trench: these also turn on the trench-shot override
         // (hood may go up while the robot stays put).
-        operatorController.x().onTrue(backupShots.useCommand(BackupShots.Spot.LEFT_TRENCH, aimCommand)
+        tele(operatorController.x()).onTrue(backupShots.useCommand(BackupShots.Spot.LEFT_TRENCH, aimCommand)
             .andThen(aim.trenchOverrideCommand()));
-        operatorController.leftBumper().onTrue(backupShots.useCommand(BackupShots.Spot.RIGHT_TRENCH, aimCommand)
+        tele(operatorController.leftBumper()).onTrue(backupShots.useCommand(BackupShots.Spot.RIGHT_TRENCH, aimCommand)
             .andThen(aim.trenchOverrideCommand()));
 
         // TRENCH GUARD (automatic): near a trench the hood goes all the way DOWN (the Limelight on
         // the hood is taller than the trench bar with the hood up). Right stick CLICK (R3) = trench
         // shot: hood may go up while the robot stays put next to the trench; moving ends it.
-        operatorController.rightStick().onTrue(aim.trenchOverrideCommand());
+        tele(operatorController.rightStick()).onTrue(aim.trenchOverrideCommand());
 
         // LOCKED Y (press): toggle the hood between stowed and deployed (the drive team's
         // map: "Toggle Gooba Hood"). Back now that the hood motor (18) is.
-        operatorController.y().onTrue(gooba.toggleCommand());
+        tele(operatorController.y()).onTrue(gooba.toggleCommand());
 
         // D-pad Up/Down (hold): jog the hood slowly (programming lead, Oct 25; same as last
         // season). Write down "Hood Position (rot)" for good shots.
-        operatorController.povUp().whileTrue(new ManualGoobaCommand(gooba, true));
-        operatorController.povDown().whileTrue(new ManualGoobaCommand(gooba, false));
+        tele(operatorController.povUp()).whileTrue(new ManualGoobaCommand(gooba, true));
+        tele(operatorController.povDown()).whileTrue(new ManualGoobaCommand(gooba, false));
 
         // Left Stick up/down (hold): jog the ground intake slowly. Manual backup for when the
         // Driver A toggle can't do it (ignores the intake's soft limits while held). Was the D-pad.
-        new Trigger(() -> operatorController.getLeftY() < -0.5).whileTrue(groundIntakePivot.jogUpCommand());
-        new Trigger(() -> operatorController.getLeftY() > 0.5).whileTrue(groundIntakePivot.jogDownCommand());
+        tele(new Trigger(() -> operatorController.getLeftY() < -0.5)).whileTrue(groundIntakePivot.jogUpCommand());
+        tele(new Trigger(() -> operatorController.getLeftY() > 0.5)).whileTrue(groundIntakePivot.jogDownCommand());
 
         // OPEN D-pad Left/Right (hold): manual turret jog. Right = turn right (away from HOME).
         // The diagonals count too: a D-pad often reads Right as Up-Right or Down-Right for a moment,
         // and with plain Left/Right that stopped and restarted the turret (it stuttered).
-        Trigger turretJogLeft = operatorController.povLeft()
-            .or(operatorController.povUpLeft()).or(operatorController.povDownLeft());
-        Trigger turretJogRight = operatorController.povRight()
-            .or(operatorController.povUpRight()).or(operatorController.povDownRight());
+        Trigger turretJogLeft = tele(operatorController.povLeft())
+            .or(tele(operatorController.povUpLeft())).or(tele(operatorController.povDownLeft()));
+        Trigger turretJogRight = tele(operatorController.povRight())
+            .or(tele(operatorController.povUpRight())).or(tele(operatorController.povDownRight()));
         turretJogLeft.whileTrue(new ManualTurretCommand(goober, -Constants.Turret.kManualJogSpeed));
         turretJogRight.whileTrue(new ManualTurretCommand(goober, Constants.Turret.kManualJogSpeed));
 
         // Not on the map, kept on purpose: B (hold) runs the Spindex backwards to clear a jam
-        operatorController.b().whileTrue(new StartEndCommand(
+        tele(operatorController.b()).whileTrue(new StartEndCommand(
             () -> index.run(Constants.Index.kReverseSpeed),
             index::stop,
             index
@@ -489,12 +516,19 @@ public class RobotContainer {
             boolean wantsShot = operatorController.getHID().getRightTriggerAxis() > 0.5
                 || operatorController.getHID().getLeftTriggerAxis() > 0.5
                 || aim.vacuum();   // vacuum mode: keep the wheel up even while an unjam has the feeders
+            boolean rtHeld = operatorController.getHID().getRightTriggerAxis() > 0.5;
             if (aim.isActive() && wantsShot) {
                 shooter.runAtRPM(aim.targetRpm()); // auto-aim: table speed while LT or RT is held
+                lastAimRpm = aim.targetRpm();
+            } else if (rtHeld && lastAimRpm > 0 && DriverStation.isTeleopEnabled()) {
+                // Auto-aim ended mid-volley (a jog, Y, defense) while RT still feeds: keep the wheel at
+                // its last speed instead of stopping it under the balls (audit Oct 27).
+                shooter.runAtRPM(lastAimRpm);
             } else if (m_isShooterIdle) {
                 shooter.runAtRPM(Constants.Shooter.kIdleRPM);
             } else {
                 shooter.stop();
+                if (!rtHeld) lastAimRpm = 0;
             }
         }, shooter));
 
@@ -535,9 +569,44 @@ public class RobotContainer {
         System.out.println("Shooter Idle State Toggled: " + m_isShooterIdle);
     }
 
-    /** An auto is starting: its path sets the field position, so the heading is known. */
+    /**
+     * A match is starting. Leftovers from practice go back to normal (target mode, defense), and a
+     * PathPlanner auto's path sets the field position. The stay-put auto sets nothing: it trusts
+     * only what the camera already found.
+     */
     public void onAutoStart() {
-        localizer.markPoseSetByAuto();
+        aim.resetTargetMode();
+        DefenseMode.reset();
+        if (autoChooser.getSelected() instanceof com.pathplanner.lib.commands.PathPlannerAuto) {
+            localizer.markPoseSetByAuto();
+        }
+    }
+
+    /** Name of the selected auto ("None" = does nothing). */
+    public String selectedAutoName() {
+        Command c = autoChooser.getSelected();
+        return c == null ? "None" : c.getName();
+    }
+
+    /**
+     * MATCH SETUP for Pit Check: things left over from practice or tuning that would cost a match.
+     */
+    public java.util.List<String> matchSetupProblems() {
+        var p = new java.util.ArrayList<String>();
+        Command c = autoChooser.getSelected();
+        if (c == null || c.getName().equals("InstantCommand") || c.getName().equals("None"))
+            p.add("NO AUTO selected (does nothing)");
+        if (autoWinnerChooser.getSelected() != null && autoWinnerChooser.getSelected() != HubShiftTracker.AutoWinner.FMS)
+            p.add("Auto Winner is not FMS: set it back");
+        if (aim.currentMode() != frc.robot.aiming.TargetPicker.Mode.AUTO) p.add("Shot Target mode is " + aim.currentMode() + ", not AUTO");
+        if (aim.tuningMode()) p.add("Shot Tuning Mode is ON: turn it off");
+        if (!SmartDashboard.getBoolean("Vision Pose ON", true)) p.add("Vision Pose ON is off: turn it on");
+        if (gooba.limitsOff()) p.add("Hood limits are OFF (measure switch)");
+        if (elevator.limitsOff()) p.add("Elevator limits are OFF (recovery switch)");
+        if (DefenseMode.active()) p.add("Defense mode is ON");
+        if (!DriverStation.isJoystickConnected(0)) p.add("no DRIVER controller in slot 0");
+        if (!DriverStation.isJoystickConnected(1)) p.add("no OPERATOR controller in slot 1");
+        return p;
     }
 
     public Command getAutonomousCommand() {
@@ -562,7 +631,11 @@ public class RobotContainer {
         Command sel = autoChooser.getSelected();
         String text;
         boolean ok = false;
-        if (!(sel instanceof com.pathplanner.lib.commands.PathPlannerAuto auto)) {
+        if (sel != null && kStayPutAuto.equals(sel.getName())) {
+            ok = localizer.poseTrusted();
+            text = ok ? "stay-put auto: shoots the preload from here (position known)"
+                : "stay-put auto: position unknown, will follow the hub tag (point the turret at the hub)";
+        } else if (!(sel instanceof com.pathplanner.lib.commands.PathPlannerAuto auto)) {
             text = "NO AUTO SELECTED: pick one in \"Auto Mode\"";
         } else {
             var start = auto.getStartingPose();
