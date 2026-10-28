@@ -61,6 +61,7 @@ public class PracticeMatch extends SubsystemBase {
 
     private String dir = null; // RAM folder served on 5806
     private boolean wasAuto = false, wasTeleop = false;
+    private double autoEndedAt = Double.NEGATIVE_INFINITY;
     private boolean randomized = false;
     private String randomWinner = "";
     private int matchNumber = 0;
@@ -112,10 +113,14 @@ public class PracticeMatch extends SubsystemBase {
 
         // ---- match start / end ----
         if (auto && !wasAuto) startMatch();
+        if (wasAuto && !auto) autoEndedAt = now;
         if (teleop && !wasTeleop) {
             if (!inMatch) startMatch();       // teleop-only practice still gets a scorecard
             teleopStart = now;
-            pickRandomWinner(fms);
+            // Only a real match sequence (auto, then teleop within a few seconds: Driver Station
+            // Practice mode) gets a random winner. Plain teleop (shot plotting, drive tests) never
+            // does, so the hub-closed hold can't block shots there.
+            if (now - autoEndedAt < 6.0) pickRandomWinner(fms);
         }
         if (!auto && !teleop && (wasAuto || wasTeleop)) {
             if (wasTeleop && inMatch) finishMatch(); // teleop ended (or disabled): write the row
