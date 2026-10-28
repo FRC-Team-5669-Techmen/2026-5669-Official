@@ -616,8 +616,17 @@ public final class Constants {
         // Passing ready check is looser (a floor zone, not a hub opening).
         // TRENCH: 22.25 in clearance. The Limelight rides on the hood: 20.75 in hood down, 22.35 in
         // hood fully up, so near a trench the hood is capped here (lens ~22.0 in).
-        public static final double kTrenchHoodMax = 3.0;
-        public static final double kTrenchOpeningY = 1.283;    // trench opening runs y 0 to 1.283 (and mirrored)
+        public static final double kTrenchHoodMax = 3.0;  // (old cap, unused since Oct 27: hood goes all the way DOWN)
+        // TRENCH GUARD (Oct 27 night): near a trench the hood goes all the way DOWN, whatever asks
+        // for it (auto-aim, Y, D-pad jog, vacuum). The hood/Limelight sits on the turret: guard
+        // area = turret pivot + kTrenchReach around it, now and kTrenchLookahead seconds ahead.
+        public static final double kTrenchReach = 0.45;      // m (18 in): shooter/hood overhang + pose error
+        public static final double kTrenchLookahead = 0.35;  // s: the hood needs ~0.1-0.2 s to come down
+        // Trench shot override (Operator R3, and the trench backup-shot buttons X / LB): hood may go
+        // up while the robot stays within this of where the override started, slower than this.
+        public static final double kTrenchOverrideMove = 0.15;   // m (6 in)
+        public static final double kTrenchOverrideSpeed = 0.3;   // m/s
+        public static final double kTrenchOpeningY = 1.283;    // trench opening runs y 0 to 1.283 (and mirrored); manual: 50.34 in
         public static final double kPassRpmTolerance = 600.0;   // Oct 27: 400 -> 600 (volume over precision)
         public static final double kPassHoodTolerance = 0.40;   // Oct 27: 0.25 -> 0.40
         // PASS feed: spindexer and uptake as fast as they go, so the balls leave in a tight stream.

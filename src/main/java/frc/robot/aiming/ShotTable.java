@@ -61,11 +61,13 @@ public final class ShotTable {
     public static ShotTable passDefaults() {
         ShotTable t = new ShotTable();
         // 3.5 to 13 m: driving at 4 m/s shifts a 7.7 m pass to ~4 m (toward home) or ~12.5 m (away).
-        t.put(new Point(3.5, 3200, 2.60, 1.05));
-        t.put(new Point(6.0, 3700, 2.80, 1.35));
-        t.put(new Point(8.0, 4000, 3.00, 1.55));
-        t.put(new Point(10.0, 4250, 3.20, 1.75));
-        t.put(new Point(13.0, 4450, 3.40, 2.05));
+        // Oct 27: hood at the TOP for every pass (raising the hood flattens the shot: further, not
+        // higher; 6328 fixed its hood at max for passes and only changed RPM).
+        t.put(new Point(3.5, 3000, 3.80, 0.95));
+        t.put(new Point(6.0, 3500, 3.80, 1.20));
+        t.put(new Point(8.0, 3850, 3.80, 1.40));
+        t.put(new Point(10.0, 4150, 3.80, 1.60));
+        t.put(new Point(13.0, 4500, 3.80, 1.90));
         return t;
     }
 

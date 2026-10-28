@@ -196,6 +196,27 @@ public final class TargetPicker {
     }
 
     /**
+     * TRENCH GUARD: is the hood/Limelight assembly (centered on the turret pivot, reaching
+     * `reach` meters around it) inside, or about to be inside, a trench? Each trench is the hub's
+     * x band (same depth as the hub, 47 in / 1.194 m) and the opening from the side guardrail
+     * (`openingY`, 50.34 in / 1.279 m). Checked at the pivot now and where it will be after
+     * `ahead` meters of travel (dx, dy), each grown by `reach`.
+     */
+    public boolean trenchDanger(Translation2d pivot, double dx, double dy, double reach, double openingY) {
+        Translation2d later = pivot.plus(new Translation2d(dx, dy));
+        return inTrench(pivot, reach, openingY) || inTrench(later, reach, openingY)
+            || inTrench(pivot.interpolate(later, 0.5), reach, openingY);
+    }
+
+    private boolean inTrench(Translation2d p, double grow, double openingY) {
+        double[] hubs = {f.hubDepth(), f.length() - f.hubDepth()};
+        boolean inX = false;
+        for (double hx : hubs) inX |= Math.abs(p.getX() - hx) <= f.hubHalfSize() + grow;
+        double y = p.getY();
+        return inX && (y <= openingY + grow || y >= f.width() - openingY - grow);
+    }
+
+    /**
      * Robot (center) is in, or heading into, a trench (under the low bar beside either hub):
      * x within a hub band widened by `approach` meters, y within the trench opening widened by 0.3 m.
      */

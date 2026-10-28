@@ -141,4 +141,22 @@ class TargetPickerTest {
         assertTrue(t.blocked(later, corner, false));
         assertFalse(t.laneClear(now, later, corner, false));
     }
+
+    @Test
+    void trenchGuardCoversTheTrenchAndItsApproach() {
+        TargetPicker t = picker();
+        // Under the blue low-y trench (x 4.03-5.22, y 0-1.28): danger.
+        assertTrue(t.trenchDanger(p(4.6, 0.6), 0, 0, 0.45, 1.279));
+        // Same spot on the red side: danger too.
+        assertTrue(t.trenchDanger(p(11.9, 7.5), 0, 0, 0.45, 1.279));
+        // 0.3 m before the trench face, standing still: inside the 0.45 m reach.
+        assertTrue(t.trenchDanger(p(3.75, 0.6), 0, 0, 0.45, 1.279));
+        // 1.3 m before the face, still: clear. Driving at 3 m/s toward it (1.05 m in 0.35 s): danger.
+        assertFalse(t.trenchDanger(p(2.7, 0.6), 0, 0, 0.45, 1.279));
+        assertTrue(t.trenchDanger(p(2.7, 0.6), 1.05, 0, 0.45, 1.279));
+        // Beside the hub, outside the opening (y 2.0): clear.
+        assertFalse(t.trenchDanger(p(4.6, 2.0), 0, 0, 0.45, 1.279));
+        // The left-trench backup spot (pivot ~3.44, 7.52) is not under the bar.
+        assertFalse(t.trenchDanger(p(3.44, 7.52), 0, 0, 0.10, 1.279));
+    }
 }

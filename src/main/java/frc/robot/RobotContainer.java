@@ -371,8 +371,17 @@ public class RobotContainer {
         // A = Midshot (between hub and climb), X = Left trench, LB = Right trench (left/right as
         // seen from our driver station). See subsystems/BackupShots.
         operatorController.a().onTrue(backupShots.useCommand(BackupShots.Spot.MIDSHOT, aimCommand));
-        operatorController.x().onTrue(backupShots.useCommand(BackupShots.Spot.LEFT_TRENCH, aimCommand));
-        operatorController.leftBumper().onTrue(backupShots.useCommand(BackupShots.Spot.RIGHT_TRENCH, aimCommand));
+        // The trench spots sit right next to a trench: these also turn on the trench-shot override
+        // (hood may go up while the robot stays put).
+        operatorController.x().onTrue(backupShots.useCommand(BackupShots.Spot.LEFT_TRENCH, aimCommand)
+            .andThen(aim.trenchOverrideCommand()));
+        operatorController.leftBumper().onTrue(backupShots.useCommand(BackupShots.Spot.RIGHT_TRENCH, aimCommand)
+            .andThen(aim.trenchOverrideCommand()));
+
+        // TRENCH GUARD (automatic): near a trench the hood goes all the way DOWN (the Limelight on
+        // the hood is taller than the trench bar with the hood up). Right stick CLICK (R3) = trench
+        // shot: hood may go up while the robot stays put next to the trench; moving ends it.
+        operatorController.rightStick().onTrue(aim.trenchOverrideCommand());
 
         // LOCKED Y (press): toggle the hood between stowed and deployed (the drive team's
         // map: "Toggle Gooba Hood"). Back now that the hood motor (18) is.

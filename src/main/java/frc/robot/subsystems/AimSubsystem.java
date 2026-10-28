@@ -71,7 +71,10 @@ public class AimSubsystem extends SubsystemBase {
     private TargetPicker.Mode mode = TargetPicker.Mode.AUTO;
     private double robotSpeed = 0;
     private boolean legalToScore = true;
-    private boolean nearTrench = false;
+    private boolean nearTrench = false;      // hood/Limelight in or heading into a trench
+    private boolean trenchOverride = false;  // trench shot: hood allowed up while the robot stays put
+    private Translation2d overrideAnchor = null;
+    private String overrideNote = "";
     private boolean inTheirZone = false;
     private boolean active = false; // auto-aim (Operator RB / vacuum mode) or an auto is aiming
     private boolean firing = false; // ShootCommand is feeding balls right now
@@ -180,9 +183,19 @@ public class AimSubsystem extends SubsystemBase {
             fs.vxMetersPerSecond * Aim.kLaunchLookahead, fs.vyMetersPerSecond * Aim.kLaunchLookahead));
         legalToScore = !poseUsable() || (picker.legalToScore(pose.getTranslation(), red())
             && picker.legalToScore(atLaunch, red()));
-        // Heading toward or under a trench: approach margin grows with speed (0.4 s look-ahead).
-        nearTrench = poseUsable() && picker.nearTrench(pose.getTranslation(), Aim.kTrenchOpeningY,
-            0.45 + 0.4 * robotSpeed);
+        // TRENCH GUARD: the hood/Limelight (on the turret) in or heading into a trench = hood DOWN.
+        nearTrench = poseUsable() && picker.trenchDanger(pivot, fs.vxMetersPerSecond * Aim.kTrenchLookahead,
+            fs.vyMetersPerSecond * Aim.kTrenchLookahead, Aim.kTrenchReach, Aim.kTrenchOpeningY);
+        // The anchor is taken one loop after the press (a backup-shot button resets the pose first).
+        if (trenchOverride && overrideAnchor == null) overrideAnchor = pose.getTranslation();
+        else if (trenchOverride && (!poseUsable()
+                || pose.getTranslation().getDistance(overrideAnchor) > Aim.kTrenchOverrideMove
+                || robotSpeed > Aim.kTrenchOverrideSpeed)) {
+            trenchOverride = false;
+            overrideNote = "trench-shot override ended (robot moved)";
+            System.out.println("TRENCH | " + overrideNote);
+        }
+        GoobaSubsystem.setTrenchForceDown(nearTrench && !trenchOverride);
         // Where the launcher will be when the balls now in the robot have left (lane check).
         Translation2d pivotAhead = pivot.plus(new Translation2d(
             fs.vxMetersPerSecond * Aim.kLaneLookahead, fs.vyMetersPerSecond * Aim.kLaneLookahead));
@@ -235,11 +248,42 @@ public class AimSubsystem extends SubsystemBase {
 
     public double targetHood() {
         double h = tuningMode() ? SmartDashboard.getNumber("Tune Hood (rot)", 1.0) : activeTable().hood(solution.distanceMeters());
-        // Trench clearance: the Limelight on the hood would be too tall with the hood near the top.
-        return nearTrench ? Math.min(h, Aim.kTrenchHoodMax) : h;
+        // Trench guard: the Limelight on the hood is taller than the trench bar with the hood up.
+        return GoobaSubsystem.trenchForceDown() ? Constants.Gooba.kBottomPosition : h;
     }
 
     public boolean nearTrench() { return nearTrench; }
+
+    /** The shot needs the hood up, but the trench guard holds it down: don't fire. */
+    private boolean trenchBlocksShot() {
+        if (!GoobaSubsystem.trenchForceDown() || !Constants.Gooba.kHoodEnabled) return false;
+        double want = tuningMode() ? SmartDashboard.getNumber("Tune Hood (rot)", 1.0) : activeTable().hood(solution.distanceMeters());
+        return want > Constants.Gooba.kBottomPosition + hoodTolerance();
+    }
+
+    /**
+     * TRENCH SHOT (Operator R3, and the trench backup-shot buttons): let the hood go up while the
+     * robot stays put next to the trench. Refused if the turret is actually under a trench bar.
+     * Ends by itself once the robot moves 0.15 m (6 in) or drives faster than 0.3 m/s.
+     */
+    public void engageTrenchOverride() {
+        var pose = drivetrain.getState().Pose;
+        Translation2d pivot = pose.getTranslation().plus(geometry.turretPivot().rotateBy(pose.getRotation()));
+        if (!poseUsable()) {
+            overrideNote = "trench-shot override REFUSED: position unknown";
+        } else if (picker.trenchDanger(pivot, 0, 0, 0.10, Aim.kTrenchOpeningY)) {
+            overrideNote = "trench-shot override REFUSED: the hood is UNDER the trench bar";
+        } else {
+            trenchOverride = true;
+            overrideAnchor = null; // set on the next loop, after any pose reset
+            overrideNote = "trench-shot override ON: hood may go up (stay put)";
+        }
+        System.out.println("TRENCH | " + overrideNote);
+    }
+
+    public Command trenchOverrideCommand() {
+        return Commands.runOnce(this::engageTrenchOverride).withName("Trench shot override");
+    }
 
     /** Robot is inside the OPPONENT's alliance zone (shuttling from there). */
     public boolean inTheirZone() { return inTheirZone; }
@@ -311,7 +355,7 @@ public class AimSubsystem extends SubsystemBase {
         if (!solution.reachable() || !turretOnTarget(turret) || !speedOk()) return false;
         if (!passing() && !legalToScore) return false; // G407: not inside our alliance zone
         if (passing() && !target.laneClear()) return false; // a hub is in every pass lane
-        if (!rpmReady(shooter) || hubClosedForShot()) return false;
+        if (!rpmReady(shooter) || hubClosedForShot() || trenchBlocksShot()) return false;
         return !Constants.Gooba.kHoodEnabled || Math.abs(hood.getPosition() - targetHood()) <= hoodTolerance();
     }
 
@@ -327,7 +371,8 @@ public class AimSubsystem extends SubsystemBase {
         if (!poseUsable()) return !vacuum;
         double keep = Math.max(Aim.kKeepFiringDegrees, aimToleranceDegrees() * 1.5);
         return solution.reachable() && Math.abs(turret.aimErrorDegrees()) <= keep
-            && speedOk() && !hubClosedForShot() && (passing() ? target.laneClear() : legalToScore);
+            && speedOk() && !hubClosedForShot() && !trenchBlocksShot()
+            && (passing() ? target.laneClear() : legalToScore);
     }
 
     /** Shooter within tolerance of its target (looser for passing). */
@@ -352,6 +397,7 @@ public class AimSubsystem extends SubsystemBase {
         if (!solution.reachable()) return what + ": target behind turret, turning robot";
         if (!speedOk()) return String.format(java.util.Locale.US, "%s: slow down (%.1f m/s, max %.1f)",
             what, robotSpeed, passing() ? Aim.kMaxPassSpeed : Aim.kMaxScoreSpeed);
+        if (trenchBlocksShot()) return what + ": TRENCH, hood held down (Operator R3 = trench shot)";
         if (!turretOnTarget(turret)) return what + ": turret turning";
         if (!rpmReady(shooter)) return what + ": shooter spinning up";
         if (Constants.Gooba.kHoodEnabled && Math.abs(hood.getPosition() - targetHood()) > hoodTolerance()) return what + ": hood moving";
@@ -479,7 +525,11 @@ public class AimSubsystem extends SubsystemBase {
         SmartDashboard.putNumber("Aim Hood (rot)", targetHood());
         SmartDashboard.putNumber("Aim Tolerance (deg)", aimToleranceDegrees());
         SmartDashboard.putNumber("Robot Speed (m per s)", robotSpeed);
-        SmartDashboard.putBoolean("Near Trench (hood capped)", nearTrench);
+        SmartDashboard.putBoolean("Near Trench (hood capped)", GoobaSubsystem.trenchForceDown());
+        SmartDashboard.putString("Trench Guard", !poseUsable() ? "OFF: position unknown, keep the hood DOWN by hand"
+            : GoobaSubsystem.trenchForceDown() ? "HOOD HELD DOWN (trench)"
+            : trenchOverride ? "TRENCH SHOT: hood free, stay put" : nearTrench ? "near trench" : "clear");
+        SmartDashboard.putString("Trench Override", overrideNote);
         SmartDashboard.putBoolean("Aim Active", active);
         HubShiftTracker.HubState hub = HubShiftTracker.ourHubStateAt(0);
         SmartDashboard.putString("Our Hub", hub == HubShiftTracker.HubState.UNKNOWN ? "unknown (no FMS)"

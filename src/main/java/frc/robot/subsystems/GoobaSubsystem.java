@@ -109,11 +109,23 @@ public class GoobaSubsystem extends SubsystemBase {
         return m_limitsOff;
     }
 
-    /** Motion Magic move, kept inside the soft limits (unless they're switched off to measure). */
+    // TRENCH GUARD (set every loop by AimSubsystem): hood must stay all the way DOWN.
+    private static volatile boolean trenchForceDown = false;
+
+    /** AimSubsystem: the hood/Limelight is in or heading into a trench (and no trench-shot override). */
+    public static void setTrenchForceDown(boolean down) { trenchForceDown = down; }
+    public static boolean trenchForceDown() { return trenchForceDown; }
+
+    /**
+     * Motion Magic move, kept inside the soft limits (unless they're switched off to measure).
+     * Near a trench (trench guard) every target is pulled all the way DOWN: the Limelight on the
+     * hood is taller than the 22.25 in trench bar with the hood up.
+     */
     public void setPosition(double rotations) {
         if (m_motor == null) {
             return;
         }
+        if (trenchForceDown) rotations = Gooba.kBottomPosition;
         m_target = m_limitsOff ? rotations : MathUtil.clamp(rotations, Gooba.kBottomPosition, Gooba.kTopPosition);
         m_motor.setControl(m_positionControl.withPosition(m_target));
     }
@@ -201,6 +213,12 @@ public class GoobaSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
+        // Trench guard: even with no command moving the hood (a Y toggle left it up), bring it down.
+        if (m_motor != null && trenchForceDown && edu.wpi.first.wpilibj.DriverStation.isEnabled()
+                && (Double.isNaN(m_target) || m_target > Gooba.kBottomPosition + 0.05
+                    || getPosition() > Gooba.kBottomPosition + 0.3)) {
+            setPosition(Gooba.kBottomPosition);
+        }
         SmartDashboard.putBoolean("Hood Enabled", m_motor != null);
         if (m_motor != null) {
             SmartDashboard.putString("Hood Status", status());
