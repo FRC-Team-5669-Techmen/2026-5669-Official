@@ -19,7 +19,7 @@ foreach ($n in $names) {
     if (-not (Test-Path $dest)) { Invoke-WebRequest "http://$($robot):5805/matches/$n" -OutFile $dest -UseBasicParsing; $new++ }
 }
 Write-Host "Match files: $($names.Count) on the robot, $new new"
-foreach ($f in @("matches.csv", "shot-log.csv")) {
+foreach ($f in @("matches.csv", "shot-log.csv", "robot-settings.json")) {
     try { Invoke-WebRequest "http://$($robot):5805/$f" -OutFile (Join-Path $out $f) -UseBasicParsing } catch {}
 }
 # Full logs (.wpilog) for AdvantageScope: port 5807, only ones not copied yet.
@@ -43,11 +43,14 @@ Set-Location $repo
 $isRepo = $false
 if (Get-Command git -ErrorAction SilentlyContinue) { $isRepo = ((& git rev-parse --is-inside-work-tree 2>&1) -eq "true") }
 if ($isRepo) {
-    & git add -- "match-data/matches" "match-data/matches.csv" "match-data/shot-log.csv" 2>&1 | Out-Null
+    # One path at a time: git refuses the whole add if any one of them is missing.
+    foreach ($p in @("match-data/matches", "match-data/matches.csv", "match-data/shot-log.csv", "match-data/robot-settings.json")) {
+        if (Test-Path $p) { & git add -- $p 2>&1 | Out-Null }
+    }
     $changes = & git diff --cached --name-only
     if ($changes) {
         & git commit -q -m "Match data from the robot ($(Get-Date -Format 'yyyy-MM-dd HH:mm'))" 2>&1 | Out-Null
-        & git pull -q --rebase 2>&1 | Out-Null
+        & git pull -q --rebase --autostash 2>&1 | Out-Null
         & git push -q 2>&1 | Out-Null
         if ($LASTEXITCODE -eq 0) { Write-Host "Pushed to GitHub: Claude and the team can read it." -ForegroundColor Green }
         else { Write-Host "Saved and committed here; it pushes next time you run this with internet." -ForegroundColor Yellow }

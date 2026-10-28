@@ -87,6 +87,7 @@ public class Robot extends TimedRobot {
     public void robotPeriodic() {
         m_timeAndJoystickReplay.update();
         HubShiftTracker.update(); // match clock (own clock in a practice match)
+        frc.robot.util.SettingsBackup.periodic(Timer.getFPGATimestamp(), CODE_VERSION); // saved values -> robot-settings.json
         CommandScheduler.getInstance().run();
 
         m_robotContainer.updateDashboard();
