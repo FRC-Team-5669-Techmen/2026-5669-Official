@@ -34,6 +34,8 @@ public class VisionLocalizer extends SubsystemBase {
     private final GoobaSubsystem hood;
     private double lastHoodPos = 0.0;
     private double hoodSpeed = 0.0; // rotations per second
+    // Bump detection: Pigeon pitch/roll compared with "level", learned while disabled.
+    private double levelPitch = 0.0, levelRoll = 0.0, lastTilted = Double.NEGATIVE_INFINITY, tilt = 0.0;
 
     private boolean headingKnown = false;   // gyro heading matches the field (seeded)
     private boolean positionKnown = false;  // a vision fix arrived, or an auto set the pose
@@ -122,6 +124,17 @@ public class VisionLocalizer extends SubsystemBase {
         double spin = state.Speeds.omegaRadiansPerSecond;
         LimelightHelpers.SetRobotOrientation(kName, headingDeg, Math.toDegrees(spin), 0, 0, 0, 0);
 
+        // 3. Tilt (bumps): learn "level" while disabled, then measure how far off level we are.
+        double pitchDeg = drivetrain.getPigeon2().getPitch().getValueAsDouble();
+        double rollDeg = drivetrain.getPigeon2().getRoll().getValueAsDouble();
+        if (edu.wpi.first.wpilibj.DriverStation.isDisabled()) {
+            levelPitch += 0.05 * (pitchDeg - levelPitch);
+            levelRoll += 0.05 * (rollDeg - levelRoll);
+        }
+        tilt = Math.max(Math.abs(pitchDeg - levelPitch), Math.abs(rollDeg - levelRoll));
+        if (tilt > Aim.kMaxTiltForVision) lastTilted = Timer.getFPGATimestamp();
+        SmartDashboard.putNumber("Robot Tilt (deg)", tilt);
+
         status = evaluate(on, turretKnown, spin, state.Speeds);
         SmartDashboard.putString("Vision Status", status);
         SmartDashboard.putBoolean("Pose Trusted", poseTrusted());
@@ -167,6 +180,7 @@ public class VisionLocalizer extends SubsystemBase {
         if (Math.abs(turret.getVelocityDegPerSec()) > Aim.kMaxTurretSpeedForVision) return "skip: turret turning fast";
         if (Math.abs(spin) > Aim.kMaxRobotSpinForVision) return "skip: robot spinning fast";
         if (Math.abs(hoodSpeed) > Aim.kMaxHoodSpeedForVision) return "skip: hood moving";
+        if (Timer.getFPGATimestamp() - lastTilted < Aim.kTiltSettleSeconds) return "skip: robot tilted (bump)";
 
         LimelightHelpers.PoseEstimate mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(kName);
         LimelightHelpers.PoseEstimate mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(kName);

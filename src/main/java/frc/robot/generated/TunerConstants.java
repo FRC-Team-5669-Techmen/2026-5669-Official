@@ -51,7 +51,12 @@ public class TunerConstants {
 
     // REVERTED: The stator current at which the wheels start to slip;
     // Brought back down to 120 Amps to restore traction control
-    private static final Current kSlipCurrent = Amps.of(120);
+    // Oct 27: 70 A (was 120). Above the slip current the wheels only spin: a ~60 kg robot on
+    // mu 1.1 tread slips at ~60-65 A (Kraken X60 ~0.0194 Nm/A x 7.03 / 2 in wheel = ~2.7 N per A
+    // per wheel). Phoenix 6 uses this as the drive STATOR limit. MEASURE it with the dashboard
+    // button "Test: Slip Current" (docs/DRIVE-TESTS.md) and put the lowest of 3 runs here and in
+    // PathPlanner Settings > Drive Current Limit. 1678 (2026, same gearing) runs 80 A.
+    private static final Current kSlipCurrent = Amps.of(70);
 
     // REVERTED: Added a safe 80 Amp Stator Limit to the Drive motors
     private static final TalonFXConfiguration driveInitialConfigs = new TalonFXConfiguration()

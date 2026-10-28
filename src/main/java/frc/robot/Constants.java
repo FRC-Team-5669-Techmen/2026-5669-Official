@@ -617,7 +617,14 @@ public final class Constants {
         // ---- Vision position (Limelight MegaTag) ----
         // Ignore vision while the turret (and camera) is swinging faster than this, or the robot
         // spins faster than this: the image and the turret angle don't line up then.
-        public static final double kMaxTurretSpeedForVision = 120.0; // deg/s
+        // Oct 27: 60 (was 120). The code sends the turret angle NOW, but the frame was taken
+        // ~30-50 ms earlier: at 120 deg/s that's 4-6 deg of camera yaw error (~20-30 cm at 3 m).
+        // Matters now that the turret watches the hub during autos.
+        public static final double kMaxTurretSpeedForVision = 60.0; // deg/s
+        // BUMPS: while the robot is tilted (driving over a bump) the camera and the odometry are
+        // both wrong; skip vision while tilted more than this, and a moment after (1678 2026: 5 deg).
+        public static final double kMaxTiltForVision = 5.0;          // deg from level (level = while disabled)
+        public static final double kTiltSettleSeconds = 0.25;
         public static final double kMaxRobotSpinForVision = 2.5;     // rad/s
         // Ignore single-tag fixes from further away than this (meters): too noisy.
         public static final double kMaxSingleTagDistance = 4.5;
