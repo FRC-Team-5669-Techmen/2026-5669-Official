@@ -546,8 +546,8 @@ public final class Constants {
         public static final double kLockedMaxSpeedDegPerSec = 30.0;
 
         // ---- Ready to fire (Operator RT only feeds the shooter when all are true) ----
-        public static final double kRpmTolerance = 150.0;   // to START firing (or kRpmTolerancePct, whichever is bigger)
-        public static final double kRpmTolerancePct = 0.04; // 4%: 200 RPM at 5000
+        public static final double kRpmTolerance = 100.0;   // to START firing (or kRpmTolerancePct, whichever is bigger). Oct 27: 150 -> 100
+        public static final double kRpmTolerancePct = 0.025; // Oct 27: 4% -> 2.5% (long shots only tolerate ~3-4% launch-speed error)
         public static final double kKeepFiringDegrees = 4.0; // once firing, keep feeding unless the turret is this far off
         public static final double kHoodTolerance = 0.12; // rotations
 
