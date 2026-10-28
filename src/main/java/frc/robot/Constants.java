@@ -10,8 +10,14 @@ public final class Constants {
     public static final class Operator {
         public static final int kDriverControllerPort = 0;
         public static final int kOperatorControllerPort = 1;
-        public static final double kDeadband = 0.05;
+        public static final double kDeadband = 0.05;           // "sticks centered" test (X-lock, shimmy)
         public static final double kRotationalDeadband = 0.05;
+        // Oct 28: the dead zone is applied to the STICK (then rescaled 0-1) before the cubic curve.
+        // Before, a 5%-of-top-speed deadband sat on the OUTPUT after the cube: the stick did nothing
+        // until ~37% (46% in slow mode). Now 8% stick = start moving, and slow mode is finer.
+        public static final double kStickDeadband = 0.08;
+        public static final double kRequestDeadbandMps = 0.02;     // tiny: just stops wheel twitch
+        public static final double kRequestDeadbandRadPs = 0.02;
         public static final AngularVelocity kMaxAngularRate = RotationsPerSecond.of(0.75);
     }
 

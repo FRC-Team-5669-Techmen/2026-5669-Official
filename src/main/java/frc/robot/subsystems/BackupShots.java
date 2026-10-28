@@ -150,6 +150,7 @@ public class BackupShots {
             String msg = "BACKUP " + s.label.toUpperCase(Locale.US) + " (" + heading + "). Hold RT.";
             SmartDashboard.putString("Backup Shot", msg);
             System.out.println("BACKUP SHOT | " + msg);
+            frc.robot.controls.Haptics.on(frc.robot.controls.Haptics.Pad.OPERATOR); // spot set
         }).withName("Backup shot: " + s.label);
     }
 

@@ -117,6 +117,12 @@ public class Robot extends TimedRobot {
             driverHid.setRumble(RumbleType.kBothRumble, (Timer.getFPGATimestamp() % 0.25) < 0.15 ? 1.0 : 0.0);
             return;
         }
+        // Mode-change patterns (Haptics: 1 short = on, 2 short = off, long = vacuum/dump on).
+        double pattern = frc.robot.controls.Haptics.level(frc.robot.controls.Haptics.Pad.DRIVER);
+        if (pattern >= 0) {
+            driverHid.setRumble(RumbleType.kBothRumble, pattern);
+            return;
+        }
         if (defense.changeBuzz()) {
             driverHid.setRumble(RumbleType.kBothRumble, 0.8);
             return;

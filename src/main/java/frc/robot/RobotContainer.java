@@ -29,6 +29,7 @@ import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 
 import frc.robot.controls.HotasX56;
+import frc.robot.controls.Haptics;
 import frc.robot.generated.TunerConstants;
 
 // Subsystems
@@ -68,13 +69,13 @@ public class RobotContainer {
     private final double maxAngularRate = Constants.Operator.kMaxAngularRate.in(RadiansPerSecond);
 
     private final SwerveRequest.FieldCentric fieldCentricDrive = new SwerveRequest.FieldCentric()
-            .withDeadband(maxSpeed * Constants.Operator.kDeadband)
-            .withRotationalDeadband(maxAngularRate * Constants.Operator.kRotationalDeadband)
+            .withDeadband(Constants.Operator.kRequestDeadbandMps)
+            .withRotationalDeadband(Constants.Operator.kRequestDeadbandRadPs)
             .withDriveRequestType(DriveRequestType.Velocity);
 
     private final SwerveRequest.RobotCentric robotCentricDrive = new SwerveRequest.RobotCentric()
-            .withDeadband(maxSpeed * Constants.Operator.kDeadband)
-            .withRotationalDeadband(maxAngularRate * Constants.Operator.kRotationalDeadband)
+            .withDeadband(Constants.Operator.kRequestDeadbandMps)
+            .withRotationalDeadband(Constants.Operator.kRequestDeadbandRadPs)
             .withDriveRequestType(DriveRequestType.Velocity);
 
     private final SlewRateLimiter xLimiter = new SlewRateLimiter(3.0);
@@ -221,12 +222,21 @@ public class RobotContainer {
                     rInput = -driverController.getRightX(); // Rotation
 
                     // Start button swaps in the alternate (usually slower) speed limit
-                    if (driverController.getHID().getStartButton()) {
+                    // (also Driver RB, Oct 28: holding Start takes the right thumb off the rotate stick)
+                    if (driverController.getHID().getStartButton()
+                            || (DriverStation.isTeleopEnabled() && driverController.getHID().getRightBumperButton())) {
                         speedMultiplier = buttonSpeedLimiter.getSelected();
                     }
                 }
 
-                // Cubic curve for fine control at low speed, then slew-rate limiting
+                // Stick dead zone FIRST (translation by stick magnitude, so diagonals stay true), rescaled
+                // so just past it = just moving; then the cubic curve; then slew-rate limiting.
+                double mag = Math.hypot(xInput, yInput);
+                double magDb = MathUtil.applyDeadband(Math.min(1.0, mag), Constants.Operator.kStickDeadband);
+                double xIn = mag > 1e-6 ? xInput / mag * magDb : 0.0;
+                double yIn = mag > 1e-6 ? yInput / mag * magDb : 0.0;
+                double rIn = MathUtil.applyDeadband(rInput, Constants.Operator.kStickDeadband);
+                xInput = xIn; yInput = yIn; rInput = rIn;
                 double cx = Math.signum(xInput) * Math.pow(Math.abs(xInput), 3);
                 double cy = Math.signum(yInput) * Math.pow(Math.abs(yInput), 3);
                 double cr = Math.signum(rInput) * Math.pow(Math.abs(rInput), 3);
@@ -259,7 +269,9 @@ public class RobotContainer {
                 // SHOOT FROM ANYWHERE heading assist: with auto-aim on and the hub behind the
                 // turret (its ~90 degree dead zone), turn the robot just enough to bring the hub in
                 // reach. The driver's rotate stick always wins.
-                if (!defending && aim.isActive() && aim.poseUsable() && !aim.solution().reachable()
+                // Oct 28: only while a shot is wanted (auto-aim is on all teleop now, and a robot that
+                // turns itself while the driver is just driving feels like it's fighting them).
+                if (!defending && aim.isActive() && aim.shotWanted() && aim.poseUsable() && !aim.solution().reachable()
                         && !ElevatorSubsystem.isRaised()   // climbing: never turn the robot by itself
                         && Math.abs(rInput) < Constants.Aim.kDriverRotateOverride) {
                     rotationRate = MathUtil.clamp(
@@ -306,15 +318,36 @@ public class RobotContainer {
      * cancelled the WHOLE rest of the auto. Every controller binding goes through this.
      */
     private final Trigger teleop = RobotModeTriggers.teleop();
+
     private Trigger tele(Trigger t) { return t.and(teleop); }
+
+    private static final String kAimAtTeleopKey = "Auto-Aim On At Teleop Start";
+
+    /**
+     * AUTO-AIM ON BY DEFAULT (Oct 28): at teleop start (and when defense is turned off with Y) the
+     * robot turns auto-aim on by itself, so the operator's first job each match is gone. With aim
+     * on but no shot wanted, only the TURRET tracks (the camera keeps seeing hub tags = better
+     * position): the hood stays DOWN (trench-safe) and the robot never turns itself; RT, LT or
+     * vacuum/dump bring the hood up and allow the dead-zone heading assist. Operator RB still turns
+     * it off. Dashboard switch "Auto-Aim On At Teleop Start" (saved, ON).
+     */
+    private void autoAimOnIfWanted() {
+        boolean on = SmartDashboard.getBoolean(kAimAtTeleopKey, true);
+        if (on != Preferences.getBoolean(kAimAtTeleopKey, true)) Preferences.setBoolean(kAimAtTeleopKey, on);
+        if (!on || DefenseMode.active() || aimCommand.isScheduled()) return;
+        CommandScheduler.getInstance().schedule(aimCommand);
+    }
 
     private void configureDriverBindings() {
         // LOCKED Left Bumper: reset gyro / seed field centric
         // Shoot from anywhere: this also tells the robot its heading matches the field, so press it
         // with the robot pointing straight AWAY from your driver station.
-        tele(driverController.leftBumper()).onTrue(drivetrain.runOnce(() -> {
+        // Oct 28: HOLD it half a second (a habit tap at the wrong heading used to wreck field-centric
+        // driving and the aim); one short buzz = done.
+        tele(driverController.leftBumper()).debounce(0.5).onTrue(drivetrain.runOnce(() -> {
             drivetrain.seedFieldCentric();
             localizer.markHeadingKnown();
+            Haptics.on(Haptics.Pad.DRIVER);
         }));
 
         // LOCKED Right Trigger (hold): ground intake roller. Does nothing until the
@@ -340,7 +373,7 @@ public class RobotContainer {
             aimCommand.cancel();
             groundIntakePivot.stowIfDown();
             CommandScheduler.getInstance().schedule(gooba.stowCommand());
-        }));
+        }, this::autoAimOnIfWanted)); // defense OFF by Y: auto-aim back on (Oct 28)
 
         // LOCKED D-pad Up/Down (hold): climb up / down
         tele(driverController.povUp()).whileTrue(elevator.upCommand());
@@ -359,9 +392,15 @@ public class RobotContainer {
         //     hood in place), and pauses by itself when not. Hold it and keep driving.
         //   Auto-aim OFF: feeds right away, as before (spin up with LT first).
         Trigger aimOn = new Trigger(aim::isActive);
-        tele(operatorController.rightTrigger()).and(aimOn).whileTrue(
+        // RT resumes by itself after B (unjam) is let go (Oct 28: it used to stay dead until re-pressed).
+        Trigger notUnjamming = operatorController.b().negate();
+        tele(operatorController.rightTrigger()).and(notUnjamming).and(aimOn).whileTrue(
             new ShootCommand(aim, shooter, index, shooterIntake, goober, gooba, false));
-        tele(operatorController.rightTrigger()).and(aimOn.negate()).whileTrue(new FeedShooterCommand(index, shooterIntake));
+        // Aim OFF: RT spins the wheel up by itself (shooter default) and feeds once it's at speed
+        // (Oct 28: it used to feed balls into a stopped wheel unless LT was held first).
+        tele(operatorController.rightTrigger()).and(notUnjamming).and(aimOn.negate()).whileTrue(
+            new FeedShooterCommand(index, shooterIntake,
+                () -> shooter.targetRpm() > 500 && shooter.getCurrentRpm() > 0.9 * shooter.targetRpm()));
 
         // VACUUM MODE (Back, press to toggle): intake + shoot hands-free. Intake down, roller in,
         // auto-aim on, fires by itself whenever ready. Scores from inside our alliance zone,
@@ -419,12 +458,12 @@ public class RobotContainer {
         // BACKUP SHOTS (camera-proof): park on the spot, press its button, then hold RT.
         // A = Midshot (between hub and climb), X = Left trench, LB = Right trench (left/right as
         // seen from our driver station). See subsystems/BackupShots.
-        tele(operatorController.a()).onTrue(backupShots.useCommand(BackupShots.Spot.MIDSHOT, aimCommand));
+        tele(operatorController.a()).debounce(0.5).onTrue(backupShots.useCommand(BackupShots.Spot.MIDSHOT, aimCommand));
         // The trench spots sit right next to a trench: these also turn on the trench-shot override
         // (hood may go up while the robot stays put).
-        tele(operatorController.x()).onTrue(backupShots.useCommand(BackupShots.Spot.LEFT_TRENCH, aimCommand)
+        tele(operatorController.x()).debounce(0.5).onTrue(backupShots.useCommand(BackupShots.Spot.LEFT_TRENCH, aimCommand)
             .andThen(aim.trenchOverrideCommand()));
-        tele(operatorController.leftBumper()).onTrue(backupShots.useCommand(BackupShots.Spot.RIGHT_TRENCH, aimCommand)
+        tele(operatorController.leftBumper()).debounce(0.5).onTrue(backupShots.useCommand(BackupShots.Spot.RIGHT_TRENCH, aimCommand)
             .andThen(aim.trenchOverrideCommand()));
 
         // TRENCH GUARD (automatic): near a trench the hood goes all the way DOWN (the Limelight on
@@ -533,6 +572,10 @@ public class RobotContainer {
             }
         }, goober).withName("Turret: watch hub in auto"));
 
+        Preferences.initBoolean(kAimAtTeleopKey, true);
+        SmartDashboard.putBoolean(kAimAtTeleopKey, Preferences.getBoolean(kAimAtTeleopKey, true));
+        RobotModeTriggers.teleop().onTrue(Commands.runOnce(this::autoAimOnIfWanted).withName("Teleop start: auto-aim on"));
+
         shooter.setDefaultCommand(new RunCommand(() -> {
             boolean wantsShot = operatorController.getHID().getRightTriggerAxis() > 0.5
                 || operatorController.getHID().getLeftTriggerAxis() > 0.5
@@ -545,6 +588,9 @@ public class RobotContainer {
                 // Auto-aim ended mid-volley (a jog, Y, defense) while RT still feeds: keep the wheel at
                 // its last speed instead of stopping it under the balls (audit Oct 27).
                 shooter.runAtRPM(lastAimRpm);
+            } else if (rtHeld && DriverStation.isTeleopEnabled()) {
+                // Auto-aim OFF and RT held: spin up to the fast preset (the feeders wait for it).
+                shooter.runAtRPM(Constants.Shooter.kFastTargetRPM);
             } else if (m_isShooterIdle) {
                 shooter.runAtRPM(Constants.Shooter.kIdleRPM);
             } else {
@@ -598,6 +644,7 @@ public class RobotContainer {
     public void onAutoStart() {
         aim.resetTargetMode();
         DefenseMode.reset();
+        if (m_isShooterIdle) toggleShooterIdleMode(); // idle left on from practice: off
         if (autoChooser.getSelected() instanceof com.pathplanner.lib.commands.PathPlannerAuto) {
             localizer.markPoseSetByAuto();
         }
@@ -625,6 +672,19 @@ public class RobotContainer {
         if (gooba.limitsOff()) p.add("Hood limits are OFF (measure switch)");
         if (elevator.limitsOff()) p.add("Elevator limits are OFF (recovery switch)");
         if (DefenseMode.active()) p.add("Defense mode is ON");
+        if (!"field".equals(driveModeChooser.getSelected())) p.add("Drive Mode is Robot Centric");
+        Double lim = globalSpeedLimiter.getSelected();
+        if (lim != null && lim < 1.0) p.add("Global Speed Limit is " + Math.round(lim * 100) + "%");
+        if (m_isShooterIdle) p.add("Shooter idle is ON");
+        // Saved switches left off their match settings after practice/tuning.
+        String[][] saved = {{"Hold Fire: Hub Closed", "true"}, {"Auto Agitate", "true"}, {"Agitate Drive Shimmy", "false"},
+            {"Power Budget ON", "true"}, {"Vision Fixes Heading", "true"}, {"Climb Shot Table", "true"},
+            {"Auto: Turret Watches Hub", "true"}, {kAimAtTeleopKey, "true"}};
+        for (String[] k : saved) {
+            boolean want = Boolean.parseBoolean(k[1]);
+            if (Preferences.containsKey(k[0]) && Preferences.getBoolean(k[0], want) != want)
+                p.add("\"" + k[0] + "\" is " + (want ? "OFF" : "ON") + " (match setting: " + (want ? "ON" : "OFF") + ")");
+        }
         if (!DriverStation.isJoystickConnected(0)) p.add("no DRIVER controller in slot 0");
         if (!DriverStation.isJoystickConnected(1)) p.add("no OPERATOR controller in slot 1");
         return p;
@@ -701,7 +761,11 @@ public class RobotContainer {
 
         // Operator feel: a firm buzz while auto-aim is on and everything is ready to fire.
         boolean ready = DriverStation.isTeleopEnabled() && aim.readyToFire(goober, shooter, gooba);
-        operatorController.getHID().setRumble(RumbleType.kBothRumble, ready ? 0.4 : 0.0);
+        double pattern = Haptics.level(Haptics.Pad.OPERATOR);
+        operatorController.getHID().setRumble(RumbleType.kBothRumble, pattern >= 0 ? pattern : ready ? 0.4 : 0.0);
+        var op = operatorController.getHID();
+        aim.setShotWanted(!DriverStation.isTeleopEnabled() || op.getRightTriggerAxis() > 0.5
+            || op.getLeftTriggerAxis() > 0.5 || aim.vacuum() || aim.isFiring());
         SmartDashboard.putBoolean("Ready To Fire", ready);
         // Which Xbox controller is which: slot 0 = DRIVER, slot 1 = OPERATOR in the
         // Driver Station USB tab. Driver A / Right Trigger / D-pad only work from slot 0.

@@ -152,7 +152,10 @@ public class GoobaSubsystem extends SubsystemBase {
     /** Operator Y: toggle between the stowed and deployed presets. */
     public Command toggleCommand() {
         return runOnce(() -> {
-            m_deployed = !m_deployed;
+            // Go to whichever preset the hood is FARTHER from (auto-aim may have left it anywhere,
+            // so a plain flip could move it the "wrong" way).
+            double pos = getPosition();
+            m_deployed = Math.abs(pos - Gooba.kPositionDeployed) > Math.abs(pos - Gooba.kPositionStowed);
             setPosition(m_deployed ? Gooba.kPositionDeployed : Gooba.kPositionStowed);
         });
     }

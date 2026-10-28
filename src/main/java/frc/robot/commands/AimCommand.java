@@ -43,6 +43,7 @@ public class AimCommand extends Command {
 
     @Override
     public void initialize() {
+        frc.robot.controls.Haptics.on(frc.robot.controls.Haptics.Pad.OPERATOR); // auto-aim ON
         aim.setActive(true);
         turret.clearAngleTarget();
         turret.resetAimFilter();
@@ -60,7 +61,8 @@ public class AimCommand extends Command {
                 turret.setAimStatus((aim.passing() ? "PASS" : "HUB") + " BEHIND: turning robot");
             }
             if (Constants.Gooba.kHoodEnabled) {
-                hood.setPosition(aim.targetHood());
+                // No shot wanted (just tracking in teleop): hood DOWN, safe under the trench.
+                hood.setPosition(aim.shotWanted() ? aim.targetHood() : Constants.Gooba.kBottomPosition);
             }
             SmartDashboard.putString("Aim Mode", "POSITION");
             return;
@@ -71,8 +73,9 @@ public class AimCommand extends Command {
         turret.clearAngleTarget();
         if (limelight.isValidTarget() && turret.endMeasured()) {
             turret.aimAtTarget(limelight.getTX());
+            double hoodTy = hood.getRotationForTy(tyFilter.calculate(limelight.getTY()));
             if (Constants.Gooba.kHoodEnabled) {
-                hood.setPosition(hood.getRotationForTy(tyFilter.calculate(limelight.getTY())));
+                hood.setPosition(aim.shotWanted() ? hoodTy : Constants.Gooba.kBottomPosition);
             }
         } else {
             turret.stop();
@@ -87,6 +90,7 @@ public class AimCommand extends Command {
 
     @Override
     public void end(boolean interrupted) {
+        frc.robot.controls.Haptics.off(frc.robot.controls.Haptics.Pad.OPERATOR); // auto-aim OFF
         aim.setActive(false);
         turret.stop();
         turret.clearAngleTarget();

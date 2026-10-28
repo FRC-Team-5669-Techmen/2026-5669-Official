@@ -47,6 +47,10 @@ public class VacuumCommand extends Command {
     private boolean startedAim = false;
     private final boolean dump;
     private static volatile boolean dumping = false;
+    private static volatile boolean vacuuming = false;
+
+    /** Vacuum mode (roller in) is on. */
+    public static boolean vacuuming() { return vacuuming; }
 
     /** Dump mode is on (the power budget and the shooter read this). */
     public static boolean dumping() { return dumping; }
@@ -81,10 +85,14 @@ public class VacuumCommand extends Command {
     public void initialize() {
         aim.setVacuum(true);
         dumping = dump;
-        if (!dump && !ElevatorSubsystem.isRaised()) pivot.deployIfUp();
+        vacuuming = !dump;
+        // Both modes lower the intake (Oct 28: dump used to wait for Driver A; one less step).
+        if (!ElevatorSubsystem.isRaised()) pivot.deployIfUp();
         startedAim = !aimCommand.isScheduled();
         if (startedAim) CommandScheduler.getInstance().schedule(aimCommand);
         CommandScheduler.getInstance().schedule(shoot);
+        frc.robot.controls.Haptics.longBuzz(frc.robot.controls.Haptics.Pad.DRIVER);
+        frc.robot.controls.Haptics.longBuzz(frc.robot.controls.Haptics.Pad.OPERATOR);
         SmartDashboard.putBoolean(dump ? "Dump Mode" : "Vacuum Mode", true);
         System.out.println(dump ? "DUMP | on: X-take + auto-shoot (" + aim.currentMode() + ")"
             : "VACUUM | on: intake + auto-shoot (" + aim.currentMode() + ")");
@@ -100,7 +108,7 @@ public class VacuumCommand extends Command {
         if (!aimCommand.isScheduled() && free(aimCommand)) CommandScheduler.getInstance().schedule(aimCommand);
         if (!shoot.isScheduled() && free(shoot)) CommandScheduler.getInstance().schedule(shoot);
         if (dump) SmartDashboard.putString("Dump", pivot.isUpish()
-            ? "ON, intake UP: X-take throws balls high (Driver A to lower it)" : "ON: X-take + auto-pass");
+            ? "ON, intake UP (climbing?): X-take throws balls high" : "ON: X-take + auto-pass");
     }
 
     /** Every mechanism this command needs is idle (or only running its default command). */
@@ -119,7 +127,9 @@ public class VacuumCommand extends Command {
     @Override
     public void end(boolean interrupted) {
         aim.setVacuum(false);
-        if (dump) dumping = false;
+        if (dump) dumping = false; else vacuuming = false;
+        frc.robot.controls.Haptics.off(frc.robot.controls.Haptics.Pad.DRIVER);
+        frc.robot.controls.Haptics.off(frc.robot.controls.Haptics.Pad.OPERATOR);
         shoot.cancel();
         rollerIn.cancel();
         if (startedAim) aimCommand.cancel();

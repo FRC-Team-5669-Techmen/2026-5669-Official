@@ -61,12 +61,15 @@ public class DefenseMode extends SubsystemBase {
     /**
      * Driver Y: toggle. Turning on runs `onEnable` (stop aim/vacuum, intake up, hood down).
      */
-    public Command toggleCommand(Runnable onEnable) {
+    public Command toggleCommand(Runnable onEnable) { return toggleCommand(onEnable, () -> {}); }
+
+    /** Driver Y: toggle; `onDisable` runs when Y turns it OFF. */
+    public Command toggleCommand(Runnable onEnable, Runnable onDisable) {
         return Commands.runOnce(() -> {
             on = !on;
             changedAt = Timer.getFPGATimestamp();
             changedOn = on;
-            if (on) onEnable.run();
+            if (on) onEnable.run(); else onDisable.run();
             System.out.println("DEFENSE | " + (on ? "ON" : "OFF"));
         }).withName("Toggle defense mode");
     }

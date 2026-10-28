@@ -147,5 +147,7 @@ public class AgitationPlanner {
     }
 
     public String status() { return status; }
+    /** Gave up: no ball after every try while feeding (hopper probably EMPTY). */
+    public boolean probablyEmpty() { return tries >= p.maxTries; }
     public String lastVolley() { return lastVolley; }
 }

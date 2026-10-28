@@ -9,7 +9,20 @@ public class FeedShooterCommand extends Command {
     private final IndexSubsystem index;
     private final ShooterIntakeSubsystem shooterIntake;
 
+    private final java.util.function.BooleanSupplier ready;
+    private boolean started = false;
+
     public FeedShooterCommand(IndexSubsystem index, ShooterIntakeSubsystem shooterIntake) {
+        this(index, shooterIntake, () -> true);
+    }
+
+    /**
+     * @param ready feeding starts once this is true (the wheel is at speed), then keeps going
+     *              through the speed dip each ball causes
+     */
+    public FeedShooterCommand(IndexSubsystem index, ShooterIntakeSubsystem shooterIntake,
+                              java.util.function.BooleanSupplier ready) {
+        this.ready = ready;
         this.index = index;
         this.shooterIntake = shooterIntake;
         
@@ -18,7 +31,12 @@ public class FeedShooterCommand extends Command {
     }
 
     @Override
+    public void initialize() { started = false; }
+
+    @Override
     public void execute() {
+        if (!started && !ready.getAsBoolean()) { index.stop(); shooterIntake.stop(); return; }
+        started = true;
         index.feed(); // forward with automatic unjam
         shooterIntake.feed();
     }

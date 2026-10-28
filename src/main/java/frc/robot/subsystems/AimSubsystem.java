@@ -129,6 +129,7 @@ public class AimSubsystem extends SubsystemBase {
             case PASS -> TargetPicker.Mode.AUTO;
         };
         System.out.println("AIM | Shot target mode: " + buttonMode);
+        frc.robot.controls.Haptics.shortBuzzes(frc.robot.controls.Haptics.Pad.OPERATOR, buttonMode.ordinal() + 1);
     }
 
     private TargetPicker.Mode lastChooser = TargetPicker.Mode.AUTO;
@@ -322,6 +323,14 @@ public class AimSubsystem extends SubsystemBase {
     /** ShootCommand is feeding balls right now. */
     public boolean isFiring() { return firing; }
     public void setActive(boolean on) { active = on; }
+
+    private volatile boolean shotWanted = true;
+    /**
+     * A shot is wanted now: Operator RT/LT held, vacuum/dump on, firing, or not teleop (autos). With
+     * auto-aim on all teleop, the hood stays DOWN and the robot never turns itself until this is true.
+     */
+    public boolean shotWanted() { return shotWanted; }
+    public void setShotWanted(boolean w) { shotWanted = w; }
 
     /** Aim tolerance (deg) for the current target and distance. */
     public double aimToleranceDegrees() {

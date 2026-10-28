@@ -49,6 +49,7 @@ public class Agitator extends SubsystemBase {
     private final AgitationPlanner.Inputs in = new AgitationPlanner.Inputs();
 
     private Command pump = null, rollerCmd = null;
+    private boolean wasEmpty = false;
     private final ArrayDeque<Double> pumpTimes = new ArrayDeque<>();
     private boolean hot = false;
     private int nudges = 0, pumps = 0, shakes = 0, shimmies = 0;
@@ -158,11 +159,17 @@ public class Agitator extends SubsystemBase {
         }
         // Dump mode: never pump the intake (it's X-taking, maybe under the trench) or shimmy the drive.
         boolean dumping = frc.robot.commands.VacuumCommand.dumping();
-        in.pumpPossible = !climbing && !dumping && pivot.isDown() && CommandScheduler.getInstance().requiring(pivot) == null
+        // Vacuum: never lift the intake while the driver is collecting (Oct 28 audit).
+        boolean vacuuming = frc.robot.commands.VacuumCommand.vacuuming();
+        in.pumpPossible = !climbing && !dumping && !vacuuming && pivot.isDown() && CommandScheduler.getInstance().requiring(pivot) == null
             && !hot && batteryOk && pumpTimes.size() < Agitation.kMaxPumpsPerMinute;
         in.shimmyPossible = !climbing && !dumping && shimmyOn && DriverStation.isTeleopEnabled() && driverHandsOff && batteryOk && !pumping;
         in.busy = pumping || shimmying();
         AgitationPlanner.Action action = planner.update(now, in);
+        // Hopper looks EMPTY: three long buzzes for the operator, once per volley.
+        boolean empty = planner.probablyEmpty();
+        if (empty && !wasEmpty) frc.robot.controls.Haptics.empty(frc.robot.controls.Haptics.Pad.OPERATOR);
+        wasEmpty = empty;
 
         switch (action) {
             case NUDGE -> {

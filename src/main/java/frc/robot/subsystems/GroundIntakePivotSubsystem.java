@@ -248,6 +248,8 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
 
     private void endJog() {
         stop();
+        // Driver A's toggle follows where the jog left it (it used to need a second press).
+        isDown = position() < (GroundIntakePivot.kUpPosition + GroundIntakePivot.kDownPosition) / 2;
         leader.getConfigurator().apply(softLimitsOn, 0.0); // DOWN soft limit back on (no wait)
     }
 
