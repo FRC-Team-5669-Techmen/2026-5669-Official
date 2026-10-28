@@ -174,9 +174,16 @@ public class VisionLocalizer extends SubsystemBase {
         SmartDashboard.putNumberArray("Camera In Robot (fwd,left,yaw)", cam);
     }
 
+    // Keys put on the dashboard since this boot. Oct 28 fix: the dashboard entry used to be made
+    // only the first time a key was ever saved, so after a reboot the field had nothing to write to
+    // (Elastic showed an empty box, typing in it did nothing).
+    private static final java.util.Set<String> published = new java.util.HashSet<>();
+
     private static double savedNumber(String key, double dflt) {
         if (!edu.wpi.first.wpilibj.Preferences.containsKey(key)) {
             edu.wpi.first.wpilibj.Preferences.initDouble(key, dflt);
+        }
+        if (published.add(key)) {
             SmartDashboard.putNumber(key, edu.wpi.first.wpilibj.Preferences.getDouble(key, dflt));
         }
         double v = SmartDashboard.getNumber(key, edu.wpi.first.wpilibj.Preferences.getDouble(key, dflt));
