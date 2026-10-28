@@ -74,5 +74,11 @@ teleop sessions over 20 s; real FMS matches carry the event, match type and numb
 
 **Get it off the robot**: double-click `tools/match-data/Sync Match Data.bat` on the driver
 station laptop (robot on). It copies new match files, the CSVs and the logs into `match-data/`,
-then commits and pushes the small files when the laptop is online, so the team and Claude can
-read them from GitHub. The FRC app import is the next step (prompt in the chat, Oct 28).
+then pushes the small files to GitHub when the laptop is online, so the team and Claude can read
+them. It pushes from its own copy of the repo (`%LOCALAPPDATA%\Techmen5669-MatchData`), never from
+the code folder, so a sync can't change the code you deploy. Offline: the files wait in
+`match-data/`; run it again with internet.
+
+**Sound on the match screen**: browsers keep sound off until the screen is touched. Tap it once
+(the grey "Tap anywhere for sound" bar goes away). The screen follows the robot's alliance (red
+or blue) for "ours". The FRC app import is the next step (prompt in the chat, Oct 28).

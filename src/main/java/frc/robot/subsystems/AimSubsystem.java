@@ -405,7 +405,7 @@ public class AimSubsystem extends SubsystemBase {
     public String readyText(Goober turret, ShooterSubsystem shooter, GoobaSubsystem hood) {
         if (!active) return "aim off (Operator RB)";
         if (!poseUsable()) {
-            if (vacuum) return "VACUUM holds: position unknown (face the hub until Vision Status says OK)";
+            if (vacuum) return (frc.robot.commands.VacuumCommand.dumping() ? "DUMP" : "VACUUM") + " holds: position unknown (face the hub until Vision Status says OK)";
             return turret.targetLocked() ? "tag-only: shooter spinning up" : "tag-only: turret not on hub tag";
         }
         String what = passing() ? (TargetPicker.isRelay(target) ? "SHUTTLE" : "PASS") : climbShot() ? "CLIMB SCORE" : "SCORE";

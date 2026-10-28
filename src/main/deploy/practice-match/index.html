@@ -228,6 +228,7 @@ details summary{cursor:pointer;font:700 12px var(--font-mono);letter-spacing:.18
   <button class="btn" id="fsBtn">Full screen</button>
 </div>
 
+<div id="soundBar" style="display:block;margin:0 0 12px;padding:10px 14px;border-radius:10px;background:#2a2d33;color:#fff;font-weight:600;text-align:center;cursor:pointer">Tap anywhere for sound (browsers keep it off until the screen is touched)</div>
 <div class="grid">
   <div class="panel hub red" id="redHub">
     <div class="who">Red hub · ours</div>
@@ -250,7 +251,7 @@ details summary{cursor:pointer;font:700 12px var(--font-mono);letter-spacing:.18
   </div>
 </div>
 
-<div class="eyebrow" style="margin-top:12px">Our hub through the match: red = open, grey = closed</div>
+<div class="eyebrow" style="margin-top:12px">Our hub through the match: color = open, grey = closed</div>
 <div class="timeline" id="timeline" aria-label="Our hub through the match" style="margin-top:6px"></div>
 
 <div class="stats">
@@ -332,10 +333,21 @@ details summary{cursor:pointer;font:700 12px var(--font-mono);letter-spacing:.18
 
   // ---------------- sound (synthesized tones; no recorded field audio) ----------------
   let soundOn = true, voiceOn = false, ac = null;
+  // Browsers keep sound off until someone touches the page (a screen nobody clicked stayed silent):
+  // the first tap or key anywhere turns it on, and the "Tap for sound" bar says so until then.
+  function unlockAudio(){
+    try { ac = ac || new (window.AudioContext||window.webkitAudioContext)(); if (ac.state !== "running") ac.resume(); } catch(e){}
+    try { if (window.speechSynthesis) speechSynthesis.getVoices(); } catch(e){}
+    setTimeout(showSoundBar, 300);
+  }
+  function showSoundBar(){ const b = document.getElementById("soundBar"); if (b) b.style.display = (ac && ac.state === "running") ? "none" : "block"; }
+  ["pointerdown","keydown","touchstart"].forEach(ev => document.addEventListener(ev, unlockAudio, {passive:true}));
+  let usRed = true; // our alliance (robot's "alliance"; red when unknown)
   function tone(freq, dur, type="square", vol=0.18, when=0){
     if (!soundOn) return;
     try {
       ac = ac || new (window.AudioContext||window.webkitAudioContext)();
+      if (ac.state !== "running") { ac.resume(); }
       const t0 = ac.currentTime + when, o = ac.createOscillator(), g = ac.createGain();
       o.type = type; o.frequency.setValueAtTime(freq, t0);
       g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
@@ -374,7 +386,7 @@ details summary{cursor:pointer;font:700 12px var(--font-mono);letter-spacing:.18
   const tl = $("timeline");
   function buildTimeline(redWon){
     tl.innerHTML = "";
-    const weWon = redWon === null ? null : redWon === true; // we are red
+    const weWon = redWon === null ? null : redWon === usRed;
     SEGS.forEach(s => {
       const d = document.createElement("div");
       d.className = "seg";
@@ -407,7 +419,11 @@ details summary{cursor:pointer;font:700 12px var(--font-mono);letter-spacing:.18
   function render(st){
     const ph = phaseOf(st.mode, st.matchTime);
     const redWon = st.autoWinner === "red" ? true : st.autoWinner === "blue" ? false : null;
-    const key = String(redWon);
+    usRed = st.alliance !== "blue";
+    const weWon = redWon === null ? null : redWon === usRed;
+    const key = String(redWon) + usRed;
+    $("redHub").querySelector(".who").textContent = usRed ? "Red hub · ours" : "Red hub · theirs";
+    $("blueHub").querySelector(".who").textContent = usRed ? "Blue hub · theirs" : "Blue hub · ours";
     // keep the finished match's timeline on screen after it ends; reset when the next auto starts
     if (key !== builtFor && (redWon !== null || st.mode === "auto")) { buildTimeline(redWon); builtFor = key; }
     const over = st.mode === "disabled" && st.last && !soloRunning;
@@ -420,8 +436,8 @@ details summary{cursor:pointer;font:700 12px var(--font-mono);letter-spacing:.18
     setHub("red", red, nc, st, redWon); setHub("blue", blue, nc, st, redWon);
     const ph2 = $("playhead"); if (ph2) ph2.style.left = (100 * elapsed(st.mode, st.matchTime) / TOTAL) + "%";
     $("banner").textContent = over && st.source === "robot" ? st.last : redWon === null ? (st.mode === "teleop" ? "Auto winner unknown: hubs shown open" : "")
-      : (redWon ? "WE WON AUTO" : "THEY WON AUTO") + (st.randomWinner ? " (random)" : "")
-        + (redWon ? " · our hub CLOSED in shifts 1 and 3" : " · our hub OPEN in shifts 1 and 3");
+      : (weWon ? "WE WON AUTO" : "THEY WON AUTO") + (st.randomWinner ? " (random)" : "")
+        + (weWon ? " · our hub CLOSED in shifts 1 and 3" : " · our hub OPEN in shifts 1 and 3");
     $("sAuto").textContent = st.autoBalls ?? 0; $("sOpen").textContent = st.openBalls ?? 0;
     $("sClosed").textContent = st.closedBalls ?? 0; $("sPass").textContent = st.passBalls ?? 0;
     $("sClimb").textContent = st.hang >= 0 ? st.hang.toFixed(0) : st.lift >= 0 ? "lift " + st.lift.toFixed(0) : "-";
@@ -459,14 +475,14 @@ details summary{cursor:pointer;font:700 12px var(--font-mono);letter-spacing:.18
     if (p.mode === "auto" && st.mode !== "auto") SFX.autoEnd();
     if (st.mode === "teleop" && p.mode !== "teleop") SFX.teleop();
     if (st.mode === "teleop" && redWon !== null && !winnerSaid) {
-      winnerSaid = true; say(redWon ? "We won auto. Closed first." : "Lost auto. Open first.");
+      winnerSaid = true; say(redWon === usRed ? "We won auto. Closed first." : "Lost auto. Open first.");
     }
     if (st.mode === "teleop" && ph.name !== p.phase && p.phase !== "" && p.mode === "teleop") {
       if (ph.name === "END GAME") { SFX.endgame(); say("End game. Both hubs open."); } else SFX.change();
     }
     if (st.mode === "teleop" && nc >= 0) {
-      const ourOn = hubOn("teleop", st.matchTime, true, redWon);
-      const ourNext = hubOn("teleop", st.matchTime - nc - 0.01, true, redWon);
+      const ourOn = hubOn("teleop", st.matchTime, usRed, redWon);
+      const ourNext = hubOn("teleop", st.matchTime - nc - 0.01, usRed, redWon);
       const n = Math.ceil(nc), pn = Math.ceil(p.next);
       if (n !== pn) {
         if (n <= 3 && n >= 1) SFX.tick();
@@ -546,7 +562,7 @@ details summary{cursor:pointer;font:700 12px var(--font-mono);letter-spacing:.18
   let memHist = [];
   function saveMatch(st){
     const row = {when: new Date().toISOString(), match: st.match, source: st.source,
-      winner: st.autoWinner === "red" ? "red" : st.autoWinner === "blue" ? "blue" : "?",
+      winner: st.autoWinner === "red" || st.autoWinner === "blue" ? ((st.autoWinner === "red") === (st.alliance !== "blue") ? "we" : "they") : "?",
       auto: st.autoBalls||0, open: st.openBalls||0, closed: st.closedBalls||0, pass: st.passBalls||0,
       made, tower, hang: st.hang >= 0 ? +st.hang.toFixed(1) : null};
     const h = hist(); h.push(row); saveHist(h); memHist.push(row); drawHist();
@@ -556,7 +572,7 @@ details summary{cursor:pointer;font:700 12px var(--font-mono);letter-spacing:.18
     const body = $("hist").querySelector("tbody"); body.innerHTML = "";
     h.slice(-12).reverse().forEach(r => {
       const tr = document.createElement("tr");
-      [r.match + (r.source === "solo" ? "s" : ""), r.winner === "red" ? "we" : r.winner === "blue" ? "they" : "?", r.auto, r.open, r.closed, r.pass, r.made,
+      [r.match + (r.source === "solo" ? "s" : ""), (r.winner === "we" || r.winner === "red") ? "we" : (r.winner === "they" || r.winner === "blue") ? "they" : "?", r.auto, r.open, r.closed, r.pass, r.made,
         r.tower ? "L" + r.tower : "-", r.hang ?? "-"].forEach(v => { const td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
       body.appendChild(tr);
     });

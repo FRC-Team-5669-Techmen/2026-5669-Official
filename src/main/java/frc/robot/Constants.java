@@ -16,8 +16,8 @@ public final class Constants {
         // Before, a 5%-of-top-speed deadband sat on the OUTPUT after the cube: the stick did nothing
         // until ~37% (46% in slow mode). Now 8% stick = start moving, and slow mode is finer.
         public static final double kStickDeadband = 0.08;
-        public static final double kRequestDeadbandMps = 0.02;     // tiny: just stops wheel twitch
-        public static final double kRequestDeadbandRadPs = 0.02;
+        public static final double kRequestDeadbandMps = 0.0;      // none: the 8% STICK dead zone does it (0.02 after the cube ate ~23% of the stick)
+        public static final double kRequestDeadbandRadPs = 0.0;
         public static final AngularVelocity kMaxAngularRate = RotationsPerSecond.of(0.75);
     }
 
@@ -438,6 +438,8 @@ public final class Constants {
 
     /** POWER BUDGET (subsystems/PowerBudget): drive supply current while vacuum/dump mode run. */
     public static final class Power {
+        /** Drive STATOR limit = TunerConstants.kSlipCurrent (keep the two equal). */
+        public static final double kDriveStatorAmps = 70.0;
         public static final double kNormalDriveSupplyAmps = 40.0; // = TunerConstants driveInitialConfigs
         public static final double kHeavyDriveSupplyAmps = 25.0;  // vacuum / dump mode on
         public static final double kSagDriveSupplyAmps = 18.0;    // ...and the battery still sagged

@@ -245,6 +245,24 @@ public class RobotContainer {
                 double cx = Math.signum(xInput) * Math.pow(Math.abs(xInput), 3);
                 double cy = Math.signum(yInput) * Math.pow(Math.abs(yInput), 3);
                 double cr = Math.signum(rInput) * Math.pow(Math.abs(rInput), 3);
+                // SHOOTING ASSISTS (Oct 28, from 581/5000/1678/6328), while SCORING with RT held or the
+                // robot firing (vacuum), teleop, robot position known, Driver left stick click NOT held
+                // (full-power override): speed capped just under the 1.5 m/s fire limit, so the robot
+                // keeps firing while the driver creeps instead of silently stopping. The cap is applied
+                // BEFORE the slew limiters, so pressing or letting go of RT ramps the speed instead of
+                // braking hard or lurching (bug hunt Oct 28). Passing keeps full speed (allowed to
+                // 4 m/s). Switch "Slow Down While Shooting".
+                var opHid = operatorController.getHID();
+                boolean scoringNow = DriverStation.isTeleopEnabled() && aim.isActive() && !aim.passing()
+                    && aim.poseUsable()
+                    && (opHid.getRightTriggerAxis() > 0.5 || aim.isFiring())
+                    && !driverController.getHID().getLeftStickButton()
+                    && SmartDashboard.getBoolean(kSlowShootKey, true);
+                if (scoringNow && !DefenseMode.active()) {
+                    double capFrac = Constants.Aim.kMaxScoreSpeed * 0.9 / (maxSpeed * speedMultiplier);
+                    double c = Math.hypot(cx, cy);
+                    if (c > capFrac) { cx *= capFrac / c; cy *= capFrac / c; }
+                }
                 double scaledX = xLimiter.calculate(cx);
                 double scaledY = yLimiter.calculate(cy);
                 double scaledRot = rotLimiter.calculate(cr);
@@ -295,22 +313,10 @@ public class RobotContainer {
                         .withRotationalRate(rotationRate);
                 }
 
-                // SHOOTING ASSISTS (Oct 28, from 581/5000/1678/6328), while SCORING with RT held or the
-                // robot firing (vacuum), teleop, Driver left stick click NOT held (full-power override):
-                //  - speed capped just under the 1.5 m/s fire limit, so the robot keeps firing while
-                //    the driver creeps instead of silently stopping (581 1.5 m/s, 5000 2.5, 1678 1/5);
-                //  - sticks centered + nearly stopped + hub in reach = wheels lock in an X (581, 6328),
-                //    so a bump from a defender doesn't knock the shot off.
-                // Passing keeps full speed (it's allowed up to 4 m/s). Switch "Slow Down While Shooting".
+                // Sticks centered + nearly stopped + hub in reach while scoring = wheels lock in an X
+                // (581, 6328), so a bump from a defender doesn't knock the shot off.
                 double vx = scaledX * currentMaxSpeed, vy = scaledY * currentMaxSpeed;
-                var opHid = operatorController.getHID();
-                boolean scoringNow = DriverStation.isTeleopEnabled() && aim.isActive() && !aim.passing()
-                    && (opHid.getRightTriggerAxis() > 0.5 || aim.isFiring())
-                    && !driverController.getHID().getLeftStickButton()
-                    && SmartDashboard.getBoolean(kSlowShootKey, true);
                 if (scoringNow) {
-                    double v = Math.hypot(vx, vy), cap = Constants.Aim.kMaxScoreSpeed * 0.9;
-                    if (v > cap) { vx *= cap / v; vy *= cap / v; }
                     var st = drivetrain.getState().Speeds;
                     boolean centered = Math.hypot(xInput, yInput) < 1e-6 && Math.abs(rInput) < 1e-6;
                     if (centered && aim.poseUsable() && aim.solution().reachable()
@@ -366,6 +372,15 @@ public class RobotContainer {
         boolean on = SmartDashboard.getBoolean(kAimAtTeleopKey, true);
         if (on != Preferences.getBoolean(kAimAtTeleopKey, true)) Preferences.setBoolean(kAimAtTeleopKey, on);
         if (!on || DefenseMode.active() || aimCommand.isScheduled()) return;
+        // Bug hunt Oct 28: with the position unknown (no auto run, no tags seen yet) auto-aim would
+        // only follow a hub tag, so RT never fed and the turret swung by itself in the pit. Then it
+        // stays OFF (RT works the old way) and the dashboard says why. A real match always starts
+        // with an auto, which sets the position.
+        if (!aim.poseUsable()) {
+            SmartDashboard.putString("Auto-Aim At Teleop Start", "OFF: position unknown (RB turns it on)");
+            return;
+        }
+        SmartDashboard.putString("Auto-Aim At Teleop Start", "ON");
         CommandScheduler.getInstance().schedule(aimCommand);
     }
 
@@ -449,7 +464,11 @@ public class RobotContainer {
         // ready (passes from the neutral zone; pauses in the trench, hood down; in our zone scores
         // only into an open hub). Lower the intake first (Driver A). Ends like vacuum: Operator RB,
         // Y, Back (switches to vacuum), Driver Y (defense). Driver LT/RT still take the roller.
-        tele(operatorController.leftStick()).onTrue(Commands.runOnce(() -> {
+        // Bug hunt Oct 28: the intake jog is on the same stick, and a hard push often clicks it, so
+        // the click only counts with the stick near center (not pushed for the last 0.3 s).
+        Trigger leftStickCentered = new Trigger(() -> Math.abs(operatorController.getLeftY()) < 0.3
+            && Math.abs(operatorController.getLeftX()) < 0.3).debounce(0.3);
+        tele(operatorController.leftStick().and(leftStickCentered)).onTrue(Commands.runOnce(() -> {
             if (dumpCommand.isScheduled()) dumpCommand.cancel();
             else { vacuumCommand.cancel(); CommandScheduler.getInstance().schedule(dumpCommand); }
         }).withName("Operator L3: dump toggle"));
@@ -515,8 +534,8 @@ public class RobotContainer {
 
         // Left Stick up/down (hold): jog the ground intake slowly. Manual backup for when the
         // Driver A toggle can't do it (ignores the intake's soft limits while held). Was the D-pad.
-        tele(new Trigger(() -> operatorController.getLeftY() < -0.5)).whileTrue(groundIntakePivot.jogUpCommand());
-        tele(new Trigger(() -> operatorController.getLeftY() > 0.5)).whileTrue(groundIntakePivot.jogDownCommand());
+        tele(new Trigger(() -> operatorController.getLeftY() < -0.5 && !operatorController.getHID().getLeftStickButton())).whileTrue(groundIntakePivot.jogUpCommand());
+        tele(new Trigger(() -> operatorController.getLeftY() > 0.5 && !operatorController.getHID().getLeftStickButton())).whileTrue(groundIntakePivot.jogDownCommand());
 
         // OPEN D-pad Left/Right (hold): manual turret jog. Right = turn right (away from HOME).
         // The diagonals count too: a D-pad often reads Right as Up-Right or Down-Right for a moment,
@@ -612,6 +631,17 @@ public class RobotContainer {
                 .ignoringDisable(true));
         Preferences.initBoolean(kAimAtTeleopKey, true);
         SmartDashboard.putBoolean(kAimAtTeleopKey, Preferences.getBoolean(kAimAtTeleopKey, true));
+        // Saved the moment they're flipped (were saved only at teleop start, so Pit Check read stale values).
+        for (String key : new String[] {kAimAtTeleopKey, "Practice: Random Auto Winner"}) {
+            new Trigger(() -> SmartDashboard.getBoolean(key, true) != Preferences.getBoolean(key, true))
+                .onTrue(Commands.runOnce(() -> Preferences.setBoolean(key, SmartDashboard.getBoolean(key, true)))
+                    .ignoringDisable(true));
+        }
+        // Published at boot so the Drive Team tab never shows grey "missing" widgets.
+        SmartDashboard.putBoolean("Vacuum Mode", false);
+        SmartDashboard.putBoolean("Dump Mode", false);
+        SmartDashboard.putBoolean("Shooter Idle Active", false);
+        SmartDashboard.putString("Auto-Aim At Teleop Start", "waiting for teleop");
         RobotModeTriggers.teleop().onTrue(Commands.runOnce(this::autoAimOnIfWanted).withName("Teleop start: auto-aim on"));
 
         shooter.setDefaultCommand(new RunCommand(() -> {

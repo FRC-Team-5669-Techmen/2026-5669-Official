@@ -53,7 +53,15 @@ public class PowerBudget extends SubsystemBase {
         for (var m : drivetrain.getModules()) {
             TalonFX d = m.getDriveMotor();
             CurrentLimitsConfigs c = new CurrentLimitsConfigs();
-            d.getConfigurator().refresh(c); // once at boot (blocking is fine here)
+            var status = d.getConfigurator().refresh(c, 0.25); // once at boot (blocking is fine here)
+            // Bug hunt Oct 28: if a drive Talon didn't answer, c holds Phoenix defaults (stator 120 A),
+            // and the first apply would undo the 70 A slip limit. Never send a stator limit above it.
+            if (!status.isOK() || !c.StatorCurrentLimitEnable || c.StatorCurrentLimit > Power.kDriveStatorAmps + 5) {
+                System.out.println("POWER | drive " + d.getDeviceID() + " config read " + status
+                    + ": using stator " + Power.kDriveStatorAmps + " A");
+                c.StatorCurrentLimit = Power.kDriveStatorAmps;
+                c.StatorCurrentLimitEnable = true;
+            }
             drives.add(d);
             configs.add(c);
         }

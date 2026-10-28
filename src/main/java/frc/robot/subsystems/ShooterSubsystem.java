@@ -83,6 +83,8 @@ public class ShooterSubsystem extends SubsystemBase {
     private static final double kAtSpeed = 100;    // launch within this of target = a good shot
     private double prevRpm = 0, minRpm = 0, launchRpm = 0, dipStart = 0;
     private boolean inDip = false;
+    private double plateau = 0, dipRef = 0, prevTime = 0;
+    private static final double kPlateauDecay = 400; // RPM per second the "holding" speed may sag
     private int shots = 0, goodShots = 0;
     // Finished shots (dip seen AND recovered or gave up), for the shot log.
     private int finishedShots = 0;
@@ -102,27 +104,35 @@ public class ShooterSubsystem extends SubsystemBase {
 
     private void meterShots(double rpm) {
         double target = m_targetRpm;
-        if (target < 1000) { inDip = false; prevRpm = rpm; return; }
+        if (target < 1000) { inDip = false; prevRpm = rpm; plateau = rpm; return; }
         double now = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
-        if (!inDip && rpm < target - kDipStart && prevRpm >= target - kDipStart) {
-            inDip = true; dipStart = now; minRpm = rpm; launchRpm = prevRpm; shots++; lastShotTime = now;
+        // Bug hunt Oct 28: a dip is measured from what the wheel is really holding (its recent top,
+        // falling slowly), capped at the target, not from the target alone: a target above what the
+        // wheel can hold (the 5400 preset holds ~4720 at 12 V) never crossed "target - 60" and
+        // counted no balls at all.
+        double dt = Math.max(0, Math.min(0.1, now - prevTime));
+        prevTime = now;
+        if (!inDip) plateau = Math.max(rpm, plateau - kPlateauDecay * dt);
+        double ref = inDip ? dipRef : Math.min(target, plateau);
+        if (!inDip && rpm < ref - kDipStart && prevRpm >= ref - kDipStart) {
+            inDip = true; dipRef = ref; dipStart = now; minRpm = rpm; launchRpm = prevRpm; shots++; lastShotTime = now;
             if (Math.abs(launchRpm - target) <= kAtSpeed) goodShots++;
             SmartDashboard.putNumber("Last Shot Launch RPM", launchRpm);
             dev.doglog.DogLog.log("Shooter/ShotLaunchRpm", launchRpm);
             dev.doglog.DogLog.log("Shooter/ShotTargetRpm", target);
         } else if (inDip) {
             minRpm = Math.min(minRpm, rpm);
-            if (rpm >= target - kRecovered) {
+            if (rpm >= dipRef - kRecovered) {
                 inDip = false;
-                lastLaunch = launchRpm; lastDip = target - minRpm; lastRecovery = now - dipStart; lastTarget = target;
+                lastLaunch = launchRpm; lastDip = dipRef - minRpm; lastRecovery = now - dipStart; lastTarget = target;
                 finishedShots++;
-                SmartDashboard.putNumber("Last Shot Dip (RPM)", target - minRpm);
+                SmartDashboard.putNumber("Last Shot Dip (RPM)", dipRef - minRpm);
                 SmartDashboard.putNumber("Last Shot Recovery (s)", now - dipStart);
-                dev.doglog.DogLog.log("Shooter/ShotDipRpm", target - minRpm);
+                dev.doglog.DogLog.log("Shooter/ShotDipRpm", dipRef - minRpm);
                 dev.doglog.DogLog.log("Shooter/ShotRecoverySec", now - dipStart);
             } else if (now - dipStart > 1.0) {
                 inDip = false; // never recovered (shooter can't reach target): stop waiting
-                lastLaunch = launchRpm; lastDip = target - minRpm; lastRecovery = -1; lastTarget = target;
+                lastLaunch = launchRpm; lastDip = dipRef - minRpm; lastRecovery = -1; lastTarget = target;
                 finishedShots++;
             }
         }
