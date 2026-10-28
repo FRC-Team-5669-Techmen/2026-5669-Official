@@ -479,6 +479,19 @@
               "period": 0.06,
               "show_submit_button": true
             }
+          },
+          {
+            "title": "Plot Angle (deg)",
+            "x": 0.0,
+            "y": 768.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Plot Angle (deg)",
+              "period": 0.06,
+              "show_submit_button": true
+            }
           }
         ]
       }

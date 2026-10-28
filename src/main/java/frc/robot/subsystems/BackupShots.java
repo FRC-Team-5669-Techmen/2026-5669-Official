@@ -99,15 +99,20 @@ public class BackupShots {
      */
     public Command plotSpotCommand() {
         SmartDashboard.putNumber("Plot Distance (m)", SmartDashboard.getNumber("Plot Distance (m)", 1.5));
+        SmartDashboard.putNumber("Plot Angle (deg)", SmartDashboard.getNumber("Plot Angle (deg)", 0.0));
         return Commands.runOnce(() -> {
             double d = SmartDashboard.getNumber("Plot Distance (m)", 1.5);
             if (d < 0.8 || d > 8.0) {
                 SmartDashboard.putString("Backup Shot", "PLOT SPOT: distance must be 0.8 to 8 m");
                 return;
             }
+            // Angle from the straight-out line (hub center toward our driver station): + = toward the
+            // driver's LEFT, - = right. 0 = straight out from the middle of the hub's front face.
+            double ang = Math.toRadians(SmartDashboard.getNumber("Plot Angle (deg)", 0.0));
+            double fwd = d * Math.cos(ang), left = d * Math.sin(ang);
             Translation2d hub = AimSubsystem.ourHub();
-            Translation2d spot = red() ? new Translation2d(hub.getX() + d, hub.getY())
-                                       : new Translation2d(hub.getX() - d, hub.getY());
+            Translation2d spot = red() ? new Translation2d(hub.getX() + fwd, hub.getY() - left)
+                                       : new Translation2d(hub.getX() - fwd, hub.getY() + left);
             Rotation2d rot;
             String heading;
             if (localizer.headingKnown()) {
@@ -119,7 +124,8 @@ public class BackupShots {
             }
             drivetrain.resetPose(new Pose2d(spot, rot));
             localizer.markPoseSetByAuto();
-            String msg = String.format(Locale.US, "PLOT SPOT set: %.2f m (%.0f in) from the hub center (%s)", d, d / 0.0254, heading);
+            String msg = String.format(Locale.US, "PLOT SPOT set: %.2f m (%.0f in) from the hub center at %.0f deg (%s)",
+                d, d / 0.0254, Math.toDegrees(ang), heading);
             SmartDashboard.putString("Backup Shot", msg);
             System.out.println("PLOT | " + msg);
         }).ignoringDisable(true).withName("Set Pose: Plot Spot");
