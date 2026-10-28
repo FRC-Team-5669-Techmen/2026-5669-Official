@@ -154,11 +154,16 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     private static final String kBoostKey = "Shooter Recovery Boost (V)";
+    private static boolean boostPublished = false;
 
     private static double boostVolts() {
         if (!edu.wpi.first.wpilibj.Preferences.containsKey(kBoostKey)) {
             edu.wpi.first.wpilibj.Preferences.initDouble(kBoostKey, Constants.Shooter.kBoostVolts);
-            SmartDashboard.putNumber(kBoostKey, Constants.Shooter.kBoostVolts);
+        }
+        if (!boostPublished) {  // every boot, so the dashboard field always exists (Oct 28 fix)
+            boostPublished = true;
+            SmartDashboard.putNumber(kBoostKey,
+                edu.wpi.first.wpilibj.Preferences.getDouble(kBoostKey, Constants.Shooter.kBoostVolts));
         }
         double v = MathUtil.clamp(SmartDashboard.getNumber(kBoostKey,
             edu.wpi.first.wpilibj.Preferences.getDouble(kBoostKey, Constants.Shooter.kBoostVolts)), 0.0, 8.0);

@@ -542,13 +542,13 @@ public final class Constants {
         // the hood. Lens height: 20.75 in with the hood all the way down, 22.35 in all the way up.
         // The code interpolates by hood position (Gooba.kBottomPosition .. kTopPosition).
         public static final double kCameraHeightHoodDown = 20.75 * 0.0254;
-        public static final double kCameraHeightHoodUp = 22.35 * 0.0254;
+        public static final double kCameraHeightHoodUp = 24.25 * 0.0254;  // Oct 28 rebuilt hood: measured 24.25 in at the top (dashboard value wins)
         // MEASURE: camera tilt, degrees UP from level.
         // MEASURED Oct 25: lens points UP, tilted back 25 degrees (phone level on top: -25 to -26).
         // Hood all the way UP: also 25 (measured Oct 25; a belt keeps the camera angle as the hood rises).
         // Oct 25 evening: Limelight re-aimed (it had tipped up); phone level now reads 22-24 -> 23.
-        public static final double kCameraPitchHoodDown = 15.5;   // Oct 28: Limelight re-aimed to about 15-16 deg (dashboard value wins once typed)
-        public static final double kCameraPitchHoodUp = 15.5;     // same as hood down: a belt compensation mechanism holds the camera angle as the hood rises
+        public static final double kCameraPitchHoodDown = 13.0;   // Oct 28: Limelight re-aimed, measured 13 deg (dashboard value wins once typed)
+        public static final double kCameraPitchHoodUp = 13.0;     // same as hood down: a belt compensation mechanism holds the camera angle as the hood rises
         // Skip vision while the hood (and camera) is moving faster than this (rotations/second).
         public static final double kMaxHoodSpeedForVision = 1.0;
         // Limelight's robot-space axes. Its web UI labels them "forward / right / up" and turns
