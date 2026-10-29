@@ -5,6 +5,12 @@
     "data": {
       "commands": [
         {
+          "type": "named",
+          "data": {
+            "name": "lowerIntake"
+          }
+        },
+        {
           "type": "path",
           "data": {
             "pathName": "Right-to-Pickup"
