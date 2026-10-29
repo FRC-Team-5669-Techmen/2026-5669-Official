@@ -14,6 +14,7 @@ import com.pathplanner.lib.commands.FollowPathCommand;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -256,9 +257,10 @@ public class RobotContainer {
                 // braking hard or lurching (bug hunt Oct 28). Passing keeps full speed (allowed to
                 // 4 m/s). Switch "Slow Down While Shooting".
                 var opHid = operatorController.getHID();
+                boolean ballsFlowing = handsFreeBallsFlowing(); // every loop, so its clock stays current
                 boolean scoringNow = DriverStation.isTeleopEnabled() && aim.isActive() && !aim.passing()
                     && aim.poseUsable()
-                    && (opHid.getRightTriggerAxis() > 0.5 || aim.isFiring())
+                    && (opHid.getRightTriggerAxis() > 0.5 || ballsFlowing)
                     && !driverController.getHID().getLeftStickButton()
                     && SmartDashboard.getBoolean(kSlowShootKey, true);
                 if (scoringNow && !DefenseMode.active()) {
@@ -362,6 +364,45 @@ public class RobotContainer {
 
     private static final String kAimAtTeleopKey = "Auto-Aim On At Teleop Start";
     private static final String kSlowShootKey = "Slow Down While Shooting";
+    /**
+     * DRIVER-CENTRIC SHOOTING (Oct 28 night, for a drive team with a new operator). Both saved,
+     * both OFF until the drive coach turns them on (Pre-Match tab).
+     * AUTO FIRE: in teleop, with auto-aim on and the position known, the robot SCORES by itself
+     * whenever it is inside our alliance zone and ready (turret on the hub, wheel at speed, hood
+     * set, our hub open, moving under 1.5 m/s). No operator trigger needed: the driver decides
+     * where and when by driving there and slowing down. It never PASSES by itself (passing stays a
+     * choice: Operator RT, vacuum or dump). Operator RT and B still take over while held.
+     * OPERATOR SIMPLE MODE: the operator controller keeps only RT (fire), LT (spin up), RB (aim
+     * on/off), B (unjam) and the held A / X / LB backup spots; Y, Start, Back, both stick clicks,
+     * the D-pad jogs and the left-stick intake jog do nothing, so a bumped button can't cancel
+     * auto-aim or start a mode mid-match.
+     */
+    static final String kAutoFireKey = "Auto Fire (robot scores by itself)";
+    static final String kSimpleOpKey = "Operator Simple Mode";
+
+    private boolean savedSwitch(String key) { return SmartDashboard.getBoolean(key, Preferences.getBoolean(key, false)); }
+
+    /** Auto fire wants to shoot right now (see kAutoFireKey). */
+    private boolean autoFireWanted() {
+        var op = operatorController.getHID();
+        return DriverStation.isTeleopEnabled() && savedSwitch(kAutoFireKey)
+            && aim.isActive() && aim.poseUsable() && !aim.passing() && aim.legalToScore()
+            && !aim.vacuum() && !DefenseMode.active()
+            && op.getRightTriggerAxis() <= 0.5 && !op.getBButton();
+    }
+
+    /**
+     * Hands-free firing (vacuum, dump, auto fire) slows the robot only while balls are actually
+     * leaving: from the start of firing for 1 s, then for 0.75 s after each ball. Before, an empty
+     * hopper kept "firing" forever and held the robot at 1.35 m/s inside our zone.
+     */
+    private double handsFreeFireStart = Double.NaN;
+    private boolean handsFreeBallsFlowing() {
+        double now = Timer.getFPGATimestamp();
+        if (!aim.isFiring()) { handsFreeFireStart = Double.NaN; return false; }
+        if (Double.isNaN(handsFreeFireStart)) handsFreeFireStart = now;
+        return now - handsFreeFireStart < 1.0 || now - shooter.lastShotTime() < 0.75;
+    }
 
     /**
      * AUTO-AIM ON BY DEFAULT (Oct 28): at teleop start (and when defense is turned off with Y) the
@@ -453,12 +494,20 @@ public class RobotContainer {
                 // 11 V, kV 0.15), so "90% of target" would never come and RT would never feed.
                 () -> shooter.targetRpm() > 500 && shooter.getCurrentRpm() > 0.75 * shooter.targetRpm()));
 
+        // AUTO FIRE (switch, see kAutoFireKey): scores by itself inside our zone. Off while the
+        // operator holds RT or B, so either of those takes over and auto fire comes back after.
+        tele(new Trigger(this::autoFireWanted)).whileTrue(
+            new ShootCommand(aim, shooter, index, shooterIntake, goober, gooba, false).withName("Auto Fire"));
+
+        // OPERATOR SIMPLE MODE (switch, see kSimpleOpKey): these bindings only work with it OFF.
+        Trigger expert = new Trigger(() -> !savedSwitch(kSimpleOpKey));
+
         // VACUUM MODE (Back, press to toggle): intake + shoot hands-free. Intake down, roller in,
         // auto-aim on, fires by itself whenever ready. Scores from inside our alliance zone,
         // PASSES home from the neutral zone (follows the Start target mode). See VacuumCommand.
         // Operator RT/B and the jogs take over only while held; vacuum resumes after.
         // Vacuum and dump are two flavors of one hands-free mode: turning one on ends the other.
-        tele(operatorController.back()).onTrue(Commands.runOnce(() -> {
+        tele(operatorController.back()).and(expert).onTrue(Commands.runOnce(() -> {
             if (vacuumCommand.isScheduled()) vacuumCommand.cancel();
             else { dumpCommand.cancel(); CommandScheduler.getInstance().schedule(vacuumCommand); }
         }).withName("Operator Back: vacuum toggle"));
@@ -471,16 +520,16 @@ public class RobotContainer {
         // the click only counts with the stick near center (not pushed for the last 0.3 s).
         Trigger leftStickCentered = new Trigger(() -> Math.abs(operatorController.getLeftY()) < 0.3
             && Math.abs(operatorController.getLeftX()) < 0.3).debounce(0.3);
-        tele(operatorController.leftStick().and(leftStickCentered)).onTrue(Commands.runOnce(() -> {
+        tele(operatorController.leftStick().and(leftStickCentered)).and(expert).onTrue(Commands.runOnce(() -> {
             if (dumpCommand.isScheduled()) dumpCommand.cancel();
             else { vacuumCommand.cancel(); CommandScheduler.getInstance().schedule(dumpCommand); }
         }).withName("Operator L3: dump toggle"));
         // Y (manual hood) means "I'm taking over": vacuum mode turns off. RB does too (below).
-        tele(operatorController.y()).onTrue(Commands.runOnce(() -> { vacuumCommand.cancel(); dumpCommand.cancel(); }));
+        tele(operatorController.y()).and(expert).onTrue(Commands.runOnce(() -> { vacuumCommand.cancel(); dumpCommand.cancel(); }));
 
         // SHOT TARGET MODE (Start, press): AUTO -> SCORE only -> PASS only -> AUTO. Dashboard
         // "Shot Target" shows it. AUTO = score inside our alliance zone, pass from past it.
-        tele(operatorController.start()).onTrue(aim.cycleModeCommand());
+        tele(operatorController.start()).and(expert).onTrue(aim.cycleModeCommand());
 
         // LOCKED Left Trigger (hold): shooter windup. Auto-aim ON: to the shot table's speed for
         // the distance (the shooter's default command does it, see configureSystemDefaults).
@@ -524,21 +573,21 @@ public class RobotContainer {
         // TRENCH GUARD (automatic): near a trench the hood goes all the way DOWN (the Limelight on
         // the hood is taller than the trench bar with the hood up). Right stick CLICK (R3) = trench
         // shot: hood may go up while the robot stays put next to the trench; moving ends it.
-        tele(operatorController.rightStick()).onTrue(aim.trenchOverrideCommand());
+        tele(operatorController.rightStick()).and(expert).onTrue(aim.trenchOverrideCommand());
 
         // LOCKED Y (press): toggle the hood between stowed and deployed (the drive team's
         // map: "Toggle Gooba Hood"). Back now that the hood motor (18) is.
-        tele(operatorController.y()).onTrue(gooba.toggleCommand());
+        tele(operatorController.y()).and(expert).onTrue(gooba.toggleCommand());
 
         // D-pad Up/Down (hold): jog the hood slowly (programming lead, Oct 25; same as last
         // season). Write down "Hood Position (rot)" for good shots.
-        tele(operatorController.povUp()).whileTrue(new ManualGoobaCommand(gooba, true));
-        tele(operatorController.povDown()).whileTrue(new ManualGoobaCommand(gooba, false));
+        tele(operatorController.povUp()).and(expert).whileTrue(new ManualGoobaCommand(gooba, true));
+        tele(operatorController.povDown()).and(expert).whileTrue(new ManualGoobaCommand(gooba, false));
 
         // Left Stick up/down (hold): jog the ground intake slowly. Manual backup for when the
         // Driver A toggle can't do it (ignores the intake's soft limits while held). Was the D-pad.
-        tele(new Trigger(() -> operatorController.getLeftY() < -0.5 && !operatorController.getHID().getLeftStickButton())).whileTrue(groundIntakePivot.jogUpCommand());
-        tele(new Trigger(() -> operatorController.getLeftY() > 0.5 && !operatorController.getHID().getLeftStickButton())).whileTrue(groundIntakePivot.jogDownCommand());
+        tele(new Trigger(() -> operatorController.getLeftY() < -0.5 && !operatorController.getHID().getLeftStickButton())).and(expert).whileTrue(groundIntakePivot.jogUpCommand());
+        tele(new Trigger(() -> operatorController.getLeftY() > 0.5 && !operatorController.getHID().getLeftStickButton())).and(expert).whileTrue(groundIntakePivot.jogDownCommand());
 
         // OPEN D-pad Left/Right (hold): manual turret jog. Right = turn right (away from HOME).
         // The diagonals count too: a D-pad often reads Right as Up-Right or Down-Right for a moment,
@@ -547,8 +596,8 @@ public class RobotContainer {
             .or(tele(operatorController.povUpLeft())).or(tele(operatorController.povDownLeft()));
         Trigger turretJogRight = tele(operatorController.povRight())
             .or(tele(operatorController.povUpRight())).or(tele(operatorController.povDownRight()));
-        turretJogLeft.whileTrue(new ManualTurretCommand(goober, -Constants.Turret.kManualJogSpeed));
-        turretJogRight.whileTrue(new ManualTurretCommand(goober, Constants.Turret.kManualJogSpeed));
+        turretJogLeft.and(expert).whileTrue(new ManualTurretCommand(goober, -Constants.Turret.kManualJogSpeed));
+        turretJogRight.and(expert).whileTrue(new ManualTurretCommand(goober, Constants.Turret.kManualJogSpeed));
 
         // Not on the map, kept on purpose: B (hold) runs the Spindex backwards to clear a jam
         tele(operatorController.b()).whileTrue(new StartEndCommand(
@@ -636,6 +685,13 @@ public class RobotContainer {
         new Trigger(() -> SmartDashboard.getBoolean(kSlowShootKey, true) != Preferences.getBoolean(kSlowShootKey, true))
             .onTrue(Commands.runOnce(() -> Preferences.setBoolean(kSlowShootKey, SmartDashboard.getBoolean(kSlowShootKey, true)))
                 .ignoringDisable(true));
+        for (String key : new String[] {kAutoFireKey, kSimpleOpKey}) {
+            Preferences.initBoolean(key, false);
+            SmartDashboard.putBoolean(key, Preferences.getBoolean(key, false));
+            new Trigger(() -> SmartDashboard.getBoolean(key, false) != Preferences.getBoolean(key, false))
+                .onTrue(Commands.runOnce(() -> Preferences.setBoolean(key, SmartDashboard.getBoolean(key, false)))
+                    .ignoringDisable(true));
+        }
         Preferences.initBoolean(kAimAtTeleopKey, true);
         SmartDashboard.putBoolean(kAimAtTeleopKey, Preferences.getBoolean(kAimAtTeleopKey, true));
         // Saved the moment they're flipped (were saved only at teleop start, so Pit Check read stale values).
@@ -654,7 +710,8 @@ public class RobotContainer {
         shooter.setDefaultCommand(new RunCommand(() -> {
             boolean wantsShot = operatorController.getHID().getRightTriggerAxis() > 0.5
                 || operatorController.getHID().getLeftTriggerAxis() > 0.5
-                || aim.vacuum();   // vacuum mode: keep the wheel up even while an unjam has the feeders
+                || aim.vacuum()    // vacuum mode: keep the wheel up even while an unjam has the feeders
+                || autoFireWanted();
             boolean rtHeld = operatorController.getHID().getRightTriggerAxis() > 0.5;
             if (aim.isActive() && wantsShot) {
                 shooter.runAtRPM(aim.targetRpm()); // auto-aim: table speed while LT or RT is held
@@ -844,7 +901,7 @@ public class RobotContainer {
         operatorController.getHID().setRumble(RumbleType.kBothRumble, pattern >= 0 ? pattern : ready ? 0.4 : 0.0);
         var op = operatorController.getHID();
         aim.setShotWanted(!DriverStation.isTeleopEnabled() || op.getRightTriggerAxis() > 0.5
-            || op.getLeftTriggerAxis() > 0.5 || aim.vacuum() || aim.isFiring());
+            || op.getLeftTriggerAxis() > 0.5 || aim.vacuum() || aim.isFiring() || autoFireWanted());
         SmartDashboard.putBoolean("Ready To Fire", ready);
         // Which Xbox controller is which: slot 0 = DRIVER, slot 1 = OPERATOR in the
         // Driver Station USB tab. Driver A / Right Trigger / D-pad only work from slot 0.

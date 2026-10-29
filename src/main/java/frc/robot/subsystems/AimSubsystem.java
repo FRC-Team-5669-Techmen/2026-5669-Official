@@ -314,6 +314,9 @@ public class AimSubsystem extends SubsystemBase {
     public double turretRate() { return poseUsable() ? solution.turretRateDegPerSec() : 0.0; }
 
     public boolean isActive() { return active; }
+
+    /** Inside our alliance zone now and at the predicted launch spot (G407): scoring is legal. */
+    public boolean legalToScore() { return poseUsable() && legalToScore; }
     /** Vacuum mode on/off (it auto-fires, so it never uses the tag-only fallback). */
     public void setVacuum(boolean on) { vacuum = on; }
     public boolean vacuum() { return vacuum; }

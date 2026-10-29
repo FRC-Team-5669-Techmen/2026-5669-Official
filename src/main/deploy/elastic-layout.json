@@ -143,6 +143,18 @@
               "period": 0.06,
               "show_submit_button": false
             }
+          },
+          {
+            "title": "Auto Fire (robot scores by itself)",
+            "x": 1280.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Toggle Switch",
+            "properties": {
+              "topic": "/SmartDashboard/Auto Fire (robot scores by itself)",
+              "period": 0.06
+            }
           }
         ]
       }
@@ -245,7 +257,7 @@
             "title": "Auto Start",
             "x": 512.0,
             "y": 256.0,
-            "width": 768.0,
+            "width": 512.0,
             "height": 128.0,
             "type": "Text Display",
             "properties": {
@@ -256,7 +268,7 @@
           },
           {
             "title": "Auto Start OK",
-            "x": 1280.0,
+            "x": 1024.0,
             "y": 256.0,
             "width": 256.0,
             "height": 128.0,
@@ -375,6 +387,18 @@
             "type": "Toggle Switch",
             "properties": {
               "topic": "/SmartDashboard/Slow Down While Shooting",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Operator Simple Mode",
+            "x": 1280.0,
+            "y": 256.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Toggle Switch",
+            "properties": {
+              "topic": "/SmartDashboard/Operator Simple Mode",
               "period": 0.06
             }
           }
