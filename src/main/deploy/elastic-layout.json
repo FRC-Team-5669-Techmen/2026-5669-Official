@@ -993,11 +993,24 @@
             "title": "Shot Map Step",
             "x": 0.0,
             "y": 0.0,
-            "width": 1280.0,
+            "width": 768.0,
             "height": 128.0,
             "type": "Text Display",
             "properties": {
               "topic": "/SmartDashboard/Shot Map Step",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Pit Check",
+            "x": 768.0,
+            "y": 0.0,
+            "width": 512.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Pit Check",
               "period": 0.06,
               "show_submit_button": false
             }
@@ -1016,14 +1029,14 @@
             }
           },
           {
-            "title": "Pit Check",
+            "title": "Shot Ready",
             "x": 768.0,
             "y": 128.0,
             "width": 512.0,
             "height": 128.0,
             "type": "Text Display",
             "properties": {
-              "topic": "/SmartDashboard/Pit Check",
+              "topic": "/SmartDashboard/Shot Ready",
               "period": 0.06,
               "show_submit_button": false
             }
@@ -1079,16 +1092,15 @@
             }
           },
           {
-            "title": "Shot Ready",
+            "title": "Shots At Speed",
             "x": 1024.0,
             "y": 256.0,
             "width": 256.0,
             "height": 128.0,
-            "type": "Text Display",
+            "type": "Large Text Display",
             "properties": {
-              "topic": "/SmartDashboard/Shot Ready",
-              "period": 0.06,
-              "show_submit_button": false
+              "topic": "/SmartDashboard/Shots At Speed",
+              "period": 0.06
             }
           },
           {
@@ -1118,21 +1130,61 @@
             }
           },
           {
-            "title": "Shots At Speed",
+            "title": "Plot Distance (m)",
             "x": 512.0,
             "y": 384.0,
             "width": 256.0,
             "height": 128.0,
-            "type": "Large Text Display",
+            "type": "Text Display",
             "properties": {
-              "topic": "/SmartDashboard/Shots At Speed",
+              "topic": "/SmartDashboard/Plot Distance (m)",
+              "period": 0.06,
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "Plot Angle (deg)",
+            "x": 768.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Plot Angle (deg)",
+              "period": 0.06,
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "Set Pose: Plot Spot",
+            "x": 1024.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Set Pose: Plot Spot",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Vision Pose ON",
+            "x": 0.0,
+            "y": 512.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Toggle Switch",
+            "properties": {
+              "topic": "/SmartDashboard/Vision Pose ON",
               "period": 0.06
             }
           },
           {
             "title": "Last Shot Launch RPM",
-            "x": 768.0,
-            "y": 384.0,
+            "x": 256.0,
+            "y": 512.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Large Text Display",
@@ -1143,8 +1195,8 @@
           },
           {
             "title": "Reset Shot Stats",
-            "x": 1024.0,
-            "y": 384.0,
+            "x": 512.0,
+            "y": 512.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Command",
@@ -1153,19 +1205,6 @@
               "period": 0.06,
               "show_type": false,
               "maximize_button_space": true
-            }
-          },
-          {
-            "title": "Shot Table",
-            "x": 0.0,
-            "y": 512.0,
-            "width": 768.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Shot Table",
-              "period": 0.06,
-              "show_submit_button": false
             }
           },
           {
@@ -1193,84 +1232,6 @@
               "period": 0.06,
               "show_type": false,
               "maximize_button_space": true
-            }
-          },
-          {
-            "title": "Plot Distance (m)",
-            "x": 0.0,
-            "y": 640.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Plot Distance (m)",
-              "period": 0.06,
-              "show_submit_button": true
-            }
-          },
-          {
-            "title": "Set Pose: Plot Spot",
-            "x": 256.0,
-            "y": 640.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Command",
-            "properties": {
-              "topic": "/SmartDashboard/Set Pose: Plot Spot",
-              "period": 0.06,
-              "show_type": false,
-              "maximize_button_space": true
-            }
-          },
-          {
-            "title": "Vision Pose ON",
-            "x": 512.0,
-            "y": 640.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Toggle Switch",
-            "properties": {
-              "topic": "/SmartDashboard/Vision Pose ON",
-              "period": 0.06
-            }
-          },
-          {
-            "title": "Camera Pitch Hood Down (deg)",
-            "x": 768.0,
-            "y": 640.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Camera Pitch Hood Down (deg)",
-              "period": 0.06,
-              "show_submit_button": true
-            }
-          },
-          {
-            "title": "Camera Pitch Hood Up (deg)",
-            "x": 1024.0,
-            "y": 640.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Camera Pitch Hood Up (deg)",
-              "period": 0.06,
-              "show_submit_button": true
-            }
-          },
-          {
-            "title": "Plot Angle (deg)",
-            "x": 0.0,
-            "y": 768.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Plot Angle (deg)",
-              "period": 0.06,
-              "show_submit_button": true
             }
           }
         ]
