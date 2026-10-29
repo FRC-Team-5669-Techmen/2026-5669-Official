@@ -23,12 +23,6 @@
           }
         },
         {
-          "type": "named",
-          "data": {
-            "name": "visionScore"
-          }
-        },
-        {
           "type": "path",
           "data": {
             "pathName": "Left-to-Pickup-2"
@@ -44,12 +38,6 @@
           "type": "path",
           "data": {
             "pathName": "Shoot-LeftEnding2"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "visionScore"
           }
         },
         {
