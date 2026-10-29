@@ -165,6 +165,10 @@ Guide for students: `docs/BROWNOUTS-AND-BATTERIES.md`; research: `/home/claude/r
 The hood no longer goes as far down as before: power-on zero is the NEW bottom (Zero Hood pressed there), the top is set with "Set Hood Top", and the recorded SCORE table was cleared (old points kept in `match-data/robot-settings.json` / roboRIO `robot-settings.json` history). The Limelight was re-aimed, measured 13 deg: `kCameraPitchHoodDown/Up` 13 (dashboard "Camera Pitch Hood Down/Up (deg)" wins). **Hood travel measured Oct 28: 0 (down) to 7.94 rot (top), Set Hood Top saved 7.906** (about 2.04x the old 3.89 rotations), so `kTopPosition` 7.87, deployed preset 2.65, hood ready tolerance 0.24 / pass 0.80, and the default table / pass table / ty-map hood guesses were scaled x2.04. Lens heights are typed on the dashboard ("Camera Height Hood Down/Up (in)", floor to lens center, saved): MEASURE both with the rebuilt hood. Elastic tabs **Hood + Camera** and **Battery**. Re-plot the whole shot table.
 
 
+## Drive Team Playbook (keep it current, standing rule)
+
+The drive team learns the robot from **"Drive Team Playbook"**, pinned in the FRC 2026/27 class on ideabosco.com. Source: `assignment-sources/frc-2026-27/drive-team-playbook.src.html` in pina-hash/idea-app (build with `tools/hx-kit/build.mjs`, test with `tools/hx-kit/test.mjs`, re-upload over the post with the IDEA Website connector `replace_html_assignment`). **Every change a driver, operator, coach or technician would notice (a binding, a buzz, an automatic behavior, a dashboard name, a pre-match step) updates the playbook the same session and adds a dated row to its "What changed" page**, along with the controller map and the cheat sheet below.
+
 ## Drive Team Controller Map
 
 `tools/controller-map/`: double-click **Start Controller Map.bat** on any Windows driver station laptop for a live map of both Xbox controllers under the docked Driver Station (reads the controllers in the background, so it follows presses while Driver Station has focus). See its README. **When a controller binding changes, update the `BIND` / `CALL` tables in `tools/controller-map/index.html` too.**
