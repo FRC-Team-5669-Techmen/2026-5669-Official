@@ -342,6 +342,7 @@ This is a 2026 FRC robot with the following mechanical systems:
 - **Soft limit on the leader: DOWN only** (`kSoftLimitMargin` past DOWN, once DOWN is set). No UP soft limit: an UP limit measured from a wrong zero is what used to block raising.
 - Brake mode, 40 A stator limit on both motors. Speed is set by `kCruiseVelocity` / `kAcceleration` / `kJerk`; holding by `kP` / `kD` / `kV`.
 - **Enabling never moves it**: when the robot disables, the Motion Magic target is cleared, so it sits (brake) until the next A press or jog.
+- **While disabled the toggle follows the real position** (Oct 29): pushed up or down by hand between test runs, the next A press / auto `lowerIntake` still does the right thing (a remembered "down" used to make the next auto's lowerIntake do nothing).
 - Dashboard: "Intake Status", "Intake Position (rot)", "Intake Target (rot)", "Intake Holding Target", both motors' amps and speeds, plus a **"Zero Intake (intake is UP)"** button (works while disabled) and **"Zero Intake (intake is DOWN)"** (Oct 29, for a robot powered on with the intake already down; `zeroAtDown()`: leader at `kDownPosition`, DOWN state). For the shop only (a robot powered on with the intake down): starting a match with it down is not legal.
 - Wrong direction: flip `kLeaderInverted`. Motors fighting: flip `kFollowerAlignment`. All in `Constants.GroundIntakePivot`.
 
@@ -468,7 +469,7 @@ ignores an Xbox controller that lands in its slot. See `docs/X56-HOTAS-SETUP.md`
 - Alliance-aware path flipping (Red vs Blue)
 - **An auto reserves every motor any of its commands uses for its WHOLE run** (`PathPlannerAuto` adds the union of its commands' requirements; event-marker commands count via `FollowPathCommand`). So in an auto with `visionScore`, the turret's default "watch the hub in autos" never runs, and the shooter/turret sit still between shots: use `prepareShot` / `watchHub` zones instead
 - Auto chooser defaults to **"Shoot Preload (stay put)"** (Oct 27 night; was "None" = zero points): shoots the preload from where the robot sits, never drives. Still **pick the real auto before every match**: Pit Check and "Auto Start" say if none is picked
-- **Auto is 20 s** in REBUILT. PathPlanner's "Simulated Driving Time" counts only driving, so add each `score` (up to 3.5 s). The 3-piece autos are ~16.2 s of driving + 2 x 3.5 s = ~23 s: the last volley gets cut off until the paths are faster or `prepareShot` zones save the spin-up time
+- **Auto is 20 s** in REBUILT. PathPlanner's "Simulated Driving Time" counts only driving, so add each `score` (until the hopper is empty: about 1 s plus the firing time). The 3-piece autos are ~16.2 s of driving + 2 x 3.5 s = ~23 s: the last volley gets cut off until the paths are faster or `prepareShot` zones save the spin-up time
 
 ### Named Commands (registered in `Marcos.java`)
 The registered strings are referenced by the deployed `.auto`/`.path` files — do not
@@ -478,7 +479,7 @@ rename them without updating the autos in `src/main/deploy/pathplanner/`.
 |------|---------|---------|
 | `spinUpShooter` | RunShooterCommand (fast RPM) | 1.5s |
 | `spinUpShooterSlow` | RunShooterCommand (slow RPM) | 1.5s |
-| `score` | AimCommand + ShootCommand: aim from position, fire every ball the moment it's ready | 3.5s |
+| `score` | AimCommand + ShootCommand (`Marcos.scoreUntilEmpty`): aim from position, fire every ball the moment it's ready, **until the hopper is empty** (no ball for 1.0 s after firing starts). Gives up after 3.5 s if it never gets READY; 10 s safety cap (Oct 29: was a hard 3.5 s that could stop a full hopper mid-volley) | until empty |
 | `scorePreload` | Same as `score` (Oct 27; it used to fire at a fixed 5400 RPM with the turret wherever it was, which faced our own wall in Center Preload) | 3.5s |
 | `prepareShot` | Oct 29: turret on OUR HUB (never a pass corner), shooter at the SCORE table speed for that distance, hood to its angle once the trench guard lets it up; no feeding. Event marker ZONE over a whole path that ends at a shooting spot (it can start in the neutral zone), so `visionScore` fires at once. On every Shoot path of the 3-piece autos | zone |
 | `watchHub` | Turret keeps the Limelight on our hub (camera position fixes), nothing else moves. Event marker zone for paths that don't end in a shot | zone |
@@ -492,7 +493,7 @@ rename them without updating the autos in `src/main/deploy/pathplanner/`.
 | `alignTurret` | AimCommand | 2.0s |
 | `deployGooba` / `stowGooba` | Hood to deployed / stowed preset | instant |
 | `autoAimGooba` | AutoGooba (hood follows ty) | 2.0s |
-| `lowerIntake` / `intakeDown` | Ground intake DOWN (`deployIfUp` = the same Motion Magic `downMove` as Driver A, same speed and strength) + roller in **for the rest of auto**. The roller is run by a manager with no requirements that **steps aside while firing**, so the Agitator runs it like in teleop (5 V assist, tap-outs; 12 V while feeding jams the inlet). The 3-piece autos fire it from an event marker at 0.10 of the first pickup path (x ~5.7 m: clear of the trench/bump, ~0.6 s before the pile) | instant |
+| `lowerIntake` / `intakeDown` | Ground intake DOWN (`forceDown()`: the same Motion Magic `downMove` as Driver A, same speed and strength, and it ignores the toggle's memory, so a stale "down" from an earlier test run can't skip it; console `AUTO \| lowerIntake: ...` shows it fired) + roller in **for the rest of auto**. The roller is run by a manager with no requirements that **steps aside while firing**, so the Agitator runs it like in teleop (5 V assist, tap-outs; 12 V while feeding jams the inlet). The 3-piece autos fire it from an event marker at 0.10 of the first pickup path (x ~5.7 m: clear of the trench/bump, ~0.6 s before the pile) | instant |
 | `raiseIntake` | Roller off + intake UP | instant |
 | `runGroundIntake` | Roller in for the rest of auto (intake stays where it is). **Name-only event markers** (PathPlanner's default: a name, no command) only fire an `EventTrigger`: Marcos binds one for `runGroundIntake`, `lowerIntake`, `intakeDown`, `intakeStartsDown` and `raiseIntake` | instant |
 | `togglePiston1`, `togglePiston2` | No-ops (pneumatics removed; kept so old autos load cleanly) | - |

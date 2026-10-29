@@ -116,11 +116,14 @@ public class Marcos {
             .withName("Auto: roller manager");
         // One shared instance: scheduling it again while it runs does nothing.
         Runnable startRoller = () -> CommandScheduler.getInstance().schedule(rollerForAuto);
-        // Intake DOWN + roller on: the very same move as Driver A's DOWN press (deployIfUp runs the
-        // same Motion Magic downMove), so the same speed and strength, and it stops pushing once
-        // it reaches the floor. Does nothing if the code already knows it's down.
+        // Intake DOWN + roller on: the very same Motion Magic downMove as Driver A's DOWN press, so
+        // the same speed and strength, and it stops pushing once it reaches the floor. forceDown()
+        // ignores what the toggle remembers (a match always starts with the intake UP). The console
+        // line shows it fired: no line = the marker/command never ran.
         Runnable lower = () -> {
-            groundIntakePivot.deployIfUp();
+            System.out.println("AUTO | lowerIntake: intake DOWN + roller (intake was at "
+                + String.format(java.util.Locale.US, "%.1f", groundIntakePivot.position()) + " rot)");
+            groundIntakePivot.forceDown();
             startRoller.run();
         };
         Runnable raise = () -> {
@@ -196,15 +199,20 @@ public class Marcos {
     }
 
     /**
-     * AUTO SCORE that ends as soon as the hopper is EMPTY (Oct 27): once firing has started, no
-     * ball has left for kEmptySeconds = done, so the auto moves on instead of waiting out the full
-     * 3.5 s (the 3-piece autos ran ~23 s of a 20 s auto). Still stops at 3.5 s no matter what.
+     * AUTO SCORE that keeps firing until the hopper is EMPTY: once firing has started it ends when
+     * no ball has left for kEmptySeconds, so a full hopper empties completely and an empty one
+     * moves on after about a second. If it never gets READY (hub out of reach, robot shoved) it
+     * gives up after kGiveUpSeconds. kMaxVolleySeconds is only a safety cap: a volley that is
+     * still launching balls is scoring, so it isn't cut short.
      */
     private static final double kEmptySeconds = 1.0; // > the agitation pump trigger (0.8 s), so a bridged hopper gets one pump first
+    private static final double kGiveUpSeconds = 3.5; // never READY in this long: move on
+    private static final double kMaxVolleySeconds = 10.0;
 
     public static Command scoreUntilEmpty(AimSubsystem aim, ShooterSubsystem shooter, IndexSubsystem index,
             ShooterIntakeSubsystem shooterIntake, Goober goober, GoobaSubsystem gooba,
             LimelightSubsystem limelight, CommandSwerveDrivetrain drivetrain) {
+        double[] started = {0.0};
         double[] firstFire = {Double.NaN};
         double[] lastBall = {Double.NEGATIVE_INFINITY};
         int[] shotsAtStart = {0};
@@ -213,7 +221,7 @@ public class Marcos {
             .until(() -> {
                 double now = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
                 if (Double.isNaN(firstFire[0]) && aim.isFiring()) firstFire[0] = now;
-                if (Double.isNaN(firstFire[0])) return false;
+                if (Double.isNaN(firstFire[0])) return now - started[0] > kGiveUpSeconds;
                 if (shooter.shotsStarted() > shotsAtStart[0]) lastBall[0] = shooter.lastShotTime();
                 double since = now - Math.max(firstFire[0], lastBall[0]);
                 return since > kEmptySeconds;
@@ -223,11 +231,12 @@ public class Marcos {
                 // guard): let the hood up while the robot stays put. AimSubsystem refuses it if
                 // the hood is really under the bar, and it ends once the robot moves 0.15 m.
                 aim.engageTrenchOverride();
+                started[0] = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
                 firstFire[0] = Double.NaN;
                 lastBall[0] = Double.NEGATIVE_INFINITY;
                 shotsAtStart[0] = shooter.shotsStarted();
             })
-            .withTimeout(3.5)
+            .withTimeout(kMaxVolleySeconds)
             .withName("score (until empty)");
     }
 }
