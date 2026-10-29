@@ -1,0 +1,87 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 6.462276490066225,
+        "y": 6.69859569536424
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 5.968600993377484,
+        "y": 7.627867218539416
+      },
+      "isLocked": false,
+      "linkedName": "Agro-NewRotatedCenterLeft"
+    },
+    {
+      "anchor": {
+        "x": 4.901390728476821,
+        "y": 7.417329139072849
+      },
+      "prevControl": {
+        "x": 5.474608432774617,
+        "y": 7.38258867214571
+      },
+      "nextControl": {
+        "x": 4.182657284768212,
+        "y": 7.460888741721855
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 3.296945364238411,
+        "y": 7.301170198675497
+      },
+      "prevControl": {
+        "x": 4.298816225165564,
+        "y": 7.460888741721855
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Agro-FirstLeftEnding"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.48648648648648724,
+      "rotationDegrees": 179.3657096765973
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "prepareShot",
+      "waypointRelativePos": 0.0,
+      "endWaypointRelativePos": 2.0,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "prepareShot"
+        }
+      }
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 3.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0.0,
+    "rotation": -178.05851360908574
+  },
+  "reversed": false,
+  "folder": "Agro",
+  "idealStartingState": {
+    "velocity": 2.0,
+    "rotation": 107.89613292503934
+  },
+  "useDefaultConstraints": true
+}

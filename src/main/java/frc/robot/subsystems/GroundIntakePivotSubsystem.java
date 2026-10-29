@@ -54,6 +54,10 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
     private final Debouncer stallDebouncer =
         new Debouncer(GroundIntakePivot.kStallSeconds, Debouncer.DebounceType.kRising);
     private boolean stalled = false;
+    // Oct 28 safety: going UP but stuck against something well short of UP (the top hard stop
+    // reached early = the zero is wrong, e.g. "intakeStartsDown" ran with the intake really UP).
+    // It stops pushing instead of grinding at 40 A until somebody notices.
+    private boolean upBlocked = false;
     private double leaderSpeed = 0.0; // rot/s, updated every loop in periodic()
 
     // DOWN soft limit ON normally, everything OFF only while the Operator D-pad jog is held.
@@ -137,6 +141,7 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
     /** Motion Magic to a position. The leader keeps holding it there until told otherwise. */
     private void goTo(double position) {
         resetStall();
+        upBlocked = false;
         targetPosition = position;
         isHolding = true;
         leader.setControl(positionRequest.withPosition(position));
@@ -302,7 +307,29 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
             isDown = false;
             targetPosition = GroundIntakePivot.kUpPosition;
             zeroError = 0.0;
+            upBlocked = false;
         }).ignoringDisable(true).withName("Zero Intake");
+    }
+
+    /**
+     * The intake is DOWN on the floor right now: make that the zero. For starting a match with the
+     * intake already down (the "intakeStartsDown" auto step and the "Zero Intake (intake is DOWN)"
+     * button). Powering on with it down reads 0, which looks like UP: wrong by the whole travel.
+     */
+    public void zeroAtDown() {
+        if (!isDownPositionValid()) return;
+        stop();
+        leader.setPosition(GroundIntakePivot.kDownPosition);
+        follower.setPosition(-GroundIntakePivot.kDownPosition); // mirrored mount counts the other way
+        isDown = true;
+        targetPosition = GroundIntakePivot.kDownPosition;
+        zeroError = 0.0;
+        upBlocked = false;
+    }
+
+    /** The "Zero Intake (intake is DOWN)" dashboard button. Works while disabled. */
+    public Command zeroDownCommand() {
+        return runOnce(this::zeroAtDown).ignoringDisable(true).withName("Zero Intake (DOWN)");
     }
 
     private String status() {
@@ -311,6 +338,9 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
         }
         if (!isDownPositionValid()) {
             return "Intake DOWN position must be a negative number below UP";
+        }
+        if (upBlocked) {
+            return String.format("UP BLOCKED at %.1f: zero wrong? push intake up, press Zero Intake (intake is UP)", position());
         }
         if (isZeroWrong()) {
             return String.format("ZERO WRONG by %.1f: push intake up, press Zero Intake", zeroError);
@@ -326,6 +356,15 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
         stalled = stallDebouncer.calculate(
             Math.abs(speed) < GroundIntakePivot.kStallSpeed
                 && Math.abs(amps) > GroundIntakePivot.kStallAmps);
+
+        if (!isDown && isHolding && !upBlocked && stalled
+                && targetPosition >= upTarget() - 0.01 && position() < upTarget() - 1.0) {
+            stop();
+            upBlocked = true;
+            edu.wpi.first.wpilibj.DriverStation.reportWarning(String.format(
+                "INTAKE | UP blocked at %.1f rot (should reach %.1f): stopped pushing. Zero is probably wrong:"
+                + " push the intake up and press Zero Intake (intake is UP)", position(), upTarget()), false);
+        }
 
         SmartDashboard.putString("Intake Status", status());
         SmartDashboard.putString("Intake Next A Press", isDown ? "goes UP" : "goes DOWN");

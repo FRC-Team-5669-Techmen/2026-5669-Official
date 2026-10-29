@@ -329,7 +329,7 @@ This is a 2026 FRC robot with the following mechanical systems:
 - **Soft limit on the leader: DOWN only** (`kSoftLimitMargin` past DOWN, once DOWN is set). No UP soft limit: an UP limit measured from a wrong zero is what used to block raising.
 - Brake mode, 40 A stator limit on both motors. Speed is set by `kCruiseVelocity` / `kAcceleration` / `kJerk`; holding by `kP` / `kD` / `kV`.
 - **Enabling never moves it**: when the robot disables, the Motion Magic target is cleared, so it sits (brake) until the next A press or jog.
-- Dashboard: "Intake Status", "Intake Position (rot)", "Intake Target (rot)", "Intake Holding Target", both motors' amps and speeds, plus a **"Zero Intake (intake is UP)"** button (works while disabled).
+- Dashboard: "Intake Status", "Intake Position (rot)", "Intake Target (rot)", "Intake Holding Target", both motors' amps and speeds, plus a **"Zero Intake (intake is UP)"** button (works while disabled) and **"Zero Intake (intake is DOWN)"** (Oct 29, for a robot powered on with the intake already down; `zeroAtDown()`: leader at `kDownPosition`, DOWN state). The 3-piece autos' first step `intakeStartsDown` does the same.
 - Wrong direction: flip `kLeaderInverted`. Motors fighting: flip `kFollowerAlignment`. All in `Constants.GroundIntakePivot`.
 
 ### Elevator / Climber (Talon FX 19)
@@ -453,6 +453,7 @@ ignores an Xbox controller that lands in its slot. See `docs/X56-HOTAS-SETUP.md`
 - Configured in `CommandSwerveDrivetrain.configureAutoBuilder()`
 - Translation PID: (10, 0, 0), Rotation PID: (7, 0, 0)
 - Alliance-aware path flipping (Red vs Blue)
+- **An auto reserves every motor any of its commands uses for its WHOLE run** (`PathPlannerAuto` adds the union of its commands' requirements; event-marker commands count via `FollowPathCommand`). So in an auto with `visionScore`, the turret's default "watch the hub in autos" never runs, and the shooter/turret sit still between shots: use `prepareShot` / `watchHub` zones instead
 - Auto chooser defaults to **"Shoot Preload (stay put)"** (Oct 27 night; was "None" = zero points): shoots the preload from where the robot sits, never drives. Still **pick the real auto before every match**: Pit Check and "Auto Start" say if none is picked
 - **Auto is 20 s** in REBUILT. PathPlanner's "Simulated Driving Time" counts only driving, so add each `score` (up to 3.5 s). The 3-piece autos are ~16.2 s of driving + 2 x 3.5 s = ~23 s: the last volley gets cut off until the paths are faster or `prepareShot` zones save the spin-up time
 
@@ -466,7 +467,9 @@ rename them without updating the autos in `src/main/deploy/pathplanner/`.
 | `spinUpShooterSlow` | RunShooterCommand (slow RPM) | 1.5s |
 | `score` | AimCommand + ShootCommand: aim from position, fire every ball the moment it's ready | 3.5s |
 | `scorePreload` | Same as `score` (Oct 27; it used to fire at a fixed 5400 RPM with the turret wherever it was, which faced our own wall in Center Preload) | 3.5s |
-| `prepareShot` | AimCommand + shooter at the table speed, no feeding. Event marker ZONE on the end of a path into a shooting spot, so the `score` after it fires at once | zone |
+| `prepareShot` | Oct 29: turret on OUR HUB (never a pass corner), shooter at the SCORE table speed for that distance, hood to its angle once the trench guard lets it up; no feeding. Event marker ZONE over a whole path that ends at a shooting spot (it can start in the neutral zone), so `visionScore` fires at once. On every Shoot path of the 3-piece autos | zone |
+| `watchHub` | Turret keeps the Limelight on our hub (camera position fixes), nothing else moves. Event marker zone for paths that don't end in a shot | zone |
+| `intakeStartsDown` | Oct 29: the auto STARTS with the intake already DOWN: pivot zero = the floor (`zeroAtDown`), never moves the pivot, roller in for the rest of auto. First step of the 3-piece autos (replaced `lowerIntake`) | instant |
 | `visionScore` | Same as `score` | 3.5s |
 | `shoot` | FuelHandlingCommand (forward) | 2.0s |
 | `stopShooter` | InstantCommand → shooter.stop() | - |
@@ -482,7 +485,7 @@ rename them without updating the autos in `src/main/deploy/pathplanner/`.
 | `togglePiston1`, `togglePiston2` | No-ops (pneumatics removed; kept so old autos load cleanly) | - |
 
 ### Paths & Autos
-- **Autos**: `Center Preload - Dumb`, `Center Preload - Vision`, `Left 3-Piece Auto`, `Right 3-Piece Auto`
+- **Autos**: `Center Preload - Dumb`, `Center Preload - Vision`, `Right 3-Piece Auto` + `Agro Right 3-Piece Auto` (Marcos's, edited in PathPlanner), `Left 3-Piece Auto` + `Agro Left 3-Piece Auto` (made from the Right ones with `tools/pathplanner/mirror_auto.py`: re-run it after every Right change, don't hand-edit the Left). `tools/pathplanner/clone_auto.py` copies an auto with its own paths and links. **The 3-piece autos start with the intake DOWN** (`intakeStartsDown`) and the robot in the trench (x 4.63 m)
 - **Paths**: see `src/main/deploy/pathplanner/paths/`
 
 ## CAN ID Map
