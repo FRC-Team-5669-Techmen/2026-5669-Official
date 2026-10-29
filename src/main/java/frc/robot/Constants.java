@@ -542,7 +542,7 @@ public final class Constants {
         // the hood. Lens height: 20.75 in with the hood all the way down, 22.35 in all the way up.
         // The code interpolates by hood position (Gooba.kBottomPosition .. kTopPosition).
         public static final double kCameraHeightHoodDown = 21.0 * 0.0254;   // Oct 28 rebuilt hood: measured 21 in at the bottom (dashboard value wins)
-        public static final double kCameraHeightHoodUp = 24.25 * 0.0254;  // Oct 28 rebuilt hood: measured 24.25 in at the top (dashboard value wins)
+        public static final double kCameraHeightHoodUp = 23.25 * 0.0254;  // Oct 28 rebuilt hood: re-measured 23.25 in at the top (dashboard value wins)
         // MEASURE: camera tilt, degrees UP from level.
         // MEASURED Oct 25: lens points UP, tilted back 25 degrees (phone level on top: -25 to -26).
         // Hood all the way UP: also 25 (measured Oct 25; a belt keeps the camera angle as the hood rises).
