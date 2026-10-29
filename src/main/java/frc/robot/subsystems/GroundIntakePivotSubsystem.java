@@ -124,7 +124,8 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
         return downTarget() < GroundIntakePivot.kUpPosition;
     }
 
-    private double position() {
+    /** Pivot position in rotations (0 = UP, negative = down). */
+    public double position() {
         return leader.getPosition().getValueAsDouble();
     }
 
@@ -221,6 +222,17 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
 
     public void deployIfUp() {
         if (!isDownPositionValid() || isDown) return;
+        isDown = true;
+        CommandScheduler.getInstance().schedule(downMove());
+    }
+
+    /**
+     * Autos ("lowerIntake"): put the intake DOWN no matter what the toggle remembers, with the same
+     * move as Driver A's DOWN. A match always starts with the intake UP (starting configuration),
+     * so a stale "down" left from an earlier test run must never skip the move.
+     */
+    public void forceDown() {
+        if (!isDownPositionValid()) return;
         isDown = true;
         CommandScheduler.getInstance().schedule(downMove());
     }
@@ -356,6 +368,13 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
         stalled = stallDebouncer.calculate(
             Math.abs(speed) < GroundIntakePivot.kStallSpeed
                 && Math.abs(amps) > GroundIntakePivot.kStallAmps);
+
+        // While disabled nothing drives the pivot, so where it really is (it may have been pushed by
+        // hand between test runs) decides what Driver A and the autos do next. Before, a "down"
+        // remembered from the last run made the next auto's lowerIntake do nothing.
+        if (edu.wpi.first.wpilibj.DriverStation.isDisabled() && isDownPositionValid()) {
+            isDown = position() < (GroundIntakePivot.kUpPosition + GroundIntakePivot.kDownPosition) / 2;
+        }
 
         if (!isDown && isHolding && !upBlocked && stalled
                 && targetPosition >= upTarget() - 0.01 && position() < upTarget() - 1.0) {
