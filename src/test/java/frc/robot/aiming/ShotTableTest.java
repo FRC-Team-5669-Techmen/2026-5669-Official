@@ -22,9 +22,24 @@ class ShotTableTest {
     void recordedPointReplacesNearbyDefault() {
         ShotTable t = ShotTable.defaults();
         int before = t.points().size();
-        t.put(new ShotTable.Point(2.6, 4100, 0.8, 0.7)); // within 0.25 m of the 2.5 m default
+        t.put(new ShotTable.Point(3.2, 3100, 3.1, 0.7)); // within 0.25 m of the 3.13 m point
         assertEquals(before, t.points().size());
-        assertEquals(4100, t.rpm(2.6), 1e-9);
+        assertEquals(3100, t.rpm(3.2), 1e-9);
+    }
+
+    @Test
+    void measuredTableRisesWithDistance() {
+        // Further shots never need less speed or a lower hood; a point that breaks this is a typo.
+        ShotTable.Point prev = null;
+        for (ShotTable.Point p : ShotTable.defaults().points().values()) {
+            if (prev != null) {
+                assertTrue(p.rpm() >= prev.rpm(), "RPM drops at " + p.distance());
+                assertTrue(p.hood() >= prev.hood(), "hood drops at " + p.distance());
+            }
+            assertTrue(p.hood() >= 0.2 && p.hood() <= 7.87, "hood out of travel at " + p.distance());
+            prev = p;
+        }
+        assertTrue(ShotTable.defaults().points().size() >= 4);
     }
 
     @Test

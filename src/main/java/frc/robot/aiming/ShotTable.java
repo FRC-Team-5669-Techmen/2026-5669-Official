@@ -27,23 +27,21 @@ public final class ShotTable {
     public static final double kSameDistance = 0.25;
 
     /**
-     * !!! STARTING GUESSES, NOT MEASURED. Replace by recording real shots (CLAUDE.md "Shot table").
-     * RPM: 3100 could not reach the hub from the usual spot, 5400 is the fast preset. Hood: the
-     * scaled numbers from last season's map. Time of flight: rough projectile estimates, only used
-     * to aim ahead while driving.
+     * MEASURED Oct 28 evening (rebuilt hood, shop field, Plot Spot pose, Shot Tuning Mode), read
+     * from the Driver Station log "SHOT TABLE CODE" line. Only real shots: the old guesses are gone,
+     * because a guess left between two real points (2.5 and 3.5 m) bent the curve.
+     * Still to record: Midshot (~2.4 m) and Trench (~3.7 m) backup spots, which fill the two
+     * biggest gaps. 1.69 m was recorded at Tune Hood 0.0, which the hood clamps to its 0.2
+     * bottom, so 0.20 is what really flew. 5.33 m needs 4300 RPM, about all the wheel can hold on
+     * an 11 V battery: long shots want a fresh battery. Time of flight is the 0.9 s placeholder
+     * everywhere (only used to lead shots while moving; film shots to measure it).
      */
     public static ShotTable defaults() {
         ShotTable t = new ShotTable();
-        // Oct 27: kept within what the wheel can HOLD on a loaded battery (~4300 RPM at 11 V with
-        // kV 0.15) and leaning on the hood for distance (elite 2026 teams scored at 24-50% of free
-        // speed and covered distance with the hood). Still guesses: record real points.
-        // Oct 28: hood values x2.04 for the rebuilt hood (top 3.87 -> 7.9 rot). Shot table scrapped: re-plot.
-        t.put(new Point(1.5, 3000, 1.20, 0.60));
-        t.put(new Point(2.5, 3300, 2.45, 0.75));
-        t.put(new Point(3.5, 3600, 3.70, 0.90));
-        t.put(new Point(4.5, 3850, 4.90, 1.05));
-        t.put(new Point(5.5, 4050, 6.10, 1.20));
-        t.put(new Point(6.5, 4250, 7.15, 1.35));
+        t.put(new Point(1.69, 2500, 0.20, 0.90));
+        t.put(new Point(3.13, 2900, 3.00, 0.90));
+        t.put(new Point(4.73, 3500, 4.50, 0.90));
+        t.put(new Point(5.33, 4300, 5.50, 0.90));
         return t;
     }
 
