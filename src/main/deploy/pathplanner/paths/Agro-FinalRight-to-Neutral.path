@@ -1,0 +1,98 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 3.275165562913908,
+        "y": 0.8914486754966879
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 3.384064569536424,
+        "y": 0.44133278145695387
+      },
+      "isLocked": false,
+      "linkedName": "Agro-right2ending"
+    },
+    {
+      "anchor": {
+        "x": 5.03206953642384,
+        "y": 0.6010513245033122
+      },
+      "prevControl": {
+        "x": 4.582810831315752,
+        "y": 0.5608737167294187
+      },
+      "nextControl": {
+        "x": 5.925041390728477,
+        "y": 0.6809105960264901
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.9269122516556285,
+        "y": 0.8043294701986747
+      },
+      "prevControl": {
+        "x": 5.140968543046357,
+        "y": 0.6083112582781446
+      },
+      "nextControl": {
+        "x": 7.280848936652988,
+        "y": 0.8431761795276532
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 7.776324503311258,
+        "y": 1.2181456953642373
+      },
+      "prevControl": {
+        "x": 7.812624172185431,
+        "y": 0.6518708609271517
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Agro-RightPickupEnd2"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 1.2810810810810818,
+      "rotationDegrees": 178.656
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "runGroundIntake",
+      "waypointRelativePos": 1.74275618374558,
+      "endWaypointRelativePos": null,
+      "command": null
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 3.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 2.0,
+    "rotation": 91.16913932790762
+  },
+  "reversed": false,
+  "folder": "Agro",
+  "idealStartingState": {
+    "velocity": 2.0,
+    "rotation": -177.73949808885874
+  },
+  "useDefaultConstraints": true
+}
