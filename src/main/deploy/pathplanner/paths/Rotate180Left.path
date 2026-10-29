@@ -8,8 +8,8 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 8.095761589403974,
-        "y": 4.4189764900662265
+        "x": 7.623865894039735,
+        "y": 4.368156953642385
       },
       "isLocked": false,
       "linkedName": "BallCenter (Left)"
@@ -70,7 +70,7 @@
   },
   "goalEndState": {
     "velocity": 2.0,
-    "rotation": 107.89613292503934
+    "rotation": 107.89613292503935
   },
   "reversed": false,
   "folder": "Left",

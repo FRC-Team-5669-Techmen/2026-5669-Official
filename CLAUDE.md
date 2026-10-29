@@ -342,7 +342,7 @@ This is a 2026 FRC robot with the following mechanical systems:
 - **Soft limit on the leader: DOWN only** (`kSoftLimitMargin` past DOWN, once DOWN is set). No UP soft limit: an UP limit measured from a wrong zero is what used to block raising.
 - Brake mode, 40 A stator limit on both motors. Speed is set by `kCruiseVelocity` / `kAcceleration` / `kJerk`; holding by `kP` / `kD` / `kV`.
 - **Enabling never moves it**: when the robot disables, the Motion Magic target is cleared, so it sits (brake) until the next A press or jog.
-- Dashboard: "Intake Status", "Intake Position (rot)", "Intake Target (rot)", "Intake Holding Target", both motors' amps and speeds, plus a **"Zero Intake (intake is UP)"** button (works while disabled) and **"Zero Intake (intake is DOWN)"** (Oct 29, for a robot powered on with the intake already down; `zeroAtDown()`: leader at `kDownPosition`, DOWN state). The 3-piece autos' first step `intakeStartsDown` does the same.
+- Dashboard: "Intake Status", "Intake Position (rot)", "Intake Target (rot)", "Intake Holding Target", both motors' amps and speeds, plus a **"Zero Intake (intake is UP)"** button (works while disabled) and **"Zero Intake (intake is DOWN)"** (Oct 29, for a robot powered on with the intake already down; `zeroAtDown()`: leader at `kDownPosition`, DOWN state). For the shop only (a robot powered on with the intake down): starting a match with it down is not legal.
 - Wrong direction: flip `kLeaderInverted`. Motors fighting: flip `kFollowerAlignment`. All in `Constants.GroundIntakePivot`.
 
 ### Elevator / Climber (Talon FX 19)
@@ -482,23 +482,23 @@ rename them without updating the autos in `src/main/deploy/pathplanner/`.
 | `scorePreload` | Same as `score` (Oct 27; it used to fire at a fixed 5400 RPM with the turret wherever it was, which faced our own wall in Center Preload) | 3.5s |
 | `prepareShot` | Oct 29: turret on OUR HUB (never a pass corner), shooter at the SCORE table speed for that distance, hood to its angle once the trench guard lets it up; no feeding. Event marker ZONE over a whole path that ends at a shooting spot (it can start in the neutral zone), so `visionScore` fires at once. On every Shoot path of the 3-piece autos | zone |
 | `watchHub` | Turret keeps the Limelight on our hub (camera position fixes), nothing else moves. Event marker zone for paths that don't end in a shot | zone |
-| `intakeStartsDown` | Oct 29: the auto STARTS with the intake already DOWN: pivot zero = the floor (`zeroAtDown`), never moves the pivot, roller in for the rest of auto. First step of the 3-piece autos (replaced `lowerIntake`) | instant |
-| `visionScore` | Same as `score` | 3.5s |
+| `intakeStartsDown` | **Same as `lowerIntake`** (Oct 29 evening). Starting a match with the intake down is NOT legal (starting configuration): the robot always starts with it UP. The name stays so older files load; it used to set the pivot zero at the floor without moving it, which with the intake really UP left the zero wrong all match | instant |
+| `visionScore` | Same as `score`. `scoreUntilEmpty` first engages the **trench-shot override** (`AimSubsystem.engageTrenchOverride`: refused if the hood is under the bar, ends once the robot moves 0.15 m), because the 3-piece shooting spots are only ~0.15 m (turret pivot) outside the trench guard, which would otherwise hold the hood down and block every shot | 3.5s |
 | `shoot` | FuelHandlingCommand (forward) | 2.0s |
 | `stopShooter` | InstantCommand → shooter.stop() | - |
-| `intake` | Ground intake down + roller in (Oct 27; used to run the feeders and shooter backwards) | 2.0s |
+| `intake` | `lowerIntake`, then waits 2 s (the roller keeps running for the rest of auto). It no longer requires the roller: a named command that does would make the whole auto require it, and the roller manager scheduling its roller would cancel the auto | 2.0s |
 | `reverseFeed` | FuelHandlingCommand (reverse): spindexer, uptake and shooter backwards (the old `intake`) | 2.0s |
 | `aimTurret` | AimCommand (turret + hood from position) | 2.0s |
 | `alignTurret` | AimCommand | 2.0s |
 | `deployGooba` / `stowGooba` | Hood to deployed / stowed preset | instant |
 | `autoAimGooba` | AutoGooba (hood follows ty) | 2.0s |
-| `lowerIntake` / `intakeDown` | Ground intake DOWN + roller in **for the rest of auto** (scheduled on its own, stops when auto ends). Were no-ops until Oct 27, so the 3-piece autos picked nothing up | instant |
+| `lowerIntake` / `intakeDown` | Ground intake DOWN (`deployIfUp` = the same Motion Magic `downMove` as Driver A, same speed and strength) + roller in **for the rest of auto**. The roller is run by a manager with no requirements that **steps aside while firing**, so the Agitator runs it like in teleop (5 V assist, tap-outs; 12 V while feeding jams the inlet). The 3-piece autos fire it from an event marker at 0.10 of the first pickup path (x ~5.7 m: clear of the trench/bump, ~0.6 s before the pile) | instant |
 | `raiseIntake` | Roller off + intake UP | instant |
-| `runGroundIntake` | Roller in for the rest of auto. The trigger-only `runGroundIntake` event markers in the pickup paths fire it too (`EventTrigger`) | instant |
+| `runGroundIntake` | Roller in for the rest of auto (intake stays where it is). **Name-only event markers** (PathPlanner's default: a name, no command) only fire an `EventTrigger`: Marcos binds one for `runGroundIntake`, `lowerIntake`, `intakeDown`, `intakeStartsDown` and `raiseIntake` | instant |
 | `togglePiston1`, `togglePiston2` | No-ops (pneumatics removed; kept so old autos load cleanly) | - |
 
 ### Paths & Autos
-- **Autos**: `Center Preload - Dumb`, `Center Preload - Vision`, `Right 3-Piece Auto` + `Agro Right 3-Piece Auto` (Marcos's, edited in PathPlanner), `Left 3-Piece Auto` + `Agro Left 3-Piece Auto` (made from the Right ones with `tools/pathplanner/mirror_auto.py`: re-run it after every Right change, don't hand-edit the Left). `tools/pathplanner/clone_auto.py` copies an auto with its own paths and links. **The 3-piece autos start with the intake DOWN** (`intakeStartsDown`) and the robot in the trench (x 4.63 m)
+- **Autos**: `Center Preload - Dumb`, `Center Preload - Vision`, `Right 3-Piece Auto` + `Agro Right 3-Piece Auto` (Marcos's, edited in PathPlanner), `Left 3-Piece Auto` + `Agro Left 3-Piece Auto` (made from the Right ones with `tools/pathplanner/mirror_auto.py`: re-run it after every Right change, don't hand-edit the Left). `tools/pathplanner/clone_auto.py` copies an auto with its own paths and links. **The 3-piece autos start with the intake UP** (starting with it down is not legal), robot in the trench (x 4.60 m) facing +y; the `lowerIntake` marker at 0.10 of Right-/Left-to-Pickup lowers it. `Do not use - Agro ...` autos are retired (their `intakeStartsDown` step now lowers the intake like A)
 - **Paths**: see `src/main/deploy/pathplanner/paths/`
 
 ## CAN ID Map
