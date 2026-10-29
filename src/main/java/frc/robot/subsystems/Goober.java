@@ -171,10 +171,17 @@ public class Goober extends SubsystemBase {
         double angle = getAngleDegrees();
         double feedforward = Aim.kTurretFF * rateDegPerSec;
         double error = angleTarget - angle;
-        double output = anglePID.calculate(angle, angleTarget) + feedforward;
-        // Static-friction kick so small errors still move the turret (no kick once close).
-        if (Math.abs(error) > Aim.kTurretToleranceDegrees * 0.5) {
-            output += Math.copySign(Aim.kTurretKS, error);
+        double output;
+        if (Math.abs(error) < Aim.kTurretHoldDegrees && Math.abs(rateDegPerSec) < Aim.kTurretHoldRate) {
+            // Oct 28 jitter fix: close enough and the target isn't moving = hold still (brake).
+            // Before, P + the static kick kept nudging it back and forth across the target.
+            anglePID.reset();
+            output = 0.0;
+        } else {
+            output = anglePID.calculate(angle, angleTarget) + feedforward;
+            // Static-friction kick, ramped in over the first kTurretKSRampDegrees of error (it used
+            // to switch on and off at a hard edge, which made the turret chatter around it).
+            output += Aim.kTurretKS * MathUtil.clamp(error / Aim.kTurretKSRampDegrees, -1.0, 1.0);
         }
         SmartDashboard.putNumber("Turret Aim Error (deg)", -error);
         setMotorSpeed(MathUtil.clamp(output, -Aim.kTurretMaxOutput, Aim.kTurretMaxOutput));

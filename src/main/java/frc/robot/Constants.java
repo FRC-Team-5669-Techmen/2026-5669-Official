@@ -571,6 +571,12 @@ public final class Constants {
         // Static-friction kick (percent power): P alone gives only ~0.03 power at 1.5 deg off, too
         // little to move the turret, so it could stall just outside "locked" and never fire.
         public static final double kTurretKS = 0.03;
+        // Oct 28 (turret jittery on the robot): the kick ramps in over this many degrees of error
+        // instead of switching on at a hard edge, and inside kTurretHoldDegrees with a still target
+        // the turret holds (brake) instead of hunting. Still well inside the 2 deg fire tolerance.
+        public static final double kTurretKSRampDegrees = 1.0;
+        public static final double kTurretHoldDegrees = 0.5;
+        public static final double kTurretHoldRate = 5.0; // deg/s the target may move and still count as still
         public static final double kLockedMaxSpeedDegPerSec = 30.0;
 
         // ---- Ready to fire (Operator RT only feeds the shooter when all are true) ----
