@@ -60,8 +60,8 @@ def mirror_path(d, a, b):
     for key in ("goalEndState", "idealStartingState"):
         if d.get(key):
             d[key]["rotation"] = mirror_angle(d[key]["rotation"])
-    if d.get("folder"):
-        d["folder"] = swap(d["folder"], a, b)
+    if d.get("folder") and a in d["folder"]:
+        d["folder"] = d["folder"].replace(a, b)
     return d
 
 
@@ -152,8 +152,8 @@ def main():
         names[p] = swap(p, a, b)
         new_paths[names[p]] = mirror_path(src, a, b)
     mirror_commands(auto["command"], names)
-    if auto.get("folder"):
-        auto["folder"] = swap(auto["folder"], a, b)
+    if auto.get("folder") and a in auto["folder"]:
+        auto["folder"] = auto["folder"].replace(a, b)
     new_auto = swap(auto_name, a, b)
 
     for n, d in new_paths.items():

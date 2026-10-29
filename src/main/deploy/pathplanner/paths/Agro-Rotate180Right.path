@@ -1,0 +1,82 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 7.6892052980132455,
+        "y": 1.3560844370860923
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 8.095761589403974,
+        "y": 3.6502235099337734
+      },
+      "isLocked": false,
+      "linkedName": "Agro-BallCenter"
+    },
+    {
+      "anchor": {
+        "x": 6.876092715231788,
+        "y": 3.4542052980132456
+      },
+      "prevControl": {
+        "x": 7.403997799875617,
+        "y": 3.6982007261642473
+      },
+      "nextControl": {
+        "x": 6.417882822924082,
+        "y": 3.2424226838486665
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.462276490066225,
+        "y": 1.3706043046357603
+      },
+      "prevControl": {
+        "x": 6.549395695364238,
+        "y": 2.379735099337749
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Agro-NewRotatedCenterRight"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.8,
+      "rotationDegrees": -175.2984186943389
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "runGroundIntake",
+      "waypointRelativePos": 0.0,
+      "endWaypointRelativePos": null,
+      "command": null
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 3.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 2.0,
+    "rotation": -107.89613292503934
+  },
+  "reversed": false,
+  "folder": "Agro",
+  "idealStartingState": {
+    "velocity": 2.0,
+    "rotation": 88.99908532243735
+  },
+  "useDefaultConstraints": true
+}
