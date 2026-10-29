@@ -1,5 +1,6 @@
 package frc.robot.subsystems;
 
+import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
@@ -9,7 +10,9 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.Debouncer;
+import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -58,6 +61,14 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
     // reached early = the zero is wrong, e.g. "intakeStartsDown" ran with the intake really UP).
     // It stops pushing instead of grinding at 40 A until somebody notices.
     private boolean upBlocked = false;
+    // The current UP move has reached UP at least once, so the zero is fine: from then on the
+    // UP BLOCKED safety stays out of it (a ball or bump pushing the held intake down is NOT a
+    // wrong zero, and switching the motors off then let the intake drop for the rest of the match).
+    private boolean upArrived = false;
+
+    // Holding stiffness, tunable live from the dashboard (saved on the roboRIO).
+    private static final String kHoldKpKey = "Intake Hold kP";
+    private double appliedKp;
     private double leaderSpeed = 0.0; // rot/s, updated every loop in periodic()
 
     // DOWN soft limit ON normally, everything OFF only while the Operator D-pad jog is held.
@@ -71,7 +82,10 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
 
         // Leader gets the shared settings + Motion Magic + the DOWN soft limit.
         TalonFXConfiguration leaderConfig = sharedConfig();
-        leaderConfig.Slot0.kP = GroundIntakePivot.kP;
+        Preferences.initDouble(kHoldKpKey, GroundIntakePivot.kP);
+        appliedKp = MathUtil.clamp(Preferences.getDouble(kHoldKpKey, GroundIntakePivot.kP), 1.0, 12.0);
+        SmartDashboard.putNumber(kHoldKpKey, appliedKp);
+        leaderConfig.Slot0.kP = appliedKp;
         leaderConfig.Slot0.kD = GroundIntakePivot.kD;
         leaderConfig.Slot0.kV = GroundIntakePivot.kV;
         leaderConfig.MotionMagic.MotionMagicCruiseVelocity = GroundIntakePivot.kCruiseVelocity;
@@ -143,6 +157,7 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
     private void goTo(double position) {
         resetStall();
         upBlocked = false;
+        upArrived = false;
         targetPosition = position;
         isHolding = true;
         leader.setControl(positionRequest.withPosition(position));
@@ -268,6 +283,9 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
         // Driver A's toggle follows where the jog left it (it used to need a second press).
         isDown = position() < (GroundIntakePivot.kUpPosition + GroundIntakePivot.kDownPosition) / 2;
         leader.getConfigurator().apply(softLimitsOn, 0.0); // DOWN soft limit back on (no wait)
+        // Let go in the upper half: keep HOLDING it there (letting go used to switch the motors
+        // off, so a raised intake sagged). In the lower half it rests in brake, like DOWN.
+        if (!isDown) goTo(position());
     }
 
     /** Hotter of the two pivot motors, deg C. */
@@ -376,13 +394,26 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
             isDown = position() < (GroundIntakePivot.kUpPosition + GroundIntakePivot.kDownPosition) / 2;
         }
 
-        if (!isDown && isHolding && !upBlocked && stalled
+        if (!isDown && isHolding && isNear(upTarget())) upArrived = true;
+        // UP BLOCKED = the UP move itself stalled well short of UP (wrong zero). Only before the
+        // move has reached UP: after that, a push from outside is fought, not given up on.
+        if (!isDown && isHolding && !upBlocked && !upArrived && stalled
                 && targetPosition >= upTarget() - 0.01 && position() < upTarget() - 1.0) {
             stop();
             upBlocked = true;
             edu.wpi.first.wpilibj.DriverStation.reportWarning(String.format(
                 "INTAKE | UP blocked at %.1f rot (should reach %.1f): stopped pushing. Zero is probably wrong:"
                 + " push the intake up and press Zero Intake (intake is UP)", position(), upTarget()), false);
+        }
+
+        // "Intake Hold kP" typed on the dashboard: saved, and sent to the motor right away.
+        double kp = MathUtil.clamp(SmartDashboard.getNumber(kHoldKpKey, appliedKp), 1.0, 12.0);
+        if (kp != appliedKp) {
+            appliedKp = kp;
+            Preferences.setDouble(kHoldKpKey, kp);
+            leader.getConfigurator().apply(new Slot0Configs()
+                .withKP(kp).withKD(GroundIntakePivot.kD).withKV(GroundIntakePivot.kV), 0.0); // no wait
+            System.out.println("INTAKE | hold kP now " + kp);
         }
 
         SmartDashboard.putString("Intake Status", status());

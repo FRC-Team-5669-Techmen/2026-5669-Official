@@ -284,7 +284,10 @@ public final class Constants {
         public static final double kJerk = 1300.0;          // how gently it starts/stops accelerating (bigger = sharper)
 
         // ---- Holding: how the motors keep it on target ----
-        public static final double kP = 3.0;   // push-back strength per rotation of error. Sags = raise, bounces = lower
+        // Push-back strength per rotation of error. Sags = raise, bounces/buzzes = lower.
+        // Oct 29: 3.0 -> 5.0 (the held UP intake sagged while driving). Only the FIRST boot uses this:
+        // after that the dashboard "Intake Hold kP" (saved on the roboRIO, applied live) wins.
+        public static final double kP = 5.0;
         public static final double kD = 0.1;   // damping: calms bouncing. Raise a little if it overshoots
         public static final double kV = 0.12;  // volts per rot/s, the Kraken's built-in speed constant. Leave it
 
