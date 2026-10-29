@@ -97,52 +97,64 @@ public class Marcos {
         // pneumatics came off, so the 3-piece autos drove through the balls without picking
         // any up.
         // ==========================================
-        // Roller in for the REST OF AUTO: scheduled on its own (not part of the auto's sequence),
-        // so it keeps spinning through the paths and shots, and stops by itself when auto ends.
-        // One shared instance: scheduling it again while it runs does nothing.
-        Command rollerForAuto = intakeRoller.runCommand()
+        // Roller in for the REST OF AUTO, scheduled on its own (not part of the auto's sequence), so
+        // it keeps spinning through the paths and stops by itself when auto ends. It steps aside
+        // while balls are being fired: then the Agitator runs the roller exactly like in teleop
+        // (5 V assist + tap-outs), because 12 V while feeding packs the hopper and jams the inlet.
+        // No requirements of its own (like VacuumCommand), and none of these named commands
+        // require the roller, so scheduling it can never cancel the auto that started it.
+        Command rollerIn = intakeRoller.runCommand().withName("Auto: intake roller");
+        Command rollerForAuto = Commands.run(() -> {
+                if (aim.isFiring()) {
+                    if (rollerIn.isScheduled()) rollerIn.cancel();
+                } else if (!rollerIn.isScheduled()) {
+                    CommandScheduler.getInstance().schedule(rollerIn);
+                }
+            })
             .onlyWhile(DriverStation::isAutonomousEnabled)
-            .withName("Auto: intake roller");
-        // A command can only be used in one place, so each use below makes its own runOnce.
+            .finallyDo(rollerIn::cancel)
+            .withName("Auto: roller manager");
+        // One shared instance: scheduling it again while it runs does nothing.
         Runnable startRoller = () -> CommandScheduler.getInstance().schedule(rollerForAuto);
+        // Intake DOWN + roller on: the very same move as Driver A's DOWN press (deployIfUp runs the
+        // same Motion Magic downMove), so the same speed and strength, and it stops pushing once
+        // it reaches the floor. Does nothing if the code already knows it's down.
+        Runnable lower = () -> {
+            groundIntakePivot.deployIfUp();
+            startRoller.run();
+        };
+        Runnable raise = () -> {
+            rollerForAuto.cancel();
+            groundIntakePivot.stowIfDown();
+        };
 
-        // Intake DOWN + roller on (for the rest of auto). Instant: the path starts right away
-        // while the intake goes down. First step of both 3-piece autos.
-        NamedCommands.registerCommand("lowerIntake",
-            Commands.runOnce(() -> {
-                groundIntakePivot.deployIfUp();
-                startRoller.run();
-            }));
+        // Instant: the path keeps going while the intake comes down. Use it as the auto's first
+        // step, or as an event marker once the robot is clear of the trench and bump.
+        NamedCommands.registerCommand("lowerIntake", Commands.runOnce(lower));
         // Same thing under a clearer name, for new autos.
-        NamedCommands.registerCommand("intakeDown",
-            Commands.runOnce(() -> {
-                groundIntakePivot.deployIfUp();
-                startRoller.run();
-            }));
-        // The robot STARTS the auto with the intake already DOWN (Oct 29): tell the code so (the
-        // pivot's zero becomes the floor, as if it had been powered on up and lowered) and roller
-        // on for the rest of auto. Never moves the pivot. First step of the 3-piece autos; only
-        // run them with the intake down at the start.
-        NamedCommands.registerCommand("intakeStartsDown",
-            Commands.runOnce(() -> {
-                groundIntakePivot.zeroAtDown();
-                startRoller.run();
-            }));
+        NamedCommands.registerCommand("intakeDown", Commands.runOnce(lower));
+        // Oct 29: starting a match with the intake down is NOT legal (starting configuration), so
+        // the robot always starts with it UP. This name only stays so older auto files load, and
+        // it now does exactly what lowerIntake does. (It used to set the pivot's zero at the
+        // floor without moving it: with the intake really UP that zero would be wrong all match.
+        // That job is the "Zero Intake (intake is DOWN)" dashboard button now, for the shop.)
+        NamedCommands.registerCommand("intakeStartsDown", Commands.runOnce(lower));
         // Intake UP + roller off.
-        NamedCommands.registerCommand("raiseIntake",
-            Commands.runOnce(() -> {
-                rollerForAuto.cancel();
-                groundIntakePivot.stowIfDown();
-            }));
-        // Intake down + roller for 2 s (stays down after).
-        NamedCommands.registerCommand("intake",
-            Commands.runOnce(groundIntakePivot::deployIfUp)
-                .andThen(intakeRoller.runCommand().withTimeout(2.0)));
-
-        // The "runGroundIntake" event markers in the pickup paths have no command attached, so
-        // they fire this trigger: roller on for the rest of auto (in case lowerIntake was removed).
+        NamedCommands.registerCommand("raiseIntake", Commands.runOnce(raise));
+        // Intake down + roller on, then 2 s to let it pick up. The roller keeps running for the rest
+        // of auto like lowerIntake (it used to require the roller here, which would have let the
+        // roller manager cancel the whole auto).
+        NamedCommands.registerCommand("intake", Commands.runOnce(lower).andThen(Commands.waitSeconds(2.0)));
+        // Roller on for the rest of auto (the intake stays where it is).
         NamedCommands.registerCommand("runGroundIntake", Commands.runOnce(startRoller));
+
+        // Event markers that only have a NAME (no command attached, the PathPlanner default) just
+        // fire a trigger with that name. These make the intake names work that way too.
         new EventTrigger("runGroundIntake").onTrue(Commands.runOnce(startRoller));
+        new EventTrigger("lowerIntake").onTrue(Commands.runOnce(lower));
+        new EventTrigger("intakeDown").onTrue(Commands.runOnce(lower));
+        new EventTrigger("intakeStartsDown").onTrue(Commands.runOnce(lower));
+        new EventTrigger("raiseIntake").onTrue(Commands.runOnce(raise));
 
         // Pneumatics are gone: still no-ops so old autos load cleanly.
         NamedCommands.registerCommand("togglePiston1", Commands.none());
@@ -207,6 +219,10 @@ public class Marcos {
                 return since > kEmptySeconds;
             })
             .beforeStarting(() -> {
+                // Stopped next to a trench (the 3-piece shooting spots are ~0.15 m from the trench
+                // guard): let the hood up while the robot stays put. AimSubsystem refuses it if
+                // the hood is really under the bar, and it ends once the robot moves 0.15 m.
+                aim.engageTrenchOverride();
                 firstFire[0] = Double.NaN;
                 lastBall[0] = Double.NEGATIVE_INFINITY;
                 shotsAtStart[0] = shooter.shotsStarted();

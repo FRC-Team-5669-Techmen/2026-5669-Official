@@ -3,13 +3,13 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.5467141162514837,
-        "y": 7.3219335705812565
+        "x": 4.603733443708609,
+        "y": 7.58430761589404
       },
       "prevControl": null,
       "nextControl": {
-        "x": 7.576807031808487,
-        "y": 7.419174797514396
+        "x": 8.633826359265608,
+        "y": 7.681548842827179
       },
       "isLocked": false,
       "linkedName": "LeftStart"
@@ -31,7 +31,14 @@
   "rotationTargets": [],
   "constraintZones": [],
   "pointTowardsZones": [],
-  "eventMarkers": [],
+  "eventMarkers": [
+    {
+      "name": "lowerIntake",
+      "waypointRelativePos": 0.1,
+      "endWaypointRelativePos": null,
+      "command": null
+    }
+  ],
   "globalConstraints": {
     "maxVelocity": 3.0,
     "maxAcceleration": 3.0,
@@ -48,7 +55,7 @@
   "folder": "Left",
   "idealStartingState": {
     "velocity": 2.0,
-    "rotation": 0.0
+    "rotation": -90.8105417621942
   },
   "useDefaultConstraints": true
 }

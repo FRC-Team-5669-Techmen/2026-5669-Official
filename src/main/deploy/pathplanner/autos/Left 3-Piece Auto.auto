@@ -5,12 +5,6 @@
     "data": {
       "commands": [
         {
-          "type": "named",
-          "data": {
-            "name": "intakeStartsDown"
-          }
-        },
-        {
           "type": "path",
           "data": {
             "pathName": "Left-to-Pickup"
