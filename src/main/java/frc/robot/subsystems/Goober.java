@@ -143,6 +143,7 @@ public class Goober extends SubsystemBase {
     // ---- Aiming at an ANGLE (shoot from anywhere) ----
     private final PIDController anglePID = new PIDController(Aim.kTurretP, 0.0, Aim.kTurretD);
     private double angleTarget = Double.NaN; // degrees from HOME, NaN = not aiming at an angle
+    private boolean holding = false;          // inside the hold band (see aimAtAngleWithRate)
 
     /**
      * One step of turning the turret to an angle (degrees clockwise from HOME), for shooting
@@ -172,9 +173,16 @@ public class Goober extends SubsystemBase {
         double feedforward = Aim.kTurretFF * rateDegPerSec;
         double error = angleTarget - angle;
         double output;
-        if (Math.abs(error) < Aim.kTurretHoldDegrees && Math.abs(rateDegPerSec) < Aim.kTurretHoldRate) {
-            // Oct 28 jitter fix: close enough and the target isn't moving = hold still (brake).
-            // Before, P + the static kick kept nudging it back and forth across the target.
+        // Oct 28 jitter fix: close enough and the target isn't moving = hold still (brake).
+        // Before, P + the static kick kept nudging it back and forth across the target.
+        // Oct 28 night: with HYSTERESIS. It starts holding inside kTurretHoldDegrees but only lets go
+        // past kTurretHoldExitDegrees (or a clearly moving target), so a target that wobbles a
+        // fraction of a degree (the robot settling, wheels locking) no longer kicks the motor on and
+        // off around the edge ("jitters sometimes").
+        holding = holding
+            ? Math.abs(error) < Aim.kTurretHoldExitDegrees && Math.abs(rateDegPerSec) < Aim.kTurretHoldExitRate
+            : Math.abs(error) < Aim.kTurretHoldDegrees && Math.abs(rateDegPerSec) < Aim.kTurretHoldRate;
+        if (holding) {
             anglePID.reset();
             output = 0.0;
         } else {
@@ -215,6 +223,7 @@ public class Goober extends SubsystemBase {
     /** Forget the angle target (aiming stopped). */
     public void clearAngleTarget() {
         angleTarget = Double.NaN;
+        holding = false;
         anglePID.reset();
     }
 

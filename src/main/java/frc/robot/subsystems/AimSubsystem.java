@@ -446,6 +446,11 @@ public class AimSubsystem extends SubsystemBase {
     public double tableRpm(double d) { return table.rpm(d); }
     public double tableHood(double d) { return table.hood(d); }
 
+    /** Every distance (m) in the SCORE table in use (code points + recorded points), closest first. */
+    public java.util.List<Double> scoreTableDistances() {
+        return new java.util.ArrayList<>(table.points().keySet());
+    }
+
     /** SCORE distances (m) recorded on this robot so far. */
     public java.util.List<Double> recordedDistances() {
         return recordedPoints(kPrefKey).stream().map(ShotTable.Point::distance).toList();

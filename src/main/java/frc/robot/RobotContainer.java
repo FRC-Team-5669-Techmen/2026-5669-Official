@@ -126,7 +126,7 @@ public class RobotContainer {
     // Self-check once a second: dashboard "Pit Check" = ALL GO or what is wrong. Read it before every match.
     public final PitCheck pitCheck = new PitCheck(goober, localizer);
     // Shot Map Day guide: "Shot Map Step" says what to do next; every shot goes to shot-log.csv.
-    public final ShotMapGuide shotMapGuide = new ShotMapGuide(aim, shooter, gooba);
+    public final ShotMapGuide shotMapGuide = new ShotMapGuide(aim, shooter, gooba, drivetrain, goober);
     // One shared auto-aim command: Operator RB toggles it, the backup-shot buttons turn it on.
     private final AimCommand aimCommand = new AimCommand(aim, goober, gooba, limelight, drivetrain);
     private final VacuumCommand vacuumCommand = new VacuumCommand(aim, shooter, index, shooterIntake,

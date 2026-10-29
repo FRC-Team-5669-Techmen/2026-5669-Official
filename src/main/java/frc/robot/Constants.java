@@ -577,6 +577,11 @@ public final class Constants {
         public static final double kTurretKSRampDegrees = 1.0;
         public static final double kTurretHoldDegrees = 0.5;
         public static final double kTurretHoldRate = 5.0; // deg/s the target may move and still count as still
+        // Hysteresis (Oct 28 night): once holding, it lets go only past these, so a target that
+        // wobbles around the 0.5 deg edge doesn't switch the motor on and off. 1 deg at 4 m = 7 cm
+        // (inside the 2 deg ready window).
+        public static final double kTurretHoldExitDegrees = 1.0;
+        public static final double kTurretHoldExitRate = 10.0;
         public static final double kLockedMaxSpeedDegPerSec = 30.0;
 
         // ---- Ready to fire (Operator RT only feeds the shooter when all are true) ----
