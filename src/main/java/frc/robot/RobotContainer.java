@@ -746,7 +746,7 @@ public class RobotContainer {
         if (aim.tuningMode()) p.add("Shot Tuning Mode is ON: turn it off");
         String bw = powerMonitor.batteryWarning(SmartDashboard.getString("Match Battery", ""));
         if (bw != null) p.add(bw);
-        if (SmartDashboard.getString("Match Battery", "").isBlank()) p.add("type the battery's name on the Match tab (Match Battery)");
+        if (SmartDashboard.getString("Match Battery", "").isBlank()) p.add("type the battery's name on the Battery tab (Match Battery)");
         if (!SmartDashboard.getBoolean("Vision Pose ON", true)) p.add("Vision Pose ON is off: turn it on");
         if (gooba.limitsOff()) p.add("Hood limits are OFF (measure switch)");
         if (elevator.limitsOff()) p.add("Elevator limits are OFF (recovery switch)");

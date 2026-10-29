@@ -11,7 +11,7 @@
             "title": "Ready To Fire",
             "x": 0.0,
             "y": 0.0,
-            "width": 640.0,
+            "width": 512.0,
             "height": 384.0,
             "type": "Boolean Box",
             "properties": {
@@ -21,10 +21,10 @@
           },
           {
             "title": "Aim Active",
-            "x": 640.0,
+            "x": 512.0,
             "y": 0.0,
-            "width": 320.0,
-            "height": 192.0,
+            "width": 256.0,
+            "height": 256.0,
             "type": "Boolean Box",
             "properties": {
               "topic": "/SmartDashboard/Aim Active",
@@ -33,10 +33,10 @@
           },
           {
             "title": "Pose Trusted",
-            "x": 960.0,
+            "x": 768.0,
             "y": 0.0,
-            "width": 320.0,
-            "height": 192.0,
+            "width": 256.0,
+            "height": 256.0,
             "type": "Boolean Box",
             "properties": {
               "topic": "/SmartDashboard/Pose Trusted",
@@ -44,11 +44,24 @@
             }
           },
           {
+            "title": "Pit Check",
+            "x": 1024.0,
+            "y": 0.0,
+            "width": 512.0,
+            "height": 256.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Pit Check",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
             "title": "Our Hub",
-            "x": 640.0,
-            "y": 192.0,
-            "width": 640.0,
-            "height": 192.0,
+            "x": 512.0,
+            "y": 256.0,
+            "width": 512.0,
+            "height": 128.0,
             "type": "Text Display",
             "properties": {
               "topic": "/SmartDashboard/Our Hub",
@@ -57,10 +70,34 @@
             }
           },
           {
+            "title": "Vacuum Mode",
+            "x": 1024.0,
+            "y": 256.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Vacuum Mode",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Dump Mode",
+            "x": 1280.0,
+            "y": 256.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Dump Mode",
+              "period": 0.06
+            }
+          },
+          {
             "title": "Shot Ready",
             "x": 0.0,
             "y": 384.0,
-            "width": 1280.0,
+            "width": 1024.0,
             "height": 128.0,
             "type": "Text Display",
             "properties": {
@@ -70,10 +107,22 @@
             }
           },
           {
+            "title": "Defense Mode",
+            "x": 1024.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Defense Mode",
+              "period": 0.06
+            }
+          },
+          {
             "title": "Shot Target",
             "x": 0.0,
             "y": 512.0,
-            "width": 1280.0,
+            "width": 1024.0,
             "height": 128.0,
             "type": "Text Display",
             "properties": {
@@ -83,65 +132,250 @@
             }
           },
           {
-            "title": "Vacuum Mode",
-            "x": 0.0,
-            "y": 640.0,
-            "width": 320.0,
-            "height": 192.0,
-            "type": "Boolean Box",
-            "properties": {
-              "topic": "/SmartDashboard/Vacuum Mode",
-              "period": 0.06
-            }
-          },
-          {
-            "title": "Dump Mode",
-            "x": 320.0,
-            "y": 640.0,
-            "width": 320.0,
-            "height": 192.0,
-            "type": "Boolean Box",
-            "properties": {
-              "topic": "/SmartDashboard/Dump Mode",
-              "period": 0.06
-            }
-          },
-          {
-            "title": "Defense Mode",
-            "x": 640.0,
-            "y": 640.0,
-            "width": 320.0,
-            "height": 192.0,
-            "type": "Boolean Box",
-            "properties": {
-              "topic": "/SmartDashboard/Defense Mode",
-              "period": 0.06
-            }
-          },
-          {
-            "title": "Pit Check",
-            "x": 960.0,
-            "y": 640.0,
-            "width": 320.0,
-            "height": 192.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Pit Check",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
             "title": "Code Version",
-            "x": 0.0,
-            "y": 832.0,
-            "width": 1280.0,
+            "x": 1024.0,
+            "y": 512.0,
+            "width": 512.0,
             "height": 128.0,
             "type": "Text Display",
             "properties": {
               "topic": "/SmartDashboard/Code Version",
               "period": 0.06,
               "show_submit_button": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Pre-Match",
+      "grid_layout": {
+        "layouts": [],
+        "containers": [
+          {
+            "title": "Pit Check",
+            "x": 0.0,
+            "y": 0.0,
+            "width": 1024.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Pit Check",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Code Version",
+            "x": 1024.0,
+            "y": 0.0,
+            "width": 512.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Code Version",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Match Driver",
+            "x": 0.0,
+            "y": 128.0,
+            "width": 384.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Match Driver",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Match Operator",
+            "x": 384.0,
+            "y": 128.0,
+            "width": 384.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Match Operator",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Match Coach",
+            "x": 768.0,
+            "y": 128.0,
+            "width": 384.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Match Coach",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Match Battery",
+            "x": 1152.0,
+            "y": 128.0,
+            "width": 384.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Match Battery",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Auto Mode",
+            "x": 0.0,
+            "y": 256.0,
+            "width": 512.0,
+            "height": 128.0,
+            "type": "ComboBox Chooser",
+            "properties": {
+              "topic": "/SmartDashboard/Auto Mode",
+              "period": 0.06,
+              "sort_options": false
+            }
+          },
+          {
+            "title": "Auto Start",
+            "x": 512.0,
+            "y": 256.0,
+            "width": 768.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Auto Start",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Auto Start OK",
+            "x": 1280.0,
+            "y": 256.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Auto Start OK",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Auto Winner",
+            "x": 0.0,
+            "y": 384.0,
+            "width": 512.0,
+            "height": 128.0,
+            "type": "ComboBox Chooser",
+            "properties": {
+              "topic": "/SmartDashboard/Auto Winner",
+              "period": 0.06,
+              "sort_options": false
+            }
+          },
+          {
+            "title": "Shot Target Mode",
+            "x": 512.0,
+            "y": 384.0,
+            "width": 512.0,
+            "height": 128.0,
+            "type": "ComboBox Chooser",
+            "properties": {
+              "topic": "/SmartDashboard/Shot Target Mode",
+              "period": 0.06,
+              "sort_options": false
+            }
+          },
+          {
+            "title": "Shooter Idle Active",
+            "x": 1024.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Shooter Idle Active",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Intake Next A Press",
+            "x": 1280.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Intake Next A Press",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Vision Status",
+            "x": 0.0,
+            "y": 512.0,
+            "width": 512.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Vision Status",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Pose Trusted",
+            "x": 512.0,
+            "y": 512.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Pose Trusted",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Seconds Since Vision Fix",
+            "x": 768.0,
+            "y": 512.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Seconds Since Vision Fix",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Auto-Aim On At Teleop Start",
+            "x": 1024.0,
+            "y": 512.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Toggle Switch",
+            "properties": {
+              "topic": "/SmartDashboard/Auto-Aim On At Teleop Start",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Slow Down While Shooting",
+            "x": 1280.0,
+            "y": 512.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Toggle Switch",
+            "properties": {
+              "topic": "/SmartDashboard/Slow Down While Shooting",
+              "period": 0.06
             }
           }
         ]
@@ -168,7 +402,7 @@
             "title": "Shot Ready",
             "x": 768.0,
             "y": 0.0,
-            "width": 512.0,
+            "width": 768.0,
             "height": 128.0,
             "type": "Text Display",
             "properties": {
@@ -201,8 +435,20 @@
             }
           },
           {
-            "title": "Climbing (elevator up)",
+            "title": "Dump Mode",
             "x": 512.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Dump Mode",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Climbing (elevator up)",
+            "x": 768.0,
             "y": 128.0,
             "width": 256.0,
             "height": 128.0,
@@ -214,7 +460,7 @@
           },
           {
             "title": "Near Trench (hood capped)",
-            "x": 768.0,
+            "x": 1024.0,
             "y": 128.0,
             "width": 256.0,
             "height": 128.0,
@@ -225,11 +471,23 @@
             }
           },
           {
+            "title": "Hanging (climb shot)",
+            "x": 1280.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Hanging (climb shot)",
+              "period": 0.06
+            }
+          },
+          {
             "title": "Field",
             "x": 0.0,
             "y": 256.0,
-            "width": 768.0,
-            "height": 384.0,
+            "width": 512.0,
+            "height": 256.0,
             "type": "Field",
             "properties": {
               "topic": "/SmartDashboard/Field",
@@ -238,7 +496,7 @@
           },
           {
             "title": "Aim Distance (m)",
-            "x": 768.0,
+            "x": 512.0,
             "y": 256.0,
             "width": 256.0,
             "height": 128.0,
@@ -250,7 +508,7 @@
           },
           {
             "title": "Robot Speed (m per s)",
-            "x": 1024.0,
+            "x": 768.0,
             "y": 256.0,
             "width": 256.0,
             "height": 128.0,
@@ -261,8 +519,32 @@
             }
           },
           {
+            "title": "Ready To Fire",
+            "x": 1024.0,
+            "y": 256.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Ready To Fire",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Aim Hub In Reach",
+            "x": 1280.0,
+            "y": 256.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/SmartDashboard/Aim Hub In Reach",
+              "period": 0.06
+            }
+          },
+          {
             "title": "Shooter Actual RPM",
-            "x": 768.0,
+            "x": 512.0,
             "y": 384.0,
             "width": 256.0,
             "height": 128.0,
@@ -274,7 +556,7 @@
           },
           {
             "title": "Aim Shooter RPM",
-            "x": 1024.0,
+            "x": 768.0,
             "y": 384.0,
             "width": 256.0,
             "height": 128.0,
@@ -285,96 +567,21 @@
             }
           },
           {
-            "title": "Agitator",
-            "x": 768.0,
-            "y": 512.0,
-            "width": 512.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Agitator",
-              "period": 0.06
-            }
-          },
-          {
-            "title": "Pit Check",
+            "title": "Pass Lane Clear",
             "x": 1024.0,
-            "y": 128.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Pit Check",
-              "period": 0.06
-            }
-          },
-          {
-            "title": "Defense",
-            "x": 0.0,
-            "y": 640.0,
-            "width": 1024.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Defense",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
-            "title": "Hanging (climb shot)",
-            "x": 1024.0,
-            "y": 640.0,
+            "y": 384.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Boolean Box",
             "properties": {
-              "topic": "/SmartDashboard/Hanging (climb shot)",
-              "period": 0.06
-            }
-          },
-          {
-            "title": "Auto Winner",
-            "x": 0.0,
-            "y": 768.0,
-            "width": 512.0,
-            "height": 128.0,
-            "type": "ComboBox Chooser",
-            "properties": {
-              "topic": "/SmartDashboard/Auto Winner",
-              "period": 0.06,
-              "sort_options": false
-            }
-          },
-          {
-            "title": "Auto Start",
-            "x": 512.0,
-            "y": 768.0,
-            "width": 512.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Auto Start",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
-            "title": "Auto Start OK",
-            "x": 1024.0,
-            "y": 768.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Boolean Box",
-            "properties": {
-              "topic": "/SmartDashboard/Auto Start OK",
+              "topic": "/SmartDashboard/Pass Lane Clear",
               "period": 0.06
             }
           },
           {
             "title": "Turret Auto-Aim",
-            "x": 0.0,
-            "y": 896.0,
+            "x": 1280.0,
+            "y": 384.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Text Display",
@@ -385,71 +592,35 @@
             }
           },
           {
-            "title": "Ready To Fire",
-            "x": 256.0,
-            "y": 896.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Boolean Box",
-            "properties": {
-              "topic": "/SmartDashboard/Ready To Fire",
-              "period": 0.06
-            }
-          },
-          {
-            "title": "Pass Lane Clear",
-            "x": 512.0,
-            "y": 896.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Boolean Box",
-            "properties": {
-              "topic": "/SmartDashboard/Pass Lane Clear",
-              "period": 0.06
-            }
-          },
-          {
-            "title": "Aim Hub In Reach",
-            "x": 768.0,
-            "y": 896.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Boolean Box",
-            "properties": {
-              "topic": "/SmartDashboard/Aim Hub In Reach",
-              "period": 0.06
-            }
-          },
-          {
-            "title": "Auto Mode",
-            "x": 1024.0,
-            "y": 896.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "ComboBox Chooser",
-            "properties": {
-              "topic": "/SmartDashboard/Auto Mode",
-              "period": 0.06,
-              "sort_options": false
-            }
-          },
-          {
-            "title": "Dump Mode",
+            "title": "Agitator",
             "x": 0.0,
-            "y": 1024.0,
-            "width": 256.0,
+            "y": 512.0,
+            "width": 384.0,
             "height": 128.0,
-            "type": "Boolean Box",
+            "type": "Text Display",
             "properties": {
-              "topic": "/SmartDashboard/Dump Mode",
+              "topic": "/SmartDashboard/Agitator",
               "period": 0.06
+            }
+          },
+          {
+            "title": "Defense",
+            "x": 384.0,
+            "y": 512.0,
+            "width": 384.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Defense",
+              "period": 0.06,
+              "show_submit_button": false
             }
           },
           {
             "title": "Dump",
-            "x": 256.0,
-            "y": 1024.0,
-            "width": 512.0,
+            "x": 768.0,
+            "y": 512.0,
+            "width": 384.0,
             "height": 128.0,
             "type": "Text Display",
             "properties": {
@@ -460,523 +631,13 @@
           },
           {
             "title": "Power Budget",
-            "x": 768.0,
-            "y": 1024.0,
-            "width": 512.0,
+            "x": 1152.0,
+            "y": 512.0,
+            "width": 384.0,
             "height": 128.0,
             "type": "Text Display",
             "properties": {
               "topic": "/SmartDashboard/Power Budget",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
-            "title": "Vision Status",
-            "x": 0.0,
-            "y": 1152.0,
-            "width": 512.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Vision Status",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
-            "title": "Pose Trusted",
-            "x": 512.0,
-            "y": 1152.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Boolean Box",
-            "properties": {
-              "topic": "/SmartDashboard/Pose Trusted",
-              "period": 0.06
-            }
-          },
-          {
-            "title": "Seconds Since Vision Fix",
-            "x": 768.0,
-            "y": 1152.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Large Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Seconds Since Vision Fix",
-              "period": 0.06
-            }
-          },
-          {
-            "title": "Intake Next A Press",
-            "x": 1024.0,
-            "y": 1152.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Intake Next A Press",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
-            "title": "Shot Target Mode",
-            "x": 0.0,
-            "y": 1280.0,
-            "width": 512.0,
-            "height": 128.0,
-            "type": "ComboBox Chooser",
-            "properties": {
-              "topic": "/SmartDashboard/Shot Target Mode",
-              "period": 0.06,
-              "sort_options": false
-            }
-          },
-          {
-            "title": "Shooter Idle Active",
-            "x": 512.0,
-            "y": 1280.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Boolean Box",
-            "properties": {
-              "topic": "/SmartDashboard/Shooter Idle Active",
-              "period": 0.06
-            }
-          },
-          {
-            "title": "Auto-Aim On At Teleop Start",
-            "x": 768.0,
-            "y": 1280.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Toggle Switch",
-            "properties": {
-              "topic": "/SmartDashboard/Auto-Aim On At Teleop Start",
-              "period": 0.06
-            }
-          },
-          {
-            "title": "Slow Down While Shooting",
-            "x": 1024.0,
-            "y": 1280.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Toggle Switch",
-            "properties": {
-              "topic": "/SmartDashboard/Slow Down While Shooting",
-              "period": 0.06
-            }
-          },
-          {
-            "title": "Match Driver",
-            "x": 0.0,
-            "y": 1408.0,
-            "width": 320.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Match Driver",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
-            "title": "Match Operator",
-            "x": 320.0,
-            "y": 1408.0,
-            "width": 320.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Match Operator",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
-            "title": "Match Coach",
-            "x": 640.0,
-            "y": 1408.0,
-            "width": 320.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Match Coach",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
-            "title": "Match Battery",
-            "x": 960.0,
-            "y": 1408.0,
-            "width": 320.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Match Battery",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
-            "title": "Code Version",
-            "x": 0.0,
-            "y": 1536.0,
-            "width": 1280.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Code Version",
-              "period": 0.06
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "Hood + Camera",
-      "grid_layout": {
-        "layouts": [],
-        "containers": [
-          {
-            "title": "Hood Limits OFF (measure)",
-            "x": 0.0,
-            "y": 0.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Command",
-            "properties": {
-              "topic": "/SmartDashboard/Hood Limits OFF (measure)",
-              "period": 0.06,
-              "show_type": false,
-              "maximize_button_space": true
-            }
-          },
-          {
-            "title": "Set Hood Top (hood at top)",
-            "x": 256.0,
-            "y": 0.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Command",
-            "properties": {
-              "topic": "/SmartDashboard/Set Hood Top (hood at top)",
-              "period": 0.06,
-              "show_type": false,
-              "maximize_button_space": true
-            }
-          },
-          {
-            "title": "Zero Hood (hood is DOWN)",
-            "x": 512.0,
-            "y": 0.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Command",
-            "properties": {
-              "topic": "/SmartDashboard/Zero Hood (hood is DOWN)",
-              "period": 0.06,
-              "show_type": false,
-              "maximize_button_space": true
-            }
-          },
-          {
-            "title": "Clear Hood Top",
-            "x": 768.0,
-            "y": 0.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Command",
-            "properties": {
-              "topic": "/SmartDashboard/Clear Hood Top",
-              "period": 0.06,
-              "show_type": false,
-              "maximize_button_space": true
-            }
-          },
-          {
-            "title": "Hood Status",
-            "x": 1024.0,
-            "y": 0.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Hood Status",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
-            "title": "Hood Position (rot)",
-            "x": 0.0,
-            "y": 128.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Large Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Hood Position (rot)",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
-            "title": "Hood Top Limit (rot)",
-            "x": 256.0,
-            "y": 128.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Large Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Hood Top Limit (rot)",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
-            "title": "Hood Target (rot)",
-            "x": 512.0,
-            "y": 128.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Large Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Hood Target (rot)",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
-            "title": "Hood Amps",
-            "x": 768.0,
-            "y": 128.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Large Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Hood Amps",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
-            "title": "Camera Pitch (deg)",
-            "x": 1024.0,
-            "y": 128.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Large Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Camera Pitch (deg)",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
-            "title": "Camera Pitch Hood Down (deg)",
-            "x": 0.0,
-            "y": 256.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Camera Pitch Hood Down (deg)",
-              "period": 0.06,
-              "show_submit_button": true
-            }
-          },
-          {
-            "title": "Camera Pitch Hood Up (deg)",
-            "x": 256.0,
-            "y": 256.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Camera Pitch Hood Up (deg)",
-              "period": 0.06,
-              "show_submit_button": true
-            }
-          },
-          {
-            "title": "Camera Height Hood Down (in)",
-            "x": 512.0,
-            "y": 256.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Camera Height Hood Down (in)",
-              "period": 0.06,
-              "show_submit_button": true
-            }
-          },
-          {
-            "title": "Camera Height Hood Up (in)",
-            "x": 768.0,
-            "y": 256.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Camera Height Hood Up (in)",
-              "period": 0.06,
-              "show_submit_button": true
-            }
-          },
-          {
-            "title": "Clear Recorded Shot Points",
-            "x": 1024.0,
-            "y": 256.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Command",
-            "properties": {
-              "topic": "/SmartDashboard/Clear Recorded Shot Points",
-              "period": 0.06,
-              "show_type": false,
-              "maximize_button_space": true
-            }
-          },
-          {
-            "title": "Shot Table",
-            "x": 0.0,
-            "y": 384.0,
-            "width": 1280.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Shot Table",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "Battery",
-      "grid_layout": {
-        "layouts": [],
-        "containers": [
-          {
-            "title": "Battery Verdict",
-            "x": 0.0,
-            "y": 0.0,
-            "width": 1280.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Battery Verdict",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
-            "title": "Battery R (mOhm)",
-            "x": 0.0,
-            "y": 128.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Large Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Battery R (mOhm)",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
-            "title": "Battery Rest (V)",
-            "x": 256.0,
-            "y": 128.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Large Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Battery Rest (V)",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
-            "title": "Robot Current (A)",
-            "x": 512.0,
-            "y": 128.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Large Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Robot Current (A)",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
-            "title": "Test: Battery Load (shooter 2 s)",
-            "x": 768.0,
-            "y": 128.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Command",
-            "properties": {
-              "topic": "/SmartDashboard/Test: Battery Load (shooter 2 s)",
-              "period": 0.06,
-              "show_type": false,
-              "maximize_button_space": true
-            }
-          },
-          {
-            "title": "Power Budget",
-            "x": 1024.0,
-            "y": 128.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Power Budget",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
-            "title": "Battery Load Test",
-            "x": 0.0,
-            "y": 256.0,
-            "width": 1280.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Battery Load Test",
-              "period": 0.06,
-              "show_submit_button": false
-            }
-          },
-          {
-            "title": "Match Battery",
-            "x": 0.0,
-            "y": 384.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Match Battery",
-              "period": 0.06,
-              "show_submit_button": true
-            }
-          },
-          {
-            "title": "Code Version",
-            "x": 256.0,
-            "y": 384.0,
-            "width": 1024.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Code Version",
               "period": 0.06,
               "show_submit_button": false
             }
@@ -1043,8 +704,8 @@
           },
           {
             "title": "Aim Distance (m)",
-            "x": 0.0,
-            "y": 256.0,
+            "x": 1280.0,
+            "y": 0.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Large Text Display",
@@ -1055,8 +716,8 @@
           },
           {
             "title": "Tune RPM",
-            "x": 256.0,
-            "y": 256.0,
+            "x": 1280.0,
+            "y": 128.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Text Display",
@@ -1068,7 +729,7 @@
           },
           {
             "title": "Tune Hood (rot)",
-            "x": 512.0,
+            "x": 0.0,
             "y": 256.0,
             "width": 256.0,
             "height": 128.0,
@@ -1081,7 +742,7 @@
           },
           {
             "title": "Shooter Actual RPM",
-            "x": 768.0,
+            "x": 256.0,
             "y": 256.0,
             "width": 256.0,
             "height": 128.0,
@@ -1093,7 +754,7 @@
           },
           {
             "title": "Shots At Speed",
-            "x": 1024.0,
+            "x": 512.0,
             "y": 256.0,
             "width": 256.0,
             "height": 128.0,
@@ -1105,8 +766,8 @@
           },
           {
             "title": "Shot Tuning Mode",
-            "x": 0.0,
-            "y": 384.0,
+            "x": 768.0,
+            "y": 256.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Toggle Switch",
@@ -1117,8 +778,8 @@
           },
           {
             "title": "Record Shot Point",
-            "x": 256.0,
-            "y": 384.0,
+            "x": 1024.0,
+            "y": 256.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Command",
@@ -1131,8 +792,8 @@
           },
           {
             "title": "Plot Distance (m)",
-            "x": 512.0,
-            "y": 384.0,
+            "x": 1280.0,
+            "y": 256.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Text Display",
@@ -1144,7 +805,7 @@
           },
           {
             "title": "Plot Angle (deg)",
-            "x": 768.0,
+            "x": 0.0,
             "y": 384.0,
             "width": 256.0,
             "height": 128.0,
@@ -1157,7 +818,7 @@
           },
           {
             "title": "Set Pose: Plot Spot",
-            "x": 1024.0,
+            "x": 256.0,
             "y": 384.0,
             "width": 256.0,
             "height": 128.0,
@@ -1171,8 +832,8 @@
           },
           {
             "title": "Vision Pose ON",
-            "x": 0.0,
-            "y": 512.0,
+            "x": 512.0,
+            "y": 384.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Toggle Switch",
@@ -1183,8 +844,8 @@
           },
           {
             "title": "Last Shot Launch RPM",
-            "x": 256.0,
-            "y": 512.0,
+            "x": 768.0,
+            "y": 384.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Large Text Display",
@@ -1195,8 +856,8 @@
           },
           {
             "title": "Reset Shot Stats",
-            "x": 512.0,
-            "y": 512.0,
+            "x": 1024.0,
+            "y": 384.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Command",
@@ -1209,8 +870,8 @@
           },
           {
             "title": "Vision Status",
-            "x": 768.0,
-            "y": 512.0,
+            "x": 1280.0,
+            "y": 384.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Text Display",
@@ -1222,7 +883,7 @@
           },
           {
             "title": "Re-find Position (camera)",
-            "x": 1024.0,
+            "x": 0.0,
             "y": 512.0,
             "width": 256.0,
             "height": 128.0,
@@ -1307,8 +968,20 @@
             }
           },
           {
+            "title": "Auto Agitate",
+            "x": 1280.0,
+            "y": 0.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Toggle Switch",
+            "properties": {
+              "topic": "/SmartDashboard/Auto Agitate",
+              "period": 0.06
+            }
+          },
+          {
             "title": "Spindex Amps",
-            "x": 256.0,
+            "x": 0.0,
             "y": 128.0,
             "width": 256.0,
             "height": 128.0,
@@ -1319,8 +992,33 @@
             }
           },
           {
+            "title": "Agitate Drive Shimmy",
+            "x": 256.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Toggle Switch",
+            "properties": {
+              "topic": "/SmartDashboard/Agitate Drive Shimmy",
+              "period": 0.06
+            }
+          },
+          {
+            "title": "Roller Assist Volts",
+            "x": 512.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Roller Assist Volts",
+              "period": 0.06,
+              "show_submit_button": true
+            }
+          },
+          {
             "title": "Practice Field: Hub Tags Only",
-            "x": 1024.0,
+            "x": 768.0,
             "y": 128.0,
             "width": 256.0,
             "height": 128.0,
@@ -1332,8 +1030,8 @@
           },
           {
             "title": "Backup Shot",
-            "x": 0.0,
-            "y": 256.0,
+            "x": 1024.0,
+            "y": 128.0,
             "width": 512.0,
             "height": 128.0,
             "type": "Text Display",
@@ -1345,7 +1043,7 @@
           },
           {
             "title": "Save Spot: Midshot",
-            "x": 512.0,
+            "x": 0.0,
             "y": 256.0,
             "width": 256.0,
             "height": 128.0,
@@ -1359,7 +1057,7 @@
           },
           {
             "title": "Save Spot: Left Trench",
-            "x": 768.0,
+            "x": 256.0,
             "y": 256.0,
             "width": 256.0,
             "height": 128.0,
@@ -1373,7 +1071,7 @@
           },
           {
             "title": "Save Spot: Right Trench",
-            "x": 1024.0,
+            "x": 512.0,
             "y": 256.0,
             "width": 256.0,
             "height": 128.0,
@@ -1383,6 +1081,45 @@
               "period": 0.06,
               "show_type": false,
               "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Agitator",
+            "x": 768.0,
+            "y": 256.0,
+            "width": 512.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Agitator",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Last Volley",
+            "x": 0.0,
+            "y": 384.0,
+            "width": 512.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Last Volley",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Agitate Lift (rot)",
+            "x": 1280.0,
+            "y": 256.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Agitate Lift (rot)",
+              "period": 0.06,
+              "show_submit_button": true
             }
           },
           {
@@ -1397,81 +1134,352 @@
               "period": 0.06,
               "show_submit_button": false
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Hood + Camera",
+      "grid_layout": {
+        "layouts": [],
+        "containers": [
+          {
+            "title": "Hood Limits OFF (measure)",
+            "x": 0.0,
+            "y": 0.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Hood Limits OFF (measure)",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
           },
           {
-            "title": "Auto Agitate",
+            "title": "Set Hood Top (hood at top)",
+            "x": 256.0,
+            "y": 0.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Set Hood Top (hood at top)",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Zero Hood (hood is DOWN)",
+            "x": 512.0,
+            "y": 0.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Zero Hood (hood is DOWN)",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Clear Hood Top",
+            "x": 768.0,
+            "y": 0.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Clear Hood Top",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Hood Status",
+            "x": 1024.0,
+            "y": 0.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Hood Status",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Hood Position (rot)",
+            "x": 1280.0,
+            "y": 0.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Hood Position (rot)",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Hood Top Limit (rot)",
             "x": 0.0,
             "y": 128.0,
             "width": 256.0,
             "height": 128.0,
-            "type": "Toggle Switch",
+            "type": "Large Text Display",
             "properties": {
-              "topic": "/SmartDashboard/Auto Agitate",
-              "period": 0.06
-            }
-          },
-          {
-            "title": "Agitator",
-            "x": 0.0,
-            "y": 384.0,
-            "width": 512.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/SmartDashboard/Agitator",
+              "topic": "/SmartDashboard/Hood Top Limit (rot)",
               "period": 0.06,
               "show_submit_button": false
             }
           },
           {
-            "title": "Last Volley",
+            "title": "Hood Target (rot)",
+            "x": 256.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Hood Target (rot)",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Hood Amps",
             "x": 512.0,
-            "y": 384.0,
-            "width": 512.0,
+            "y": 128.0,
+            "width": 256.0,
             "height": 128.0,
-            "type": "Text Display",
+            "type": "Large Text Display",
             "properties": {
-              "topic": "/SmartDashboard/Last Volley",
+              "topic": "/SmartDashboard/Hood Amps",
               "period": 0.06,
               "show_submit_button": false
             }
           },
           {
-            "title": "Agitate Lift (rot)",
+            "title": "Camera Pitch (deg)",
+            "x": 768.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Camera Pitch (deg)",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Camera Pitch Hood Down (deg)",
             "x": 1024.0,
-            "y": 384.0,
+            "y": 128.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Text Display",
             "properties": {
-              "topic": "/SmartDashboard/Agitate Lift (rot)",
+              "topic": "/SmartDashboard/Camera Pitch Hood Down (deg)",
               "period": 0.06,
               "show_submit_button": true
             }
           },
           {
-            "title": "Agitate Drive Shimmy",
+            "title": "Camera Pitch Hood Up (deg)",
+            "x": 1280.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Camera Pitch Hood Up (deg)",
+              "period": 0.06,
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "Camera Height Hood Down (in)",
+            "x": 0.0,
+            "y": 256.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Camera Height Hood Down (in)",
+              "period": 0.06,
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "Camera Height Hood Up (in)",
+            "x": 256.0,
+            "y": 256.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Camera Height Hood Up (in)",
+              "period": 0.06,
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "Clear Recorded Shot Points",
+            "x": 512.0,
+            "y": 256.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Command",
+            "properties": {
+              "topic": "/SmartDashboard/Clear Recorded Shot Points",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
+            }
+          },
+          {
+            "title": "Shot Table",
+            "x": 0.0,
+            "y": 384.0,
+            "width": 1280.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Shot Table",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Battery",
+      "grid_layout": {
+        "layouts": [],
+        "containers": [
+          {
+            "title": "Battery Verdict",
+            "x": 0.0,
+            "y": 0.0,
+            "width": 1280.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Battery Verdict",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Battery R (mOhm)",
+            "x": 1280.0,
+            "y": 0.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Battery R (mOhm)",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Battery Rest (V)",
+            "x": 0.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Battery Rest (V)",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Robot Current (A)",
+            "x": 256.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Large Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Robot Current (A)",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Test: Battery Load (shooter 2 s)",
             "x": 512.0,
             "y": 128.0,
             "width": 256.0,
             "height": 128.0,
-            "type": "Toggle Switch",
+            "type": "Command",
             "properties": {
-              "topic": "/SmartDashboard/Agitate Drive Shimmy",
-              "period": 0.06
+              "topic": "/SmartDashboard/Test: Battery Load (shooter 2 s)",
+              "period": 0.06,
+              "show_type": false,
+              "maximize_button_space": true
             }
           },
           {
-            "title": "Roller Assist Volts",
+            "title": "Power Budget",
             "x": 768.0,
             "y": 128.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Text Display",
             "properties": {
-              "topic": "/SmartDashboard/Roller Assist Volts",
+              "topic": "/SmartDashboard/Power Budget",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Battery Load Test",
+            "x": 0.0,
+            "y": 256.0,
+            "width": 1280.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Battery Load Test",
+              "period": 0.06,
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "Match Battery",
+            "x": 1024.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Match Battery",
               "period": 0.06,
               "show_submit_button": true
+            }
+          },
+          {
+            "title": "Code Version",
+            "x": 0.0,
+            "y": 384.0,
+            "width": 1024.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Code Version",
+              "period": 0.06,
+              "show_submit_button": false
             }
           }
         ]
@@ -1497,8 +1505,8 @@
           },
           {
             "title": "Test: Wheel Radius",
-            "x": 0.0,
-            "y": 128.0,
+            "x": 1280.0,
+            "y": 0.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Command",
@@ -1511,7 +1519,7 @@
           },
           {
             "title": "Test: Slip Current",
-            "x": 256.0,
+            "x": 0.0,
             "y": 128.0,
             "width": 256.0,
             "height": 128.0,
@@ -1525,7 +1533,7 @@
           },
           {
             "title": "Test: Drive Feedforward",
-            "x": 512.0,
+            "x": 256.0,
             "y": 128.0,
             "width": 256.0,
             "height": 128.0,
@@ -1539,7 +1547,7 @@
           },
           {
             "title": "Auto: Turret Watches Hub",
-            "x": 768.0,
+            "x": 512.0,
             "y": 128.0,
             "width": 256.0,
             "height": 128.0,
@@ -1551,7 +1559,7 @@
           },
           {
             "title": "Robot Tilt (deg)",
-            "x": 1024.0,
+            "x": 768.0,
             "y": 128.0,
             "width": 256.0,
             "height": 128.0,
@@ -1576,8 +1584,8 @@
           },
           {
             "title": "Seconds Since Vision Fix",
-            "x": 768.0,
-            "y": 256.0,
+            "x": 1024.0,
+            "y": 128.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Large Text Display",
@@ -1588,8 +1596,8 @@
           },
           {
             "title": "Drive Avg Amps",
-            "x": 1024.0,
-            "y": 256.0,
+            "x": 1280.0,
+            "y": 128.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Large Text Display",
@@ -1600,8 +1608,8 @@
           },
           {
             "title": "Robot Speed (m per s)",
-            "x": 0.0,
-            "y": 384.0,
+            "x": 768.0,
+            "y": 256.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Large Text Display",
@@ -1612,7 +1620,7 @@
           },
           {
             "title": "Defense",
-            "x": 256.0,
+            "x": 0.0,
             "y": 384.0,
             "width": 768.0,
             "height": 128.0,
@@ -1626,7 +1634,7 @@
           {
             "title": "Pit Check",
             "x": 1024.0,
-            "y": 384.0,
+            "y": 256.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Text Display",
@@ -1638,8 +1646,8 @@
           },
           {
             "title": "Climb Shot Table",
-            "x": 0.0,
-            "y": 512.0,
+            "x": 1280.0,
+            "y": 256.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Toggle Switch",
@@ -1650,8 +1658,8 @@
           },
           {
             "title": "Clear Recorded Climb Points",
-            "x": 256.0,
-            "y": 512.0,
+            "x": 768.0,
+            "y": 384.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Command",
@@ -1664,7 +1672,7 @@
           },
           {
             "title": "Climb Table",
-            "x": 512.0,
+            "x": 0.0,
             "y": 512.0,
             "width": 768.0,
             "height": 128.0,
@@ -1677,8 +1685,8 @@
           },
           {
             "title": "Pass Feed Volts",
-            "x": 0.0,
-            "y": 640.0,
+            "x": 1024.0,
+            "y": 384.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Text Display",
@@ -1690,8 +1698,8 @@
           },
           {
             "title": "Vision Fixes Heading",
-            "x": 256.0,
-            "y": 640.0,
+            "x": 1280.0,
+            "y": 384.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Toggle Switch",
@@ -1702,8 +1710,8 @@
           },
           {
             "title": "Heading Off By (deg)",
-            "x": 512.0,
-            "y": 640.0,
+            "x": 768.0,
+            "y": 512.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Large Text Display",
@@ -1714,8 +1722,8 @@
           },
           {
             "title": "Power Budget ON",
-            "x": 768.0,
-            "y": 640.0,
+            "x": 1024.0,
+            "y": 512.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Toggle Switch",

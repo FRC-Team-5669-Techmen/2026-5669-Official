@@ -44,7 +44,7 @@ import frc.robot.power.BatteryEstimator;
  *   <li>"Test: Battery Load (shooter 2 s)" (Drive Tests tab, robot ENABLED): spins the shooter from
  *       rest for 2 s and measures R cleanly. Same robot, every battery = a fair comparison.</li>
  *   <li>/home/lvuser/shotmap/battery-history.csv: one row per match and per load test, by the
- *       "Match Battery" name typed on the Match tab. Synced to the laptop with the match data.
+ *       "Match Battery" name typed on the Battery or Pre-Match tab. Synced to the laptop with the match data.
  *       Pit Check warns when the battery typed in had high resistance last time.</li>
  * </ul>
  * Dashboard: "Battery R (mOhm)", "Battery Rest (V)", "Robot Current (A)", "Battery Verdict",

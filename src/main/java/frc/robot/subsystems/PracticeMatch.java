@@ -105,7 +105,7 @@ public class PracticeMatch extends SubsystemBase {
         Preferences.initBoolean(kRandomKey, true);
         SmartDashboard.putBoolean(kRandomKey, Preferences.getBoolean(kRandomKey, true));
         SmartDashboard.putString("Practice Match", "Driver Station Practice mode, then the match screen at :5806");
-        // Who's driving and which battery: typed on the Match tab, kept between matches (saved),
+        // Who's driving and which battery: typed on the Battery or Pre-Match tab, kept between matches (saved),
         // written into every match file so the app can tie matches to drivers and batteries.
         for (String k : kCrew) {
             String key = "Match " + k;
