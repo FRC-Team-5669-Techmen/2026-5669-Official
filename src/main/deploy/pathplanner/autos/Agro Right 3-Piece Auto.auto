@@ -5,12 +5,6 @@
     "data": {
       "commands": [
         {
-          "type": "named",
-          "data": {
-            "name": "lowerIntake"
-          }
-        },
-        {
           "type": "path",
           "data": {
             "pathName": "Agro-Right-to-Pickup"
