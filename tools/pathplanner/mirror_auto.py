@@ -42,7 +42,7 @@ def mirror_point(p):
 
 
 def mirror_angle(deg):
-    return 0.0 if deg is None else -deg
+    return 0.0 if not deg else -deg  # no "-0.0" in the files
 
 
 def mirror_path(d, a, b):
