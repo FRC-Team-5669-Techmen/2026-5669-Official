@@ -21,8 +21,9 @@ import sys
 MIRROR_Y = 4.0346          # hub center line (Constants.Aim.kHubY)
 HUB = (4.6255, 4.0346)     # our (blue) hub center
 SCORE_LINE_X = 4.19        # G407: robot center must be within this of our wall to score
-CENTER_LINE_X = 8.27       # G403: never fully cross it in auto
+CENTER_LINE_X = 8.27       # G403: never FULLY cross it in auto
 HALF_LENGTH = 0.375        # 29.5 in bumpers / 2
+HALF_WIDTH = 0.311         # 24.5 in bumpers / 2 (the robot's shortest reach behind its center)
 TURRET_REACH = (10.0, 290.0)  # turret degrees it can aim (HOME = robot front, turning right)
 SCORE_COMMANDS = {"score", "visionScore", "scorePreload"}
 
@@ -113,10 +114,15 @@ def check(auto, paths):
     steps = flat(auto["command"], [])
     for i, (t, name) in enumerate(steps):
         if t == "path":
-            far = max(bezier_xs(paths[name])) + HALF_LENGTH
-            if far >= CENTER_LINE_X:
+            deepest = max(bezier_xs(paths[name]))
+            behind = CENTER_LINE_X - (deepest - HALF_WIDTH)  # worst case: robot sideways
+            if behind <= 0:
                 ok = False
-                print(f"  !! {name}: robot front reaches x {far:.2f} m, past the center line (G403)")
+                print(f"  !! {name}: robot center reaches x {deepest:.2f} m, the WHOLE robot can be "
+                      f"past the center line (G403)")
+            elif deepest + HALF_LENGTH > CENTER_LINE_X:
+                print(f"  {name}: partly over the center line, back edge still {behind:.2f} m on our "
+                      f"side (G403 = never FULLY cross; leave room for drift)")
         if t == "named" and name in SCORE_COMMANDS:
             prev = next((n for tt, n in reversed(steps[:i]) if tt == "path"), None)
             if prev is None:

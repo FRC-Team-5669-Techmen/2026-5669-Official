@@ -51,16 +51,20 @@ public class Marcos {
         // auto's starting pose is enough.
         NamedCommands.registerCommand("scorePreload", scoreUntilEmpty(aim, shooter, index, shooterIntake, goober, gooba, limelight, drivetrain));
 
-        // GET READY TO SHOOT while still driving (Oct 27): turret + hood on the hub and the
-        // shooter at the table speed, no feeding. Put it on the last part of a path that ends at
-        // a shooting spot (event marker zone in PathPlanner), so the "score" right after it fires
-        // at once instead of spending its first second spinning up and turning the turret.
-        NamedCommands.registerCommand("prepareShot",
-            Commands.parallel(
-                new AimCommand(aim, goober, gooba, limelight, drivetrain),
-                Commands.run(() -> shooter.runAtRPM(aim.targetRpm()), shooter)
-            )
-        );
+        // GET READY TO SCORE while still driving home (Oct 29): turret on OUR HUB, shooter at the
+        // scoring speed for the distance, hood to its angle as soon as the trench guard lets it
+        // up. No feeding. Event marker ZONE on a path that ends at a shooting spot, so the
+        // "visionScore" after it fires at once instead of first spinning up and turning the
+        // turret. Always our hub (never a pass corner), so the zone can start in the neutral zone.
+        NamedCommands.registerCommand("prepareShot", prepareShot(aim, shooter, goober, gooba, drivetrain));
+
+        // Turret keeps the Limelight on our hub (camera position fixes while driving), nothing
+        // else moves. Event marker zone for paths without a shot at the end. (An auto holds every
+        // motor its commands use for its whole run, so the turret's own "watch the hub in autos"
+        // default never runs in an auto that scores.)
+        NamedCommands.registerCommand("watchHub", Commands.run(() -> aimTurretAtHub(aim, goober, drivetrain), goober)
+            .finallyDo(() -> { goober.stop(); goober.clearAngleTarget(); })
+            .withName("watchHub"));
 
         // Timeout prevents auto hangs
         NamedCommands.registerCommand("shoot",
@@ -115,6 +119,15 @@ public class Marcos {
                 groundIntakePivot.deployIfUp();
                 startRoller.run();
             }));
+        // The robot STARTS the auto with the intake already DOWN (Oct 29): tell the code so (the
+        // pivot's zero becomes the floor, as if it had been powered on up and lowered) and roller
+        // on for the rest of auto. Never moves the pivot. First step of the 3-piece autos; only
+        // run them with the intake down at the start.
+        NamedCommands.registerCommand("intakeStartsDown",
+            Commands.runOnce(() -> {
+                groundIntakePivot.zeroAtDown();
+                startRoller.run();
+            }));
         // Intake UP + roller off.
         NamedCommands.registerCommand("raiseIntake",
             Commands.runOnce(() -> {
@@ -141,6 +154,33 @@ public class Marcos {
         NamedCommands.registerCommand("deployGooba", new GoobaToggleCommand(gooba, true));
         NamedCommands.registerCommand("stowGooba", new GoobaToggleCommand(gooba, false));
         NamedCommands.registerCommand("autoAimGooba", new AutoGooba(gooba, limelight).withTimeout(2.0));
+    }
+
+    /** Point the turret at OUR HUB from the field position (no shoot-on-the-move lead). */
+    private static void aimTurretAtHub(AimSubsystem aim, Goober goober, CommandSwerveDrivetrain drivetrain) {
+        if (!aim.poseUsable()) {
+            goober.stop();
+            return;
+        }
+        var s = aim.hubSolution();
+        goober.aimAtAngleWithRate(s.turretDegrees(), s.reachable() ? s.turretRateDegPerSec()
+            : Math.toDegrees(drivetrain.getState().Speeds.omegaRadiansPerSecond));
+    }
+
+    /** The "prepareShot" named command: turret, shooter and hood ready to score at our hub, no feeding. */
+    public static Command prepareShot(AimSubsystem aim, ShooterSubsystem shooter, Goober goober,
+            GoobaSubsystem gooba, CommandSwerveDrivetrain drivetrain) {
+        return Commands.run(() -> {
+            aimTurretAtHub(aim, goober, drivetrain);
+            if (!aim.poseUsable()) return;
+            double distance = aim.hubSolution().distanceMeters();
+            shooter.runAtRPM(aim.tableRpm(distance));
+            // The hood holds DOWN by itself near a trench (GoobaSubsystem trench guard).
+            if (Constants.Gooba.kHoodEnabled) gooba.setPosition(aim.tableHood(distance));
+        }, goober, shooter, gooba)
+            // Turret stops where it is pointing; the wheel keeps spinning for the score after it.
+            .finallyDo(() -> { goober.stop(); goober.clearAngleTarget(); })
+            .withName("prepareShot");
     }
 
     /**

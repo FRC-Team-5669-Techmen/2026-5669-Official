@@ -590,6 +590,8 @@ public class RobotContainer {
 
         // Dashboard button for when the code restarts with the intake somewhere other than UP.
         SmartDashboard.putData("Zero Intake (intake is UP)", groundIntakePivot.zeroCommand());
+        // For a robot powered on with the intake already DOWN (it would otherwise read 0 = UP).
+        SmartDashboard.putData("Zero Intake (intake is DOWN)", groundIntakePivot.zeroDownCommand());
 
         // Elevator: zero button (elevator all the way down), and a recovery switch that turns
         // the soft limits off in case it was powered on with the elevator up.

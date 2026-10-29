@@ -305,6 +305,26 @@ public class GroundIntakePivotSubsystem extends SubsystemBase {
         }).ignoringDisable(true).withName("Zero Intake");
     }
 
+    /**
+     * The intake is DOWN on the floor right now: make that the zero. For starting a match with the
+     * intake already down (the "intakeStartsDown" auto step and the "Zero Intake (intake is DOWN)"
+     * button). Powering on with it down reads 0, which looks like UP: wrong by the whole travel.
+     */
+    public void zeroAtDown() {
+        if (!isDownPositionValid()) return;
+        stop();
+        leader.setPosition(GroundIntakePivot.kDownPosition);
+        follower.setPosition(-GroundIntakePivot.kDownPosition); // mirrored mount counts the other way
+        isDown = true;
+        targetPosition = GroundIntakePivot.kDownPosition;
+        zeroError = 0.0;
+    }
+
+    /** The "Zero Intake (intake is DOWN)" dashboard button. Works while disabled. */
+    public Command zeroDownCommand() {
+        return runOnce(this::zeroAtDown).ignoringDisable(true).withName("Zero Intake (DOWN)");
+    }
+
     private String status() {
         if (GroundIntakePivot.kDownPosition == 0.0) {
             return "Intake DOWN position not set";

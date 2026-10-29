@@ -1,0 +1,54 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 4.633392645314355,
+        "y": 7.5363174377224205
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 8.663485560871372,
+        "y": 7.63355866465556
+      },
+      "isLocked": false,
+      "linkedName": "Agro-LeftStart"
+    },
+    {
+      "anchor": {
+        "x": 8.313036773428234,
+        "y": 6.761655516014235
+      },
+      "prevControl": {
+        "x": 8.305776839653399,
+        "y": 7.117392270981123
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Agro-BallCenter (Left)"
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 3.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 2.0,
+    "rotation": -88.99908532243735
+  },
+  "reversed": false,
+  "folder": "Agro",
+  "idealStartingState": {
+    "velocity": 2.0,
+    "rotation": -90.8105417621942
+  },
+  "useDefaultConstraints": true
+}
