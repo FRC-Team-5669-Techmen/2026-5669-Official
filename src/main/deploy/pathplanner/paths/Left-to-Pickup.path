@@ -3,13 +3,13 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.5467141162514837,
-        "y": 7.3219335705812565
+        "x": 4.644151838671412,
+        "y": 7.5363174377224205
       },
       "prevControl": null,
       "nextControl": {
-        "x": 7.5768070318084835,
-        "y": 7.419174797514396
+        "x": 8.674244754228411,
+        "y": 7.63355866465556
       },
       "isLocked": false,
       "linkedName": "LeftStart"
@@ -34,7 +34,7 @@
   "eventMarkers": [
     {
       "name": "lowerIntake",
-      "waypointRelativePos": 0.1,
+      "waypointRelativePos": 0.1515444015444003,
       "endWaypointRelativePos": null,
       "command": null
     }
@@ -55,7 +55,7 @@
   "folder": "Left",
   "idealStartingState": {
     "velocity": 2.0,
-    "rotation": 0.0
+    "rotation": -90.34461966731753
   },
   "useDefaultConstraints": true
 }

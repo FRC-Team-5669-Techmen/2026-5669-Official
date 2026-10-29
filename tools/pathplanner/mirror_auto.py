@@ -143,6 +143,41 @@ def check(auto, paths):
     print("  all good" if ok else "  FIX the lines marked !!")
 
 
+def sync_linked_elsewhere(new_paths):
+    """
+    A linked waypoint can also live in a path that isn't in the auto (e.g. LeftStart.path).
+    PathPlanner keeps linked waypoints on the same spot when it opens the project, so a stale copy
+    would drag the new path back to the old spot (Oct 29: Left-to-Pickup jumped back to the old
+    start). Move those copies, with their control points, onto the new spot.
+    """
+    spots = {}
+    for d in new_paths.values():
+        for w in d["waypoints"]:
+            if w.get("linkedName"):
+                spots[w["linkedName"]] = w["anchor"]
+    folder = os.path.join(ROOT, "paths")
+    for f in sorted(os.listdir(folder)):
+        name = f[:-len(".path")]
+        if not f.endswith(".path") or name in new_paths:
+            continue
+        with open(os.path.join(folder, f)) as fh:
+            d = json.load(fh)
+        moved = False
+        for w in d["waypoints"]:
+            spot = spots.get(w.get("linkedName"))
+            if spot is None or (w["anchor"]["x"], w["anchor"]["y"]) == (spot["x"], spot["y"]):
+                continue
+            dx, dy = spot["x"] - w["anchor"]["x"], spot["y"] - w["anchor"]["y"]
+            for k in ("anchor", "prevControl", "nextControl"):
+                if w.get(k):
+                    w[k] = {"x": w[k]["x"] + dx, "y": w[k]["y"] + dy}
+            moved = True
+        if moved:
+            with open(os.path.join(folder, f), "w") as fh:
+                json.dump(d, fh, indent=2)
+            print(f"path  {name} (linked waypoint moved to match)")
+
+
 def main():
     if len(sys.argv) != 4:
         print(__doc__)
@@ -166,6 +201,7 @@ def main():
         with open(os.path.join(ROOT, "paths", n + ".path"), "w") as f:
             json.dump(d, f, indent=2)
         print(f"path  {n}")
+    sync_linked_elsewhere(new_paths)
     with open(os.path.join(ROOT, "autos", new_auto + ".auto"), "w") as f:
         json.dump(auto, f, indent=2)
     print(f"auto  {new_auto}")
