@@ -27,19 +27,22 @@ public final class ShotTable {
     public static final double kSameDistance = 0.25;
 
     /**
-     * MEASURED Oct 28 evening (rebuilt hood, shop field, Plot Spot pose, Shot Tuning Mode), read
-     * from the Driver Station log "SHOT TABLE CODE" line. Only real shots: the old guesses are gone,
-     * because a guess left between two real points (2.5 and 3.5 m) bent the curve.
-     * Still to record: Midshot (~2.4 m) and Trench (~3.7 m) backup spots, which fill the two
-     * biggest gaps. 1.69 m was recorded at Tune Hood 0.0, which the hood clamps to its 0.2
-     * bottom, so 0.20 is what really flew. 5.33 m needs 4300 RPM, about all the wheel can hold on
-     * an 11 V battery: long shots want a fresh battery. Time of flight is the 0.9 s placeholder
-     * everywhere (only used to lead shots while moving; film shots to measure it).
+     * MEASURED (rebuilt hood, shop field, Shot Tuning Mode), read from the Driver Station log
+     * "SHOT TABLE CODE" lines: 1.69 / 3.13 / 4.73 / 5.33 m on Oct 28 evening (Plot Spot pose),
+     * 2.46 / 3.55 / 3.92 m on Oct 30 (camera pose, Vision Pose ON). Only real shots, no guesses.
+     * 1.69 m was recorded at Tune Hood 0.0, which the hood clamps to its 0.2 bottom, so 0.20 is what
+     * really flew. RPM is not monotonic (2.46 m at hood 1.10 wanted 3250, more than 3.13 m at hood
+     * 3.00): a lower hood gives a steeper arc that needs more speed; the hood does rise with distance.
+     * 5.33 m needs 4300 RPM, about all the wheel can hold on an 11 V battery. Time of flight is the
+     * 0.9 s placeholder everywhere (only used to lead shots while moving).
      */
     public static ShotTable defaults() {
         ShotTable t = new ShotTable();
         t.put(new Point(1.69, 2500, 0.20, 0.90));
+        t.put(new Point(2.46, 3250, 1.10, 0.90));
         t.put(new Point(3.13, 2900, 3.00, 0.90));
+        t.put(new Point(3.55, 3050, 3.45, 0.90));
+        t.put(new Point(3.92, 3350, 3.64, 0.90));
         t.put(new Point(4.73, 3500, 4.50, 0.90));
         t.put(new Point(5.33, 4300, 5.50, 0.90));
         return t;
