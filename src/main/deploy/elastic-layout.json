@@ -132,16 +132,15 @@
             }
           },
           {
-            "title": "Code Version",
+            "title": "Auto Selected",
             "x": 1024.0,
             "y": 512.0,
             "width": 512.0,
             "height": 128.0,
-            "type": "Text Display",
+            "type": "Large Text Display",
             "properties": {
-              "topic": "/SmartDashboard/Code Version",
-              "period": 0.06,
-              "show_submit_button": false
+              "topic": "/SmartDashboard/Auto Selected",
+              "period": 0.06
             }
           },
           {
@@ -270,7 +269,7 @@
             "title": "Auto Start OK",
             "x": 1024.0,
             "y": 256.0,
-            "width": 256.0,
+            "width": 128.0,
             "height": 128.0,
             "type": "Boolean Box",
             "properties": {
@@ -400,6 +399,19 @@
             "properties": {
               "topic": "/SmartDashboard/Operator Simple Mode",
               "period": 0.06
+            }
+          },
+          {
+            "title": "Auto Delay (s)",
+            "x": 1152.0,
+            "y": 256.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/SmartDashboard/Auto Delay (s)",
+              "period": 0.06,
+              "show_submit_button": true
             }
           }
         ]

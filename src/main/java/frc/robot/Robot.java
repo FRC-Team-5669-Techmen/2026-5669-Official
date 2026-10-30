@@ -179,7 +179,7 @@ public class Robot extends TimedRobot {
         m_robotContainer.onAutoStart();
         m_autonomousCommand = m_robotContainer.getAutonomousCommand();
         autoStart = Timer.getFPGATimestamp();
-        System.out.println("CMD | AUTO start: " + m_robotContainer.selectedAutoName());
+        System.out.println("CMD | AUTO start: " + (m_autonomousCommand == null ? "None" : m_autonomousCommand.getName()));
 
         if (m_autonomousCommand != null) {
             CommandScheduler.getInstance().schedule(m_autonomousCommand);

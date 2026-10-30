@@ -379,6 +379,9 @@ public class RobotContainer {
      */
     static final String kAutoFireKey = "Auto Fire (robot scores by itself)";
     static final String kSimpleOpKey = "Operator Simple Mode";
+    static final String kAutoDelayKey = "Auto Delay (s)";
+    /** Longest auto delay accepted: the auto is 20 s and every auto needs time to run. */
+    static final double kMaxAutoDelay = 15.0;
 
     /** Not in Shot Tuning Mode (the D-pad and Y tune and record instead while it's on). */
     private final Trigger notTuning = new Trigger(() -> !SmartDashboard.getBoolean("Shot Tuning Mode", false));
@@ -717,6 +720,10 @@ public class RobotContainer {
                 .onTrue(Commands.runOnce(() -> Preferences.setBoolean(key, SmartDashboard.getBoolean(key, false)))
                     .ignoringDisable(true));
         }
+        // AUTO DELAY (backup, default 0): seconds the robot waits at the start of auto before the
+        // picked auto runs, for a partner whose path crosses ours. Saved; shown on the Drive Team tab.
+        Preferences.initDouble(kAutoDelayKey, 0.0);
+        SmartDashboard.putNumber(kAutoDelayKey, Preferences.getDouble(kAutoDelayKey, 0.0));
         Preferences.initBoolean(kAimAtTeleopKey, true);
         SmartDashboard.putBoolean(kAimAtTeleopKey, Preferences.getBoolean(kAimAtTeleopKey, true));
         // Saved the moment they're flipped (were saved only at teleop start, so Pit Check read stale values).
@@ -851,8 +858,40 @@ public class RobotContainer {
         return p;
     }
 
+    /** Dashboard "Auto Delay (s)", 0-15, saved on the roboRIO the moment it changes. */
+    public double autoDelaySeconds() {
+        double typed = SmartDashboard.getNumber(kAutoDelayKey, 0.0);
+        double d = Double.isFinite(typed) ? MathUtil.clamp(typed, 0.0, kMaxAutoDelay) : 0.0;
+        if (d != typed) SmartDashboard.putNumber(kAutoDelayKey, d);
+        if (d != Preferences.getDouble(kAutoDelayKey, 0.0)) Preferences.setDouble(kAutoDelayKey, d);
+        return d;
+    }
+
+    /**
+     * The picked auto, after "Auto Delay (s)" if one is set. The auto runs as a proxy behind the
+     * wait, so the chooser's command is never composed (it can run again next match without a
+     * reboot) and the turret's "watch the hub" default keeps the camera fixing the position while
+     * the robot waits.
+     */
     public Command getAutonomousCommand() {
-        return autoChooser.getSelected();
+        Command sel = autoChooser.getSelected();
+        double delay = autoDelaySeconds();
+        if (sel == null || delay <= 0.0) return sel;
+        return Commands.sequence(Commands.waitSeconds(delay), sel.asProxy())
+            .withName(sel.getName() + " (after " + fmtSeconds(delay) + " s wait)");
+    }
+
+    private static String fmtSeconds(double s) {
+        return Math.abs(s - Math.rint(s)) < 1e-6 ? String.format(java.util.Locale.US, "%.0f", s)
+            : String.format(java.util.Locale.US, "%.1f", s);
+    }
+
+    /** Big "Auto Selected" text for the Drive Team tab: the auto's name and any delay. */
+    private String autoSelectedText() {
+        String name = selectedAutoName();
+        if (name.equals("InstantCommand")) name = "None";
+        double delay = autoDelaySeconds();
+        return delay > 0.0 ? name + "  |  WAIT " + fmtSeconds(delay) + " s" : name;
     }
 
     /**
@@ -909,6 +948,7 @@ public class RobotContainer {
 
     public void updateDashboard() {
         if (DriverStation.isDisabled()) updateAutoStartCheck();
+        SmartDashboard.putString("Auto Selected", autoSelectedText());
         boolean isHubOpen = isHubOpenForUs();
 
         driverDashboard.updateLiveStats(
