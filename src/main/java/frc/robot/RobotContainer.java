@@ -380,6 +380,17 @@ public class RobotContainer {
     static final String kAutoFireKey = "Auto Fire (robot scores by itself)";
     static final String kSimpleOpKey = "Operator Simple Mode";
 
+    /** Not in Shot Tuning Mode (the D-pad and Y tune and record instead while it's on). */
+    private final Trigger notTuning = new Trigger(() -> !SmartDashboard.getBoolean("Shot Tuning Mode", false));
+
+    /** Nudge a "Tune ..." dashboard number, kept inside [lo, hi]; prints it so the console shows each step. */
+    private static void bumpTune(String key, double step, double fallback, double lo, double hi) {
+        double v = MathUtil.clamp(SmartDashboard.getNumber(key, fallback) + step, lo, hi);
+        v = Math.round(v * 100.0) / 100.0;
+        SmartDashboard.putNumber(key, v);
+        System.out.println("TUNE | " + key + " = " + v);
+    }
+
     private boolean savedSwitch(String key) { return SmartDashboard.getBoolean(key, Preferences.getBoolean(key, false)); }
 
     /** Auto fire wants to shoot right now (see kAutoFireKey). */
@@ -502,6 +513,20 @@ public class RobotContainer {
         // OPERATOR SIMPLE MODE (switch, see kSimpleOpKey): these bindings only work with it OFF.
         Trigger expert = new Trigger(() -> !savedSwitch(kSimpleOpKey));
 
+        // SHOT TUNING FROM THE CONTROLLER (Oct 30): with "Shot Tuning Mode" ON the operator tunes and
+        // records without touching the laptop, so plotting a spot takes a minute instead of five.
+        //   D-pad Up / Down    = Tune Hood +0.1 / -0.1 rot
+        //   D-pad Right / Left = Tune RPM +50 / -50
+        //   Y                  = Record Shot Point (one short buzz = saved)
+        // The normal D-pad jogs and the Y hood toggle are off while tuning (they'd cancel auto-aim).
+        Trigger tuning = new Trigger(aim::tuningMode);
+        tele(operatorController.povUp()).and(tuning).onTrue(Commands.runOnce(() -> bumpTune("Tune Hood (rot)", 0.1, 1.0, 0.2, 7.87)));
+        tele(operatorController.povDown()).and(tuning).onTrue(Commands.runOnce(() -> bumpTune("Tune Hood (rot)", -0.1, 1.0, 0.2, 7.87)));
+        tele(operatorController.povRight()).and(tuning).onTrue(Commands.runOnce(() -> bumpTune("Tune RPM", 50, 4000, 1500, 5000)));
+        tele(operatorController.povLeft()).and(tuning).onTrue(Commands.runOnce(() -> bumpTune("Tune RPM", -50, 4000, 1500, 5000)));
+        tele(operatorController.y()).and(tuning).onTrue(aim.recordPointCommand().andThen(
+            Commands.runOnce(() -> Haptics.on(Haptics.Pad.OPERATOR))).withName("Operator Y: record shot point"));
+
         // VACUUM MODE (Back, press to toggle): intake + shoot hands-free. Intake down, roller in,
         // auto-aim on, fires by itself whenever ready. Scores from inside our alliance zone,
         // PASSES home from the neutral zone (follows the Start target mode). See VacuumCommand.
@@ -577,12 +602,12 @@ public class RobotContainer {
 
         // LOCKED Y (press): toggle the hood between stowed and deployed (the drive team's
         // map: "Toggle Gooba Hood"). Back now that the hood motor (18) is.
-        tele(operatorController.y()).and(expert).onTrue(gooba.toggleCommand());
+        tele(operatorController.y()).and(expert).and(notTuning).onTrue(gooba.toggleCommand());
 
         // D-pad Up/Down (hold): jog the hood slowly (programming lead, Oct 25; same as last
         // season). Write down "Hood Position (rot)" for good shots.
-        tele(operatorController.povUp()).and(expert).whileTrue(new ManualGoobaCommand(gooba, true));
-        tele(operatorController.povDown()).and(expert).whileTrue(new ManualGoobaCommand(gooba, false));
+        tele(operatorController.povUp()).and(expert).and(notTuning).whileTrue(new ManualGoobaCommand(gooba, true));
+        tele(operatorController.povDown()).and(expert).and(notTuning).whileTrue(new ManualGoobaCommand(gooba, false));
 
         // Left Stick up/down (hold): jog the ground intake slowly. Manual backup for when the
         // Driver A toggle can't do it (ignores the intake's soft limits while held). Was the D-pad.
@@ -596,8 +621,8 @@ public class RobotContainer {
             .or(tele(operatorController.povUpLeft())).or(tele(operatorController.povDownLeft()));
         Trigger turretJogRight = tele(operatorController.povRight())
             .or(tele(operatorController.povUpRight())).or(tele(operatorController.povDownRight()));
-        turretJogLeft.and(expert).whileTrue(new ManualTurretCommand(goober, -Constants.Turret.kManualJogSpeed));
-        turretJogRight.and(expert).whileTrue(new ManualTurretCommand(goober, Constants.Turret.kManualJogSpeed));
+        turretJogLeft.and(expert).and(notTuning).whileTrue(new ManualTurretCommand(goober, -Constants.Turret.kManualJogSpeed));
+        turretJogRight.and(expert).and(notTuning).whileTrue(new ManualTurretCommand(goober, Constants.Turret.kManualJogSpeed));
 
         // Not on the map, kept on purpose: B (hold) runs the Spindex backwards to clear a jam
         tele(operatorController.b()).whileTrue(new StartEndCommand(

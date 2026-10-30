@@ -109,7 +109,7 @@ public class ShotMapGuide extends SubsystemBase {
         }
         int launched = shooter.finishedShots() - shotsAtSpotStart;
         return String.format(Locale.US, "FREE MAP at %s. Start numbers filled in. Fire a volley (%d launched here). "
-            + "Short: hood +0.25 or RPM +100. All in? Record Shot Point. Biggest gap: %s",
+            + "Op D-pad: Up/Down hood 0.1, Right/Left RPM 50. 8 of 10 in? Op Y records (buzz). Biggest gap: %s",
             where, launched, biggestGap(aim.scoreTableDistances()));
     }
 
