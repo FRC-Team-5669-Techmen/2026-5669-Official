@@ -29,7 +29,7 @@ public final class ShotTable {
     /**
      * MEASURED (rebuilt hood, shop field, Shot Tuning Mode), read from the Driver Station log
      * "SHOT TABLE CODE" lines: 1.69 / 3.13 / 4.73 / 5.33 m on Oct 28 evening (Plot Spot pose),
-     * 2.46 / 3.55 / 3.92 m on Oct 30 (camera pose, Vision Pose ON). Only real shots, no guesses.
+     * 2.10 / 2.46 / 3.55 / 3.92 / 4.27 m on Oct 30 (camera pose, Vision Pose ON). Only real shots, no guesses.
      * 1.69 m was recorded at Tune Hood 0.0, which the hood clamps to its 0.2 bottom, so 0.20 is what
      * really flew. RPM is not monotonic (2.46 m at hood 1.10 wanted 3250, more than 3.13 m at hood
      * 3.00): a lower hood gives a steeper arc that needs more speed; the hood does rise with distance.
@@ -39,10 +39,12 @@ public final class ShotTable {
     public static ShotTable defaults() {
         ShotTable t = new ShotTable();
         t.put(new Point(1.69, 2500, 0.20, 0.90));
+        t.put(new Point(2.10, 2950, 0.46, 0.90));
         t.put(new Point(2.46, 3250, 1.10, 0.90));
         t.put(new Point(3.13, 2900, 3.00, 0.90));
         t.put(new Point(3.55, 3050, 3.45, 0.90));
         t.put(new Point(3.92, 3350, 3.64, 0.90));
+        t.put(new Point(4.27, 3450, 4.28, 0.90));
         t.put(new Point(4.73, 3500, 4.50, 0.90));
         t.put(new Point(5.33, 4300, 5.50, 0.90));
         return t;

@@ -39,7 +39,7 @@ class ShotTableTest {
             assertTrue(p.hood() >= 0.2 && p.hood() <= 7.87, "hood out of travel at " + p.distance());
             prev = p;
         }
-        assertTrue(ShotTable.defaults().points().size() >= 7);
+        assertTrue(ShotTable.defaults().points().size() >= 9);
     }
 
     @Test
