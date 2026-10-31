@@ -4,12 +4,12 @@
     {
       "anchor": {
         "x": 1.3088018979833935,
-        "y": 4.9871886120996445
+        "y": 3.082011387900356
       },
       "prevControl": null,
       "nextControl": {
         "x": 2.187253884738361,
-        "y": 4.0361372875963335
+        "y": 2.130960063397045
       },
       "isLocked": false,
       "linkedName": "Depot-NewRotatedCenterRight"

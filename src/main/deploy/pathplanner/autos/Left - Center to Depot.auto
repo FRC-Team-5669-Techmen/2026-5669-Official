@@ -7,7 +7,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Depot-Right-to-Pickup"
+            "pathName": "Depot-Left-to-Pickup"
           }
         },
         {
@@ -25,7 +25,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Depot-Rotate180Right"
+            "pathName": "Depot-Rotate180Left"
           }
         },
         {

@@ -4,12 +4,12 @@
     {
       "anchor": {
         "x": 3.485703642384106,
-        "y": 4.027740066225165
+        "y": 4.041459933774836
       },
       "prevControl": null,
       "nextControl": {
         "x": 2.3894536423841055,
-        "y": 4.005960264900661
+        "y": 4.063239735099339
       },
       "isLocked": false,
       "linkedName": "Depot-RightStart"
@@ -17,15 +17,15 @@
     {
       "anchor": {
         "x": 2.1910557532621597,
-        "y": 4.051138790035587
+        "y": 4.018061209964413
       },
       "prevControl": {
         "x": 3.258266018162822,
-        "y": 4.101958326459429
+        "y": 3.9672416735405713
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "Depot-BallCenter"
+      "linkedName": "Depot-BallCenterRight"
     }
   ],
   "rotationTargets": [],
@@ -42,13 +42,13 @@
   },
   "goalEndState": {
     "velocity": 0.0,
-    "rotation": 180.0
+    "rotation": -180.0
   },
   "reversed": false,
   "folder": "Depot",
   "idealStartingState": {
     "velocity": 0.0,
-    "rotation": 179.6441301693781
+    "rotation": -179.6441301693781
   },
   "useDefaultConstraints": true
 }
