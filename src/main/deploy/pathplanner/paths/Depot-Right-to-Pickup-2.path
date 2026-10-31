@@ -1,0 +1,98 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 3.296945364238411,
+        "y": 0.7680298013245033
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 4.34237582781457,
+        "y": 0.5865314569536417
+      },
+      "isLocked": false,
+      "linkedName": "Depot-FirstRightEnding"
+    },
+    {
+      "anchor": {
+        "x": 5.184528145695364,
+        "y": 0.6228311258278154
+      },
+      "prevControl": {
+        "x": 4.734412251655629,
+        "y": 0.593791390728477
+      },
+      "nextControl": {
+        "x": 5.972622340587745,
+        "y": 0.6736759125950669
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.839793046357616,
+        "y": 0.7535099337748352
+      },
+      "prevControl": {
+        "x": 6.177491127265199,
+        "y": 0.603554782282213
+      },
+      "nextControl": {
+        "x": 7.224569536423842,
+        "y": 0.8406291390728484
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 7.776324503311258,
+        "y": 1.2181456953642373
+      },
+      "prevControl": {
+        "x": 7.812624172185431,
+        "y": 0.6518708609271517
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Depot-RightPickupEnd2"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 1.2810810810810818,
+      "rotationDegrees": 178.656
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "runGroundIntake",
+      "waypointRelativePos": 1.74275618374558,
+      "endWaypointRelativePos": null,
+      "command": null
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 3.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 2.0,
+    "rotation": 91.16913932790762
+  },
+  "reversed": false,
+  "folder": "Depot",
+  "idealStartingState": {
+    "velocity": 2.0,
+    "rotation": 178.05851360908574
+  },
+  "useDefaultConstraints": true
+}

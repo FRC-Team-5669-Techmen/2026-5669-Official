@@ -1,0 +1,73 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "named",
+          "data": {
+            "name": "intakeStartsDown"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Agro-Right-to-Pickup"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Agro-Rotate180Right"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Agro-Shoot-RightEnding1"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "visionScore"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Agro-Right-to-Pickup-2"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Agro-Rotate180Right2"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Agro-Shoot-RightEnding2"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "visionScore"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Agro-FinalRight-to-Neutral"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}
