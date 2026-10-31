@@ -48,7 +48,39 @@ public class Goober extends SubsystemBase {
         ? Preferences.getDouble(kEndPreferenceKey, 0.0)
         : Turret.kEndPosition;
 
+    // ---- TURRET LOCKED (Oct 31, Beach Blitz: ring bearing failed, the turret can't turn) ----
+    // Saved switch, ON by default. While locked the motor is NEVER driven (brake), the turret reads
+    // as fixed at "Turret Locked Angle (deg)" (0 = HOME = straight out the robot front), and
+    // AimSubsystem/RobotContainer/Marcos turn the whole robot to aim instead.
+    public static final String kLockedKey = "Turret LOCKED (robot turns to aim)";
+    public static final String kLockedAngleKey = "Turret Locked Angle (deg)";
+    private static volatile boolean locked = true;
+    private static volatile double lockedAngle = 0.0;
+
+    /** The turret can't turn: aim by turning the robot. */
+    public static boolean locked() { return locked; }
+
+    /** Where the stuck turret points, degrees clockwise from HOME. */
+    public static double lockedAngleDegrees() { return lockedAngle; }
+
+    private static void syncLockSwitches() {
+        boolean l = SmartDashboard.getBoolean(kLockedKey, Preferences.getBoolean(kLockedKey, true));
+        if (l != Preferences.getBoolean(kLockedKey, true)) Preferences.setBoolean(kLockedKey, l);
+        double a = SmartDashboard.getNumber(kLockedAngleKey, Preferences.getDouble(kLockedAngleKey, 0.0));
+        if (!Double.isFinite(a)) a = 0.0;
+        a = MathUtil.clamp(a, -90.0, 360.0);
+        if (a != Preferences.getDouble(kLockedAngleKey, 0.0)) Preferences.setDouble(kLockedAngleKey, a);
+        if (l != locked) System.out.println("TURRET | " + (l ? "LOCKED: the robot turns to aim" : "unlocked: the turret aims"));
+        locked = l;
+        lockedAngle = a;
+    }
+
     public Goober() {
+        Preferences.initBoolean(kLockedKey, true);
+        Preferences.initDouble(kLockedAngleKey, 0.0);
+        SmartDashboard.putBoolean(kLockedKey, Preferences.getBoolean(kLockedKey, true));
+        SmartDashboard.putNumber(kLockedAngleKey, Preferences.getDouble(kLockedAngleKey, 0.0));
+        syncLockSwitches();
         TalonFXConfiguration configs = new TalonFXConfiguration();
         configs.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         configs.MotorOutput.Inverted = Turret.kMotorInverted
@@ -69,7 +101,7 @@ public class Goober extends SubsystemBase {
 
     /** True once the far end is set. Until then auto-aim does nothing. */
     public boolean endMeasured() {
-        return endPosition > 0.0;
+        return locked || endPosition > 0.0;
     }
 
     /** Soft limits: HOME side (0) always, far side only once it's set. */
@@ -101,6 +133,7 @@ public class Goober extends SubsystemBase {
 
     /** Percent power, positive = turn RIGHT (away from HOME). */
     public void setMotorSpeed(double percent) {
+        if (locked) { motor.stopMotor(); return; }   // never drive a turret that can't turn
         motor.setControl(request.withOutput(percent * Turret.kSpeedMultiplier));
     }
 
@@ -115,6 +148,13 @@ public class Goober extends SubsystemBase {
         lastTagAimTime = now;
         // Run the raw Limelight data through our filter to smooth the noise
         double smoothedTx = txFilter.calculate(tx);
+        if (locked) {
+            // Can't turn: just keep "on the tag" up to date (the ROBOT turns on tx, RobotContainer).
+            turnPID.calculate(smoothedTx, 0.0);
+            stop();
+            aimStatus = turnPID.atSetpoint() ? "LOCKED (turret fixed)" : "ROBOT TURNING to tag";
+            return;
+        }
 
         // The PID returns kP * (0 - tx), which is negative for a tag on the right.
         // Flip it so a tag on the RIGHT turns the turret RIGHT.
@@ -161,6 +201,16 @@ public class Goober extends SubsystemBase {
      * keeps up instead of lagging behind.
      */
     public void aimAtAngleWithRate(double targetDegrees, double rateDegPerSec) {
+        if (locked) {
+            // The turret can't turn: remember the angle the shot needs (aimErrorDegrees() = how far
+            // the ROBOT still has to turn), never drive the motor.
+            angleTarget = targetDegrees;
+            double err = lockedAngle - targetDegrees;
+            SmartDashboard.putNumber("Turret Aim Error (deg)", err);
+            stop();
+            aimStatus = Math.abs(err) <= Aim.kTurretToleranceDegrees ? "LOCKED (robot on target)" : "ROBOT TURNING to aim";
+            return;
+        }
         if (!endMeasured()) {
             stop();
             aimStatus = "OFF: far end not set";
@@ -229,6 +279,7 @@ public class Goober extends SubsystemBase {
 
     /** Turret speed, degrees per second, positive = turning RIGHT. 0 until the far end is set. */
     public double getVelocityDegPerSec() {
+        if (locked) return 0.0;
         return endMeasured() ? motor.getVelocity().getValueAsDouble() / rotationsPerDegree() : 0.0;
     }
 
@@ -243,6 +294,7 @@ public class Goober extends SubsystemBase {
 
     /** Degrees from HOME (0 = HOME, kEndDegrees = far end). Reads 0 until the far end is set. */
     public double getAngleDegrees() {
+        if (locked) return lockedAngle;
         return endMeasured() ? getPosition() / rotationsPerDegree() : 0.0;
     }
 
@@ -302,6 +354,7 @@ public class Goober extends SubsystemBase {
     }
 
     private String status() {
+        if (locked) return String.format(java.util.Locale.US, "LOCKED at %.0f deg: robot turns to aim", lockedAngle);
         if (endPosition < 0.0) {
             return "BACKWARDS: flip kMotorInverted, re-measure kEndPosition";
         }
@@ -320,6 +373,9 @@ public class Goober extends SubsystemBase {
 
     @Override
     public void periodic() {
+        syncLockSwitches();
+        if (locked) motor.stopMotor();
+        SmartDashboard.putNumber("Turret Raw Angle (deg)", endPosition > 0.0 ? getPosition() / rotationsPerDegree() : 0.0);
         SmartDashboard.putString("Turret Status", status());
         SmartDashboard.putString("Turret Auto-Aim", aimStatus);
         SmartDashboard.putNumber("Turret Position (rot)", getPosition());

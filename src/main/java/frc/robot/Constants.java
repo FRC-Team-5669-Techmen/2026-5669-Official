@@ -600,6 +600,20 @@ public final class Constants {
         public static final double kHeadingAssistMax = 2.5; // rad/s
         public static final double kDriverRotateOverride = 0.15; // right-stick deflection that takes over
 
+        // ---- TURRET LOCKED (Oct 31, Beach Blitz: the turret ring bearing failed) ----
+        // Dashboard switch "Turret LOCKED (robot turns to aim)" (saved, ON by default). The turret
+        // motor is never driven; the shooter points where the turret is stuck ("Turret Locked
+        // Angle (deg)", saved, 0 = HOME = straight out the robot front), and auto-aim turns the
+        // WHOLE ROBOT instead (teleop: while a shot is wanted and the rotate stick is centered;
+        // autos: during every score). Turn rate = P x heading error, at least kLockedTurnMin
+        // outside the deadband so the last degrees close, capped at kLockedTurnMax.
+        public static final double kLockedTurnP = 5.0;          // rad/s per rad of heading error
+        public static final double kLockedTurnMax = 3.0;        // rad/s
+        public static final double kLockedTurnMin = 0.35;       // rad/s (static friction)
+        public static final double kLockedTurnDeadbandDeg = 0.75;
+        public static final double kLockedMaxSpinDegPerSec = 20.0; // READY only while the robot turns slower
+        public static final double kLockedTagTurnP = 0.06;      // rad/s per degree of Limelight tx (no position yet)
+
         // ---- Shooting while moving (ShotSolver.solve; research: docs/PASSING-AND-SOTM-RESEARCH.md) ----
         // Aim at a VIRTUAL target: target - (turret pivot velocity) x (effective flight time),
         // iterated, from where the robot will be when the ball leaves. RPM/hood are read at the

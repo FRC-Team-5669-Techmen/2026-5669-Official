@@ -159,4 +159,33 @@ class ShotSolverTest {
         double expectedY = HUB.getY() - 1.5 * tof.applyAsDouble(s.distanceMeters());
         assertEquals(expectedY, s.aimPoint().getY(), 0.01);
     }
+
+    // TURRET LOCKED (Oct 31): the robot turns to aim a fixed shooter.
+    @org.junit.jupiter.api.Test
+    void lockedTurretTurnsTheRobot() {
+        ShotSolver.Geometry g = ShotSolver.Geometry.locked(new Translation2d(), 0.0, 0.0);
+        var s = ShotSolver.solve(new edu.wpi.first.math.geometry.Pose2d(0, 0, new edu.wpi.first.math.geometry.Rotation2d()),
+            0, 0, new Translation2d(0, 5), g, d -> 1.0, false);
+        org.junit.jupiter.api.Assertions.assertTrue(s.reachable());
+        org.junit.jupiter.api.Assertions.assertEquals(Math.PI / 2, s.headingErrorRad(), 1e-6); // turn left 90
+        org.junit.jupiter.api.Assertions.assertEquals(-90.0, s.turretDegrees(), 1e-6);
+
+        // Off-center pivot (the real robot): turning by the error a few times settles on the target.
+        ShotSolver.Geometry real = ShotSolver.Geometry.locked(new Translation2d(-0.135, 0.094), 0.0, 0.0);
+        double heading = Math.toRadians(170);
+        Translation2d hub = new Translation2d(4.6, 4.0);
+        Translation2d at = new Translation2d(2.0, 2.0);
+        for (int i = 0; i < 6; i++) {
+            var r = ShotSolver.solve(new edu.wpi.first.math.geometry.Pose2d(at, new edu.wpi.first.math.geometry.Rotation2d(heading)),
+                0, 0, hub, real, d -> 1.0, false);
+            heading += r.headingErrorRad();
+        }
+        var done = ShotSolver.solve(new edu.wpi.first.math.geometry.Pose2d(at, new edu.wpi.first.math.geometry.Rotation2d(heading)),
+            0, 0, hub, real, d -> 1.0, false);
+        org.junit.jupiter.api.Assertions.assertEquals(0.0, Math.toDegrees(done.headingErrorRad()), 0.05);
+        // The shooter (from the pivot, along the robot's heading) now points at the hub.
+        Translation2d pivot = at.plus(new Translation2d(-0.135, 0.094).rotateBy(new edu.wpi.first.math.geometry.Rotation2d(heading)));
+        double dir = Math.atan2(hub.getY() - pivot.getY(), hub.getX() - pivot.getX());
+        org.junit.jupiter.api.Assertions.assertEquals(0.0, Math.toDegrees(ShotSolver.wrap180(Math.toDegrees(dir - heading)) * Math.PI / 180), 0.1);
+    }
 }

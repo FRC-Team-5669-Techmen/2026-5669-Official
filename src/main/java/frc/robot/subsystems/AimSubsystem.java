@@ -50,9 +50,12 @@ public class AimSubsystem extends SubsystemBase {
 
     private final CommandSwerveDrivetrain drivetrain;
     private final VisionLocalizer localizer;
-    private final ShotSolver.Geometry geometry = new ShotSolver.Geometry(
+    private final ShotSolver.Geometry turningGeometry = new ShotSolver.Geometry(
         new Translation2d(Aim.kTurretPivotX, Aim.kTurretPivotY),
         Aim.kHomeYawDegrees, Constants.Turret.kEndDegrees, Constants.Turret.kAimMarginDegrees);
+    // Turret LOCKED (Oct 31): same pivot, the shooter fixed at Goober.lockedAngleDegrees(), robot aims.
+    private ShotSolver.Geometry geometry = turningGeometry;
+    private double robotSpinDegPerSec = 0.0;
     private final TargetPicker picker = new TargetPicker(new TargetPicker.Field(
         Aim.kFieldLength, Aim.kFieldWidth, Aim.kBlueHubX, Aim.kHubY, Aim.kHubHalfSize,
         Aim.kScoreMaxRobotDepth, Aim.kTargetHysteresis, Aim.kPassDepth, Aim.kPassSide,
@@ -179,7 +182,11 @@ public class AimSubsystem extends SubsystemBase {
     }
 
     private void solve() {
+        geometry = Goober.locked()
+            ? ShotSolver.Geometry.locked(turningGeometry.turretPivot(), Aim.kHomeYawDegrees, Goober.lockedAngleDegrees())
+            : turningGeometry;
         var state = drivetrain.getState();
+        robotSpinDegPerSec = Math.toDegrees(state.Speeds.omegaRadiansPerSecond);
         Pose2d pose = state.Pose;
         // CTRE reports robot-relative speeds: turn them into field speeds.
         ChassisSpeeds fs = ChassisSpeeds.fromRobotRelativeSpeeds(state.Speeds, pose.getRotation());
@@ -315,6 +322,36 @@ public class AimSubsystem extends SubsystemBase {
 
     public boolean isActive() { return active; }
 
+    /**
+     * TURRET LOCKED: how fast to turn the ROBOT (rad/s, CCW +) to aim the fixed shooter at the
+     * current target. With a known position it uses the solution's heading error; without one it
+     * turns onto our hub tag (Limelight tx, the camera is fixed on the shooter). 0 when the turret
+     * isn't locked or there is nothing to aim at.
+     */
+    public double lockedTurnRate(LimelightSubsystem limelight) {
+        if (!Goober.locked()) return 0.0;
+        double errRad;
+        if (poseUsable()) {
+            errRad = solution.headingErrorRad();
+        } else if (limelight != null && limelight.isValidTarget()) {
+            double tx = limelight.getTX();           // + = tag to the right = turn clockwise (negative)
+            if (Math.abs(tx) < Aim.kLockedTurnDeadbandDeg) return 0.0;
+            double r = MathUtil.clamp(-Aim.kLockedTagTurnP * tx, -Aim.kLockedTurnMax, Aim.kLockedTurnMax);
+            return Math.abs(r) < Aim.kLockedTurnMin ? Math.copySign(Aim.kLockedTurnMin, r) : r;
+        } else {
+            return 0.0;
+        }
+        if (Math.abs(Math.toDegrees(errRad)) < Aim.kLockedTurnDeadbandDeg) return 0.0;
+        double r = MathUtil.clamp(Aim.kLockedTurnP * errRad, -Aim.kLockedTurnMax, Aim.kLockedTurnMax);
+        return Math.abs(r) < Aim.kLockedTurnMin ? Math.copySign(Aim.kLockedTurnMin, r) : r;
+    }
+
+    /** Turret locked and the robot pointing the shooter within kLockedTurnDeadbandDeg (x 2) of the target. */
+    public boolean lockedOnHeading() {
+        return Goober.locked() && poseUsable()
+            && Math.abs(Math.toDegrees(solution.headingErrorRad())) < 2 * Aim.kLockedTurnDeadbandDeg;
+    }
+
     /** Inside our alliance zone now and at the predicted launch spot (G407): scoring is legal. */
     public boolean legalToScore() { return poseUsable() && legalToScore; }
     /** Vacuum mode on/off (it auto-fires, so it never uses the tag-only fallback). */
@@ -343,6 +380,8 @@ public class AimSubsystem extends SubsystemBase {
     }
 
     private boolean turretOnTarget(Goober turret) {
+        // Turret locked: the ROBOT aims, so it must also have (nearly) stopped turning.
+        if (Goober.locked() && Math.abs(robotSpinDegPerSec) > Aim.kLockedMaxSpinDegPerSec) return false;
         return turret.aimTracking(aimToleranceDegrees(), turretRate(), Aim.kTurretRateTolerance);
     }
 
@@ -419,7 +458,7 @@ public class AimSubsystem extends SubsystemBase {
         if (!speedOk()) return String.format(java.util.Locale.US, "%s: slow down (%.1f m/s, max %.1f)",
             what, robotSpeed, passing() ? Aim.kMaxPassSpeed : Aim.kMaxScoreSpeed);
         if (trenchBlocksShot()) return what + ": TRENCH, hood held down (Operator R3 = trench shot)";
-        if (!turretOnTarget(turret)) return what + ": turret turning";
+        if (!turretOnTarget(turret)) return what + (Goober.locked() ? ": robot turning to aim (keep the rotate stick centered)" : ": turret turning");
         if (!rpmReady(shooter)) return what + ": shooter spinning up";
         if (Constants.Gooba.kHoodEnabled && Math.abs(hood.getPosition() - targetHood()) > hoodTolerance()) return what + ": hood moving";
         if (hubClosedForShot()) {

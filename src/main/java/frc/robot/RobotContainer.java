@@ -299,7 +299,14 @@ public class RobotContainer {
                 // reach. The driver's rotate stick always wins.
                 // Oct 28: only while a shot is wanted (auto-aim is on all teleop now, and a robot that
                 // turns itself while the driver is just driving feels like it's fighting them).
-                if (!defending && aim.isActive() && aim.shotWanted() && aim.poseUsable() && !aim.solution().reachable()
+                boolean turretLocked = Goober.locked();
+                if (!defending && turretLocked && aim.isActive() && aim.shotWanted()
+                        && !ElevatorSubsystem.isRaised()   // climbing: never turn the robot by itself
+                        && Math.abs(rInput) < Constants.Aim.kDriverRotateOverride) {
+                    // TURRET LOCKED (Oct 31): the shooter can't turn, so the ROBOT aims it (from the
+                    // field position, or onto our hub tag while the position is unknown).
+                    rotationRate = aim.lockedTurnRate(limelight);
+                } else if (!defending && !turretLocked && aim.isActive() && aim.shotWanted() && aim.poseUsable() && !aim.solution().reachable()
                         && !ElevatorSubsystem.isRaised()   // climbing: never turn the robot by itself
                         && Math.abs(rInput) < Constants.Aim.kDriverRotateOverride) {
                     rotationRate = MathUtil.clamp(
@@ -325,6 +332,7 @@ public class RobotContainer {
                     var st = drivetrain.getState().Speeds;
                     boolean centered = Math.hypot(xInput, yInput) < 1e-6 && Math.abs(rInput) < 1e-6;
                     if (centered && aim.poseUsable() && aim.solution().reachable()
+                            && (!turretLocked || aim.lockedOnHeading())   // locked: X-lock only once aimed
                             && Math.hypot(st.vxMetersPerSecond, st.vyMetersPerSecond) < 0.3
                             && Math.abs(st.omegaRadiansPerSecond) < 0.3) {
                         return xLock;
@@ -624,8 +632,9 @@ public class RobotContainer {
             .or(tele(operatorController.povUpLeft())).or(tele(operatorController.povDownLeft()));
         Trigger turretJogRight = tele(operatorController.povRight())
             .or(tele(operatorController.povUpRight())).or(tele(operatorController.povDownRight()));
-        turretJogLeft.and(expert).and(notTuning).whileTrue(new ManualTurretCommand(goober, -Constants.Turret.kManualJogSpeed));
-        turretJogRight.and(expert).and(notTuning).whileTrue(new ManualTurretCommand(goober, Constants.Turret.kManualJogSpeed));
+        // Turret LOCKED (Oct 31): the D-pad turret jog does nothing (and so can't cancel auto-aim).
+        turretJogLeft.and(expert).and(notTuning).and(() -> !Goober.locked()).whileTrue(new ManualTurretCommand(goober, -Constants.Turret.kManualJogSpeed));
+        turretJogRight.and(expert).and(notTuning).and(() -> !Goober.locked()).whileTrue(new ManualTurretCommand(goober, Constants.Turret.kManualJogSpeed));
 
         // Not on the map, kept on purpose: B (hold) runs the Spindex backwards to clear a jam
         tele(operatorController.b()).whileTrue(new StartEndCommand(

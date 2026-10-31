@@ -20,8 +20,14 @@ public final class ShotSolver {
     public record Geometry(
         Translation2d turretPivot,   // from robot center, robot frame (x forward, y left), meters
         double homeYawDegrees,       // shooter direction at HOME, CCW from robot forward
-        double rangeDegrees,         // turret travel from HOME (about 270)
-        double marginDegrees) {}     // stay this far inside each end
+        double rangeDegrees,         // turret travel from HOME (about 270); <= 0 = turret LOCKED
+        double marginDegrees) {      // stay this far inside each end; LOCKED: the fixed turret angle
+
+        /** A turret that can't turn, stuck at fixedDegrees clockwise from HOME: the robot aims. */
+        public static Geometry locked(Translation2d turretPivot, double homeYawDegrees, double fixedDegrees) {
+            return new Geometry(turretPivot, homeYawDegrees, 0.0, fixedDegrees);
+        }
+    }
 
     /**
      * @param distanceMeters  from the turret pivot to the point being aimed at (for the shot table)
@@ -118,6 +124,17 @@ public final class ShotSolver {
         double relativeDeg = fieldAngleDeg - heading.getDegrees(); // CCW from robot front
         // Turret counts clockwise from HOME: shooter direction = home - turret.
         double turretDeg = wrap360(geo.homeYawDegrees() - relativeDeg);
+
+        // TURRET LOCKED (Oct 31): rangeDegrees <= 0 means the turret can't turn and the shooter is
+        // stuck at marginDegrees (degrees clockwise from HOME). The ROBOT turns instead: report
+        // the turret angle the shot needs (fixed + offset) and the robot turn that brings the
+        // offset to 0. Always "reachable" (any target can be reached by turning the robot).
+        if (geo.rangeDegrees() <= 0.0) {
+            double fixed = geo.marginDegrees();
+            double need = wrap180(turretDeg - fixed);   // + = target is clockwise of where it points
+            // Turning the robot CCW by d raises the needed turret angle by d: d = -need.
+            return new Solution(distance, fixed + need, true, Math.toRadians(-need), tof, aim, pivot, 0.0);
+        }
 
         double lo = geo.marginDegrees();
         double hi = geo.rangeDegrees() - geo.marginDegrees();

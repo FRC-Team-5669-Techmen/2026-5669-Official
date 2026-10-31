@@ -206,6 +206,11 @@ public class Marcos {
      * Oct 31 (team's call at Beach Blitz): longer waits (were 1.0 / 3.5 / 10 s) so a slow or
      * bridged hopper keeps getting fed. Two volleys can now use most of the 20 s auto.
      */
+    private static final com.ctre.phoenix6.swerve.SwerveRequest.RobotCentric kTurnInPlace =
+        new com.ctre.phoenix6.swerve.SwerveRequest.RobotCentric()
+            .withVelocityX(0).withVelocityY(0)
+            .withDriveRequestType(com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType.Velocity);
+
     private static final double kEmptySeconds = 2.5;  // no ball for this long after firing started: hopper empty
     private static final double kGiveUpSeconds = 5.0; // never READY in this long: move on
     private static final double kMaxVolleySeconds = 12.0;
@@ -218,7 +223,10 @@ public class Marcos {
         double[] lastBall = {Double.NEGATIVE_INFINITY};
         int[] shotsAtStart = {0};
         return new ShootCommand(aim, shooter, index, shooterIntake, goober, gooba, true)
-            .deadlineFor(new AimCommand(aim, goober, gooba, limelight, drivetrain))
+            .deadlineFor(new AimCommand(aim, goober, gooba, limelight, drivetrain),
+                // TURRET LOCKED (Oct 31): the robot turns in place to aim the fixed shooter. With the
+                // turret working this holds the robot still (as before: nothing drives during a score).
+                drivetrain.applyRequest(() -> kTurnInPlace.withRotationalRate(aim.lockedTurnRate(limelight))))
             .until(() -> {
                 double now = edu.wpi.first.wpilibj.Timer.getFPGATimestamp();
                 if (Double.isNaN(firstFire[0]) && aim.isFiring()) firstFire[0] = now;

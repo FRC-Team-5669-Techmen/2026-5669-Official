@@ -103,6 +103,7 @@ public class PitCheck extends SubsystemBase {
         // 6. Turret far end saved (aiming does nothing without it).
         if (!turret.endMeasured()) problems.add("turret far end not set");
         lines.add(String.format("Turret angle %.0f deg", turret.getAngleDegrees()));
+        if (Goober.locked()) lines.add(String.format("Turret LOCKED at %.0f deg: auto-aim turns the ROBOT", Goober.lockedAngleDegrees()));
 
         // 7. Position known.
         lines.add("Pose trusted: " + localizer.poseTrusted());
