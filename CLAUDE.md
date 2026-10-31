@@ -125,6 +125,16 @@ From a code audit for match-losing failures plus the reliability code of 6328, 5
 
 - **Main breaker trips (Oct 31 at Beach Blitz, 3 matches in a row):** the cause was WIRING (the breaker-to-PDH red wire burnt black in Q1; a burnt lug heats the breaker and trips it below 120 A). Lower supply caps (drive 30 A, shooter 40 A, roller 30 A, commit 00e3483) were written, then reverted the same day on the team's call once the wiring was found: the robot runs the normal limits. If trips come back with good wiring, re-apply 00e3483. The main breaker must be 120 A (150 A is not legal).
 
+## Turret LOCKED: the robot turns to aim (Oct 31, Beach Blitz)
+
+The turret's ring bearing failed and the turret can't turn; it's stuck pointing forward (HOME). Saved dashboard switch **"Turret LOCKED (robot turns to aim)"** (ON by default; turn OFF once the turret is repaired) and **"Turret Locked Angle (deg)"** (saved, 0 = HOME = straight out the front; set it if the turret is stuck a few degrees off).
+- `Goober`: never drives the motor while locked (brake), reads as fixed at the locked angle (camera pose for vision stays right), `aimErrorDegrees()` = how far the ROBOT still has to turn. Operator D-pad turret jog does nothing (and can't cancel auto-aim).
+- `ShotSolver.Geometry.locked(...)` (range 0): the solution's `headingErrorRad` is the robot turn that points the fixed shooter (from the turret pivot) at the target; always reachable. Test `ShotSolverTest.lockedTurretTurnsTheRobot`.
+- `AimSubsystem.lockedTurnRate(limelight)`: P 5 rad/s per rad, min 0.35 rad/s, max 3 rad/s, 0.75 deg deadband (`Constants.Aim.kLocked*`); no position = turn onto the hub tag by tx. READY also needs the robot turning slower than 20 deg/s.
+- **Teleop**: with auto-aim on and a shot wanted (Operator LT/RT held, vacuum, dump, auto fire), the robot turns itself to aim while the driver's rotate stick is centered (the stick always wins); X-lock while scoring only once aimed.
+- **Autos**: every `score`/`visionScore`/`scorePreload` (and the stay-put default) turns the robot in place to aim (`Marcos.scoreUntilEmpty` now also holds the drivetrain: zero translation, aim rotation).
+- Not tested on the robot yet (built, 78 unit tests pass).
+
 ## Easier driving for a low-practice drive team (Oct 28)
 
 Research (6328, 581, 5000, 1678, 2910 2026 code; FIRST drive-team guides; Chief Delphi; workload audit of this repo): `docs/LOW-PRACTICE-DRIVE-TEAM.md`, notes in `/home/claude/research_notes/Low practice drive team support/`.
