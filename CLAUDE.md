@@ -509,7 +509,9 @@ rename them without updating the autos in `src/main/deploy/pathplanner/`.
 
 ### Paths & Autos
 - **Autos**: `Center Preload - Dumb`, `Center Preload - Vision`, `Right 3-Piece Auto` + `Agro Right 3-Piece Auto` (Marcos's, edited in PathPlanner), `Left 3-Piece Auto` + `Agro Left 3-Piece Auto` (made from the Right ones with `tools/pathplanner/mirror_auto.py`: re-run it after every Right change, don't hand-edit the Left). `tools/pathplanner/clone_auto.py` copies an auto with its own paths and links. **The 3-piece autos start with the intake UP** (starting with it down is not legal), robot behind the line at (3.51, 0.62) / (3.51, 7.45) facing straight away from our DS; `lowerIntake` is the first step. The Agro autos were deleted
+- **Center to Depot** (Oct 31, Marcos): `Left - Center to Depot` (start in front of the hub, shoot the preload, lowerIntake, the depot run, shoot) and `Right - Center to Depot`, its mirror (paths `Depot-Left-*` / `Depot-Right-*`). The turret's reach is NOT symmetric (10-290 deg from HOME; a mirror turns turret angle t into 360 - t), so the mirror tool's check can flag a mirrored shot in the dead zone: `Depot-Rotate180Right` ends at -164 deg (turret 180) instead of the exact mirror. The other `Depot-*` paths are unused leftovers of the clone.
 - **Paths**: see `src/main/deploy/pathplanner/paths/`
+- **Deploy deletes old files** (`build.gradle` `deleteOldFiles = true`, Oct 31): an auto deleted or renamed here also disappears from the roboRIO, so the dashboard's auto list shows only the current autos (with false, every auto ever deployed stayed in the list).
 
 ## CAN ID Map
 

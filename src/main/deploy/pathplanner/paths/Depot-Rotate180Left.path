@@ -1,0 +1,86 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 2.1910557532621597,
+        "y": 4.051138790035587
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 1.9539679128397434,
+        "y": 6.394373425123624
+      },
+      "isLocked": false,
+      "linkedName": "Depot-BallCenterLeft"
+    },
+    {
+      "anchor": {
+        "x": 1.029062870699882,
+        "y": 7.386488730723606
+      },
+      "prevControl": {
+        "x": 1.914774791229683,
+        "y": 7.451828134697116
+      },
+      "nextControl": {
+        "x": 0.4511183946842515,
+        "y": 7.343853482492945
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 1.3088018979833935,
+        "y": 4.9871886120996445
+      },
+      "prevControl": {
+        "x": 0.22212336892052265,
+        "y": 4.922633451957295
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Depot-NewRotatedCenterLeft"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.3243243243243239,
+      "rotationDegrees": 103.64787005754529
+    },
+    {
+      "waypointRelativePos": 1.392432432432433,
+      "rotationDegrees": -90.45544554235076
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "runGroundIntake",
+      "waypointRelativePos": 0.05951642901425915,
+      "endWaypointRelativePos": null,
+      "command": null
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 3.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0.0,
+    "rotation": -1.397181027296316
+  },
+  "reversed": false,
+  "folder": "Depot",
+  "idealStartingState": {
+    "velocity": 0.0,
+    "rotation": 180.0
+  },
+  "useDefaultConstraints": true
+}
