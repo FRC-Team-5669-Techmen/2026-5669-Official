@@ -42,7 +42,7 @@ public class Marcos {
         );
 
         // SHOOT FROM ANYWHERE (Oct 26): aim from the field position (the path sets it) and fire
-        // every ball the moment the shot is ready, for up to 3.5 s. Works stopped or moving.
+        // every ball the moment the shot is ready, until the hopper is empty (up to 12 s).
         NamedCommands.registerCommand("score", scoreUntilEmpty(aim, shooter, index, shooterIntake, goober, gooba, limelight, drivetrain));
 
         // Same as "score" (Oct 27). It used to spin to a fixed 5400 RPM and feed with the turret
@@ -98,18 +98,14 @@ public class Marcos {
         // any up.
         // ==========================================
         // Roller in for the REST OF AUTO, scheduled on its own (not part of the auto's sequence), so
-        // it keeps spinning through the paths and stops by itself when auto ends. It steps aside
-        // while balls are being fired: then the Agitator runs the roller exactly like in teleop
-        // (5 V assist + tap-outs), because 12 V while feeding packs the hopper and jams the inlet.
+        // it keeps spinning through the paths and stops by itself when auto ends. Full power the
+        // whole time, shooting included (Oct 31, team's call; it used to drop to the Agitator's 5 V
+        // while firing). If anything interrupts it, it is started again next loop.
         // No requirements of its own (like VacuumCommand), and none of these named commands
         // require the roller, so scheduling it can never cancel the auto that started it.
         Command rollerIn = intakeRoller.runCommand().withName("Auto: intake roller");
         Command rollerForAuto = Commands.run(() -> {
-                if (aim.isFiring()) {
-                    if (rollerIn.isScheduled()) rollerIn.cancel();
-                } else if (!rollerIn.isScheduled()) {
-                    CommandScheduler.getInstance().schedule(rollerIn);
-                }
+                if (!rollerIn.isScheduled()) CommandScheduler.getInstance().schedule(rollerIn);
             })
             .onlyWhile(DriverStation::isAutonomousEnabled)
             .finallyDo(rollerIn::cancel)
@@ -201,13 +197,14 @@ public class Marcos {
     /**
      * AUTO SCORE that keeps firing until the hopper is EMPTY: once firing has started it ends when
      * no ball has left for kEmptySeconds, so a full hopper empties completely and an empty one
-     * moves on after about a second. If it never gets READY (hub out of reach, robot shoved) it
-     * gives up after kGiveUpSeconds. kMaxVolleySeconds is only a safety cap: a volley that is
-     * still launching balls is scoring, so it isn't cut short.
+     * moves on after that wait. If it never gets READY (hub out of reach, robot shoved) it gives
+     * up after kGiveUpSeconds. kMaxVolleySeconds caps one volley.
+     * Oct 31 (team's call at Beach Blitz): longer waits (were 1.0 / 3.5 / 10 s) so a slow or
+     * bridged hopper keeps getting fed. Two volleys can now use most of the 20 s auto.
      */
-    private static final double kEmptySeconds = 1.0; // > the agitation pump trigger (0.8 s), so a bridged hopper gets one pump first
-    private static final double kGiveUpSeconds = 3.5; // never READY in this long: move on
-    private static final double kMaxVolleySeconds = 10.0;
+    private static final double kEmptySeconds = 2.5;  // no ball for this long after firing started: hopper empty
+    private static final double kGiveUpSeconds = 5.0; // never READY in this long: move on
+    private static final double kMaxVolleySeconds = 12.0;
 
     public static Command scoreUntilEmpty(AimSubsystem aim, ShooterSubsystem shooter, IndexSubsystem index,
             ShooterIntakeSubsystem shooterIntake, Goober goober, GoobaSubsystem gooba,
