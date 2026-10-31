@@ -94,9 +94,8 @@ public final class Constants {
         public static final double kI = 0.0;
         public static final double kD = 0.0;
         public static final double kV = 0.15;   // volts per rot/s (measured Oct 26: 11.1 V held ~4450 RPM; 0.18 overshot)
-        // Per motor (2 motors). Oct 31 at Beach Blitz: 40 A (was 60) after the 120 A main breaker
-        // tripped 3 matches in a row: spin-up and recovery are a little slower, steady RPM the same.
-        public static final double kSupplyCurrentLimit = 40.0;
+        // Per motor (2 motors). 60 A supply each keeps a cold spin-up from browning out the battery.
+        public static final double kSupplyCurrentLimit = 60.0;
         public static final double kStatorCurrentLimit = 120.0;
         // Spin-up ramp: 0 to full voltage in 0.25 s, easy on the belt, still at speed in about a second.
         // Oct 27: 0.05 s (was 0.25): the ramp slowed the RECOVERY after every ball, not just spin-up.
@@ -444,7 +443,7 @@ public final class Constants {
     public static final class Power {
         /** Drive STATOR limit = TunerConstants.kSlipCurrent (keep the two equal). */
         public static final double kDriveStatorAmps = 70.0;
-        public static final double kNormalDriveSupplyAmps = 30.0; // Oct 31 main breaker trips: was 40 (= TunerConstants initial); same top speed, softer acceleration
+        public static final double kNormalDriveSupplyAmps = 40.0; // = TunerConstants driveInitialConfigs
         public static final double kHeavyDriveSupplyAmps = 25.0;  // vacuum / dump mode on
         public static final double kSagDriveSupplyAmps = 18.0;    // ...and the battery still sagged
         public static final double kSagVolts = 8.0;               // under this for 0.1 s = SAG
@@ -469,7 +468,6 @@ public final class Constants {
         public static final double kRollerVolts = 12.0; // spin speed while Driver RT is held (volts). Full power (Oct 25; was 9.0, before that 6.0)
         public static final double kReverseVolts = -12.0; // Driver LT (hold): spit balls back out (Oct 27: full power, was -9)
         public static final double kStatorCurrentLimit = 60.0;  // amps (was 40, raised with full power)
-        public static final double kSupplyCurrentLimit = 30.0;  // Oct 31: battery-side cap (main breaker trips)
     }
 
     public static final class Limelight {
