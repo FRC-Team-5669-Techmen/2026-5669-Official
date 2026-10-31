@@ -1,0 +1,87 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 6.099279801324503,
+        "y": 2.357955298013245
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 6.055720198675496,
+        "y": 0.6155711920529803
+      },
+      "isLocked": false,
+      "linkedName": "Depot-RightRotatedPickUpEnd2"
+    },
+    {
+      "anchor": {
+        "x": 5.408054567022539,
+        "y": 0.6081969157769855
+      },
+      "prevControl": {
+        "x": 5.947334943923803,
+        "y": 0.6158517874639232
+      },
+      "nextControl": {
+        "x": 4.3931953642384105,
+        "y": 0.5937913907284766
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 3.275165562913908,
+        "y": 0.8914486754966879
+      },
+      "prevControl": {
+        "x": 3.384064569536424,
+        "y": 0.5937913907284769
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Depot-right2ending"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 1.0,
+      "rotationDegrees": 180.0
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "prepareShot",
+      "waypointRelativePos": 0.0,
+      "endWaypointRelativePos": 2.0,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "prepareShot"
+        }
+      }
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 3.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0.0,
+    "rotation": -177.73949808885874
+  },
+  "reversed": false,
+  "folder": "Depot",
+  "idealStartingState": {
+    "velocity": 2.0,
+    "rotation": -88.66778014613048
+  },
+  "useDefaultConstraints": true
+}
