@@ -35,8 +35,6 @@ public class IntakeRollerSubsystem extends SubsystemBase {
                 : InvertedValue.CounterClockwise_Positive;
             config.CurrentLimits.StatorCurrentLimit = IntakeRoller.kStatorCurrentLimit;
             config.CurrentLimits.StatorCurrentLimitEnable = true;
-            config.CurrentLimits.SupplyCurrentLimit = IntakeRoller.kSupplyCurrentLimit;
-            config.CurrentLimits.SupplyCurrentLimitEnable = true;
             motor.getConfigurator().apply(config);
         } else {
             motor = null;

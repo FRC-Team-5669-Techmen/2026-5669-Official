@@ -1040,16 +1040,16 @@
             }
           },
           {
-            "title": "Intake Roller Amps",
+            "title": "Roller Assist Volts",
             "x": 512.0,
             "y": 128.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Text Display",
             "properties": {
-              "topic": "/SmartDashboard/Intake Roller Amps",
+              "topic": "/SmartDashboard/Roller Assist Volts",
               "period": 0.06,
-              "show_submit_button": false
+              "show_submit_button": true
             }
           },
           {
