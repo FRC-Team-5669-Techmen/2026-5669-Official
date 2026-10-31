@@ -1,0 +1,49 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "named",
+          "data": {
+            "name": "lowerIntake"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Right-to-Pickup"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Rotate180Right"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Shoot-RightEnding1"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "visionScore"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "FinalRight-to-Neutral"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}
