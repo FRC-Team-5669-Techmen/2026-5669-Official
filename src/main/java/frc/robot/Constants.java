@@ -390,9 +390,15 @@ public final class Constants {
         public static final double kPumpLift = 2.0;
         public static final int kPumpCycles = 2;
         public static final double kPumpLegTimeout = 0.55;   // seconds per up or down leg, max
-        // Oct 31 (team's call at Beach Blitz): the agitator no longer slows the roller or taps it
-        // out. While balls are fed with the intake down it runs at full IntakeRoller.kRollerVolts;
-        // a nudge is always a spindexer shake. (Was: 5 V "Roller Assist Volts", -4 V tap-outs.)
+        // Roller blink (nudge and pump): a gentle tap out (loosens the pile at the bumper), then in.
+        // Oct 26: -9 V for 0.15 s threw a ball all the way out of the robot, so it's softer now.
+        public static final double kRollerOutVolts = -4.0;
+        public static final double kRollerOutSeconds = 0.08;
+        public static final double kRollerInVolts = 12.0;
+        // Prevention (Team 581's pattern): roller turns in gently the whole time balls are fed,
+        // keeping the pile moving toward the spindexer. Only with the intake down and the driver
+        // not using the roller. Dashboard "Roller Assist Volts" (saved; 0 = off).
+        public static final double kRollerAssistVolts = 5.0;
         public static final double kShakeSeconds = 0.15;     // spindexer reverse shake
 
         // Drivetrain shimmy: robot-relative forward/back only (never a rotation wiggle: turning
@@ -461,10 +467,7 @@ public final class Constants {
         public static final boolean kInverted = false;  // flip if it spins balls OUT instead of in
         public static final double kRollerVolts = 12.0; // spin speed while Driver RT is held (volts). Full power (Oct 25; was 9.0, before that 6.0)
         public static final double kReverseVolts = -12.0; // Driver LT (hold): spit balls back out (Oct 27: full power, was -9)
-        // Oct 31: our 60 A limit removed (team's call, roller felt weak). These are Phoenix 6's own
-        // defaults, the motor's built-in protection. If its breaker trips on a stall, come back down.
-        public static final double kStatorCurrentLimit = 120.0; // amps (was 60, before that 40)
-        public static final double kSupplyCurrentLimit = 70.0;  // amps (Phoenix 6 default)
+        public static final double kStatorCurrentLimit = 60.0;  // amps (was 40, raised with full power)
     }
 
     public static final class Limelight {

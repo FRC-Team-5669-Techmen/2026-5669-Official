@@ -98,14 +98,18 @@ public class Marcos {
         // any up.
         // ==========================================
         // Roller in for the REST OF AUTO, scheduled on its own (not part of the auto's sequence), so
-        // it keeps spinning through the paths and stops by itself when auto ends. Full power the
-        // whole time, shooting included (Oct 31, team's call; it used to drop to the Agitator's 5 V
-        // while firing). If anything interrupts it, it is started again next loop.
+        // it keeps spinning through the paths and stops by itself when auto ends. It steps aside
+        // while balls are being fired: then the Agitator runs the roller exactly like in teleop
+        // (5 V assist + tap-outs), because 12 V while feeding packs the hopper and jams the inlet.
         // No requirements of its own (like VacuumCommand), and none of these named commands
         // require the roller, so scheduling it can never cancel the auto that started it.
         Command rollerIn = intakeRoller.runCommand().withName("Auto: intake roller");
         Command rollerForAuto = Commands.run(() -> {
-                if (!rollerIn.isScheduled()) CommandScheduler.getInstance().schedule(rollerIn);
+                if (aim.isFiring()) {
+                    if (rollerIn.isScheduled()) rollerIn.cancel();
+                } else if (!rollerIn.isScheduled()) {
+                    CommandScheduler.getInstance().schedule(rollerIn);
+                }
             })
             .onlyWhile(DriverStation::isAutonomousEnabled)
             .finallyDo(rollerIn::cancel)
