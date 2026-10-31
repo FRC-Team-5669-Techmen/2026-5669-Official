@@ -3,79 +3,35 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.296945364238411,
-        "y": 0.7680298013245033
+        "x": 0.8430877483443708,
+        "y": 0.9713079470198682
       },
       "prevControl": null,
       "nextControl": {
-        "x": 4.34237582781457,
-        "y": 0.5865314569536417
+        "x": 1.0817077428531288,
+        "y": 1.0458766953038532
       },
       "isLocked": false,
-      "linkedName": "Depot-FirstRightEnding"
+      "linkedName": "spongebobDepot2End"
     },
     {
       "anchor": {
-        "x": 5.184528145695364,
-        "y": 0.6228311258278154
+        "x": 1.5690811258278146,
+        "y": 2.6120529801324492
       },
       "prevControl": {
-        "x": 4.734412251655629,
-        "y": 0.593791390728477
-      },
-      "nextControl": {
-        "x": 5.972622340587745,
-        "y": 0.6736759125950669
-      },
-      "isLocked": false,
-      "linkedName": null
-    },
-    {
-      "anchor": {
-        "x": 6.839793046357616,
-        "y": 0.7535099337748352
-      },
-      "prevControl": {
-        "x": 6.177491127265199,
-        "y": 0.603554782282213
-      },
-      "nextControl": {
-        "x": 7.224569536423842,
-        "y": 0.8406291390728484
-      },
-      "isLocked": false,
-      "linkedName": null
-    },
-    {
-      "anchor": {
-        "x": 7.776324503311258,
-        "y": 1.2181456953642373
-      },
-      "prevControl": {
-        "x": 7.812624172185431,
-        "y": 0.6518708609271517
+        "x": 1.0608857615894038,
+        "y": 1.8787996688741693
       },
       "nextControl": null,
       "isLocked": false,
       "linkedName": "Depot-RightPickupEnd2"
     }
   ],
-  "rotationTargets": [
-    {
-      "waypointRelativePos": 1.2810810810810818,
-      "rotationDegrees": 178.656
-    }
-  ],
+  "rotationTargets": [],
   "constraintZones": [],
   "pointTowardsZones": [],
-  "eventMarkers": [
-    {
-      "name": "runGroundIntake",
-      "waypointRelativePos": 1.74275618374558,
-      "endWaypointRelativePos": null,
-      "command": null
-    }
-  ],
+  "eventMarkers": [],
   "globalConstraints": {
     "maxVelocity": 3.0,
     "maxAcceleration": 3.0,
@@ -86,13 +42,13 @@
   },
   "goalEndState": {
     "velocity": 2.0,
-    "rotation": 91.16913932790762
+    "rotation": 44.99999999999989
   },
   "reversed": false,
   "folder": "Depot",
   "idealStartingState": {
     "velocity": 2.0,
-    "rotation": 178.05851360908574
+    "rotation": -179.1696845137419
   },
   "useDefaultConstraints": true
 }

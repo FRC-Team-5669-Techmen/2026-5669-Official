@@ -5,6 +5,18 @@
     "data": {
       "commands": [
         {
+          "type": "path",
+          "data": {
+            "pathName": "Depot-Right-to-Pickup"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "visionScore"
+          }
+        },
+        {
           "type": "named",
           "data": {
             "name": "lowerIntake"
@@ -13,13 +25,13 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Depot-Right-to-Pickup"
+            "pathName": "Depot-Rotate180Right"
           }
         },
         {
-          "type": "path",
+          "type": "named",
           "data": {
-            "pathName": "Depot-Rotate180Right"
+            "name": "visionScore"
           }
         },
         {
@@ -41,27 +53,9 @@
           }
         },
         {
-          "type": "path",
-          "data": {
-            "pathName": "Depot-Rotate180Right2"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Depot-Shoot-RightEnding2"
-          }
-        },
-        {
           "type": "named",
           "data": {
             "name": "visionScore"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Depot-FinalRight-to-Neutral"
           }
         }
       ]

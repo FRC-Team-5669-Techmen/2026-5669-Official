@@ -3,53 +3,48 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 6.462276490066225,
-        "y": 1.3706043046357603
+        "x": 1.3730629139072845,
+        "y": 5.094950331125827
       },
       "prevControl": null,
       "nextControl": {
-        "x": 5.968600993377484,
-        "y": 0.44133278146058474
+        "x": 2.2515149006622517,
+        "y": 4.143899006622516
       },
       "isLocked": false,
       "linkedName": "Depot-NewRotatedCenterRight"
     },
     {
       "anchor": {
-        "x": 4.901390728476821,
-        "y": 0.6518708609271515
+        "x": 2.026456953642384,
+        "y": 2.8298509933774825
       },
       "prevControl": {
-        "x": 5.474608432774617,
-        "y": 0.6866113278542905
+        "x": 1.844958609271523,
+        "y": 3.8172019867549656
       },
       "nextControl": {
-        "x": 4.182657284768212,
-        "y": 0.608311258278145
+        "x": 2.1643001818139465,
+        "y": 2.079983832124185
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 3.296945364238411,
-        "y": 0.7680298013245033
+        "x": 0.8430877483443708,
+        "y": 0.9713079470198682
       },
       "prevControl": {
-        "x": 4.298816225165564,
-        "y": 0.6083112582781449
+        "x": 1.5908609271523177,
+        "y": 1.7336009933774834
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "Depot-FirstRightEnding"
+      "linkedName": "spongebobDepot2End"
     }
   ],
-  "rotationTargets": [
-    {
-      "waypointRelativePos": 0.48648648648648724,
-      "rotationDegrees": -179.3657096765973
-    }
-  ],
+  "rotationTargets": [],
   "constraintZones": [],
   "pointTowardsZones": [],
   "eventMarkers": [
@@ -75,13 +70,13 @@
   },
   "goalEndState": {
     "velocity": 0.0,
-    "rotation": 178.05851360908574
+    "rotation": -179.1696845137419
   },
   "reversed": false,
   "folder": "Depot",
   "idealStartingState": {
     "velocity": 2.0,
-    "rotation": -107.89613292503934
+    "rotation": -24.22774531795416
   },
   "useDefaultConstraints": true
 }

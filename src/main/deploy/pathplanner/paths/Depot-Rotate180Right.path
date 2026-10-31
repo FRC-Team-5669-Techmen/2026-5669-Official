@@ -3,41 +3,41 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 7.6601655629139085,
-        "y": 1.3125248344370857
+        "x": 2.0119370860927153,
+        "y": 4.027740066225165
       },
       "prevControl": null,
       "nextControl": {
-        "x": 7.594826158940398,
-        "y": 3.6574834437086086
+        "x": 1.774849245670299,
+        "y": 6.370974701313202
       },
       "isLocked": false,
       "linkedName": "Depot-BallCenter"
     },
     {
       "anchor": {
-        "x": 6.876092715231788,
-        "y": 3.4542052980132456
+        "x": 1.2206043046357615,
+        "y": 7.1930711920529795
       },
       "prevControl": {
-        "x": 7.403997799875617,
-        "y": 3.6982007261642473
+        "x": 2.1063162251655627,
+        "y": 7.258410596026489
       },
       "nextControl": {
-        "x": 6.417882822924082,
-        "y": 3.2424226838486665
+        "x": 0.6426598286201312,
+        "y": 7.150435943822319
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 6.462276490066225,
-        "y": 1.3706043046357603
+        "x": 1.3730629139072845,
+        "y": 5.094950331125827
       },
       "prevControl": {
-        "x": 6.549395695364238,
-        "y": 2.379735099337749
+        "x": 0.30585264900662246,
+        "y": 4.681134105960264
       },
       "nextControl": null,
       "isLocked": false,
@@ -46,8 +46,12 @@
   ],
   "rotationTargets": [
     {
-      "waypointRelativePos": 0.8,
-      "rotationDegrees": -175.2984186943389
+      "waypointRelativePos": 0.3243243243243239,
+      "rotationDegrees": 103.64787005754529
+    },
+    {
+      "waypointRelativePos": 1.392432432432433,
+      "rotationDegrees": -91.31047732820645
     }
   ],
   "constraintZones": [],
@@ -55,7 +59,7 @@
   "eventMarkers": [
     {
       "name": "runGroundIntake",
-      "waypointRelativePos": 0.0,
+      "waypointRelativePos": 0.05951642901425915,
       "endWaypointRelativePos": null,
       "command": null
     }
@@ -70,13 +74,13 @@
   },
   "goalEndState": {
     "velocity": 2.0,
-    "rotation": -107.89613292503935
+    "rotation": -24.22774531795416
   },
   "reversed": false,
   "folder": "Depot",
   "idealStartingState": {
     "velocity": 2.0,
-    "rotation": 88.99908532243735
+    "rotation": 180.0
   },
   "useDefaultConstraints": true
 }
